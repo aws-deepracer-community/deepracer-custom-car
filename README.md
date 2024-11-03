@@ -16,8 +16,8 @@ This repository contains a few different things:
 - [Features](#features)
 - [Installation](#installation)
 - [Usage](#usage)
-- [Building](#building)
-- [Contributing](#contributing)
+- [Building a car with Raspberry Pi](#building-a-car-with-raspberry-pi)
+- [Building the Software](#building-the-software)
 
 ## Features
 
@@ -59,7 +59,11 @@ Example custom `/opt/aws/deepracer/start_ros.sh`:
     source /opt/intel/openvino_2021/bin/setupvars.sh
     ros2 launch deepracer_launcher deepracer_launcher.py camera_resize:=False camera_fps:=15 logging_mode:=Always
 
-## Building
+## Building a car with Raspberry Pi
+
+To create a DeepRacer compatible car with WLToys A979 and a Raspberry Pi read the [building instructions](docs/raspberry_pi.md).
+
+## Building the Software
 
 There are many ways to build the software packages. The easiest is to use the VS.Code Dev Container configurations that are included in the repository. 
 
@@ -110,10 +114,4 @@ During installation a set of external packages are downloaded in the `src/` dire
 | [rplidar_ros](https://github.com/Slamtec/rplidar_ros.git) | RPLIDAR ROS package |
 | [aws-deepracer-launcher](https://github.com/aws-deepracer/aws-deepracer-launcher.git) | Launcher package for AWS DeepRacer |
 | [larsll-deepracer-logging](https://github.com/larsll/larsll-deepracer-logging.git) | Logging package for AWS DeepRacer |
-
-
-## Contributing
-
-[Explain how others can contribute to your project]
-
 

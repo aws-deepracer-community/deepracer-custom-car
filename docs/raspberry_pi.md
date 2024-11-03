@@ -1,7 +1,4 @@
-# DeepRacer for Raspberry Pi 4
-
-This repository provides a port of the DeepRacer software stack to the Raspberry Pi 4. It runs
-on Ubuntu 22.04 with ROS2 Humble, but with most of original code. To make the image smaller the server image is recommended.
+# Building a DeepRacer for Raspberry Pi 4
 
 ## Features
 
@@ -17,18 +14,26 @@ Main features of the port:
 
 The following parts are needed:
 
-- Raspberry 4 or compatible board, recommended 4GB or 8GB RAM, but even 1GB will work as memory consumption is about 700MB.
-- Optional: [Intel Neural Compute Stick (NCS) 2](https://www.intel.com/content/www/us/en/developer/articles/tool/neural-compute-stick.html)
-- [Waveshare Servo Driver Hat](https://www.waveshare.com/product/raspberry-pi/hats/motors-relays/servo-driver-hat.htm) or compatible PCA9865 servo boards.
-- USB camera with ~60 deg FOV, e.g. original DeepRacer camera or a Raspberry Pi camera.
-- 4 RGB light diodes
-- Misc cables
+* WLToys A979 (or compatible) or original DeepRacer
+* 3D-print of the parts in `/drawing`.
+* Chassis holder **TODO**
+* Raspberry Pi 4, recommended 2GB or more of RAM
+    * Stand-off set (2.5mm)
+* [Waveshare Servo Driver Hat](https://www.waveshare.com/product/raspberry-pi/hats/motors-relays/servo-driver-hat.htm) or compatible PCA9865 servo boards. 
+    * Stackable header 40pin (to get higher servo driver hat higher than the fan)
+* Raspberry Pi Camera 2
+    * Longer cable (20-25cm)
+    * Screws M2x15mm + nuts
+* Recommended cooling fan: [GeeekPi Raspberry Pi 4 Armor Lite](https://www.amazon.de/gp/product/B091L1XKL6/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&psc=1)
+* RGB Led: 
+    * [AZDelivery 5 x KY-016 FZ0455](https://www.amazon.co.uk/AZDelivery-KY-016-3-Colour-Arduino-including/dp/B07V6YSGC9/ref=sr_1_1)
+    * 4 female-female jumper cables
+    * [Led Holder](https://www.amazon.co.uk/Chanzon-Holder-Headfor-Emitting-Diodes/dp/B083Q9Q1ZR/ref=sr_1_4_sspa)
+* Servo extension cable (with red cable cut)
+* 3-pin female JST
+* 2.5mm plastic screws (preferrably of good quality) to mount back and front; or use M2 screws with nuts
 
 ¹ The Waveshare hat comes with a step-down converter from 7.4V to 5V, and will power the Pi via the GPIO header. Other similar cards will require separate power.
-
-**Optional**
-
-- Fan/heat-sink kit for Raspberry PI 4
 
 ## Software Install
 
@@ -36,10 +41,10 @@ Installation of software is reasonably straight forward, as pre-built packages a
 
 - Flash an SD card with Ubuntu 22.04 Server for ARM64 using the Raspberry Pi Imager.
 - Boot the SD card, and let it upgrade (this takes some time...)
-- Run `git clone https://github.com/larsll/deepracer-pi`
-- Run `sudo ./install-prerequisites.sh`
+- Run `git clone https://github.com/aws-deepracer-community/deepracer-custom`
+- Run `sudo ./install_scripts/pi/install-prerequisites.sh`
 - Reboot
-- Run `sudo ./install-deepracer.sh`
+- Run `sudo ./install_scripts/pi/install-deepracer.sh`
 
 Once installed you can start the stack with `sudo /opt/aws/deepracer/start_ros.sh`. To ensure a smooth start a camera needs to be plugged in.
 The launch log will now display in the console.
@@ -49,7 +54,6 @@ To automatically start at boot do `sudo systemctl enable deepracer-core` and to 
 ### Changes
 
 Some changes have been made to the code to enable access to GPIO as sysfs layout is different on the Raspberry Pi than on the custom Intel board.
-
 
 ### Improvements
 
