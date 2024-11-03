@@ -150,19 +150,7 @@ if [ $DISTRIB_RELEASE = "20.04" ]; then
 
     fi
 
-    # Disable software_update
-    echo -e -n "\nDisable software update\n"
-    cp ${systemPath}/software_update_module/software_update_config.py ${backupDir}/software_update_config.py.bak
-    rm ${systemPath}/software_update_module/software_update_config.py
-    cat ${backupDir}/software_update_config.py.bak | sed -e "s/ENABLE_PERIODIC_SOFTWARE_UPDATE = True/ENABLE_PERIODIC_SOFTWARE_UPDATE = False/" >${systemPath}/software_update_module/software_update_config.py
-
 fi
-
-# Disable video stream by default
-echo -e -n "\nDisable video stream\n"
-cp $bundlePath/bundle.js ${backupDir}/bundle.js.bak
-rm $bundlePath/bundle.js
-cat ${backupDir}/bundle.js.bak | sed -e "s/isVideoPlaying\: true/isVideoPlaying\: false/" >$bundlePath/bundle.js
 
 # Allow multiple logins on the console
 echo -e -n "\nEnable multiple logins to the console\n"
