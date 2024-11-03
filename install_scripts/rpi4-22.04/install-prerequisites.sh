@@ -27,7 +27,7 @@ if [ $(whoami) != root ]; then
     exit 1
 fi
 
-export DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+export DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/../.. >/dev/null 2>&1 && pwd)"
 
 mkdir -p $DIR/dist
 
@@ -58,7 +58,7 @@ ufw enable
 
 # Install other tools / configure network management
 apt -y install network-manager wireless-tools net-tools i2c-tools v4l-utils libraspberrypi-bin raspi-config
-cp $DIR/files/10-manage-wifi.conf /etc/NetworkManager/conf.d/
+cp $DIR/build_scripts/files/pi/10-manage-wifi.conf /etc/NetworkManager/conf.d/
 systemctl disable systemd-networkd-wait-online
 
 sed -i 's/wifi.powersave = 3/wifi.powersave = 2/' /etc/NetworkManager/conf.d/default-wifi-powersave-on.conf
