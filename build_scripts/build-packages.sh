@@ -106,10 +106,10 @@ for pkg in $PACKAGES; do
                 opt/aws/deepracer/camera/installed/lib
             cp $DIR/deps/geocam-bin-armhf/files/usr/bin/mxcam opt/aws/deepracer/camera/installed/bin
         fi
-        cp $DIR/files/aws_deepracer-community.list etc/apt/sources.list.d/aws_deepracer.list
-        cp $DIR/files/otg_eth.sh opt/aws/deepracer/util/otg_eth.sh
-        cp $DIR/files/isc-dhcp-server opt/aws/deepracer/util/isc-dhcp-server
-        cp $DIR/files/deepracer_dhcp.conf opt/aws/deepracer/util/deepracer_dhcp.conf
+        cp $DIR/install_scripts/rpi4-22.04/aws_deepracer-community.list etc/apt/sources.list.d/aws_deepracer.list
+        cp $DIR/build_scripts/files/pi/otg_eth.sh opt/aws/deepracer/util/otg_eth.sh
+        cp $DIR/build_scripts/files/pi/isc-dhcp-server opt/aws/deepracer/util/isc-dhcp-server
+        cp $DIR/build_scripts/files/pi/deepracer_dhcp.conf opt/aws/deepracer/util/deepracer_dhcp.conf
         sed -i "s/Architecture: amd64/Architecture: $TARGET_ARCH/" DEBIAN/control
         sed -i "s/Version: .*/Version: $VERSION/" DEBIAN/control
         sed -i 's/pyclean -p aws-deepracer-util/ /' DEBIAN/prerm
