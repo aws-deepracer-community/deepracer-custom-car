@@ -66,6 +66,7 @@ fi
 rm -rf $DIR/pkg-build/aws*
 mkdir -p $DIR/pkg-build $DIR/pkg-build/src $DIR/dist
 cd $DIR/pkg-build
+touch COLCON_IGNORE
 mkdir -p $PACKAGES
 
 # Check which packages we have
