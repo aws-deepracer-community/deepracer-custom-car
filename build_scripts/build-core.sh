@@ -102,6 +102,12 @@ if [ "$CACHE" != "true" ]; then
     git checkout tflite
     cd ..
 
+    # https://github.com/aws-deepracer/aws-deepracer-i2c-pkg/pull/3
+    cd aws-deepracer-i2c-pkg
+    git fetch origin pull/3/head:dummy
+    git checkout dummy
+    cd ..
+
     # Patch with aws-deepracer-ctrl-pkg.patch
     cd aws-deepracer-ctrl-pkg
     git apply $DIR/build_scripts/patches/aws-deepracer-ctrl-pkg.patch
