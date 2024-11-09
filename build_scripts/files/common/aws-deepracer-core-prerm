@@ -1,0 +1,17 @@
+#!/bin/bash
+
+if [ -f /usr/bin/pyclean ]; then
+    pyclean /opt/aws/deepracer/lib
+elif [ -f /usr/local/bin/pyclean ]; then
+    /usr/local/bin/pyclean /opt/aws/deepracer/lib
+fi
+
+if [ "$1" == "remove" ]; then
+
+    systemctl stop deepracer-core.service
+    systemctl disable deepracer-core.service
+
+    if [ -e /opt/aws/deepracer/calibration.json ]; then
+        rm /opt/aws/deepracer/calibration.json
+    fi
+fi

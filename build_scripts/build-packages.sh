@@ -52,6 +52,19 @@ if [ -z "$PACKAGES" ]; then
     exit 1
 fi
 
+# Detect ROS version
+if [ -f /opt/ros/foxy/setup.bash ]; then
+    ROS_DISTRO="foxy"
+    source /opt/ros/foxy/setup.bash
+elif [ -f /opt/ros/humble/setup.bash ]; then
+    ROS_DISTRO="humble"
+    source /opt/ros/humble/setup.bash
+else
+    echo "Unsupported ROS version"
+    exit 1
+fi
+echo "Detected ROS version: $ROS_DISTRO"
+
 # DeepRacer Repos
 sudo cp $DIR/install_scripts/common/deepracer.asc /etc/apt/trusted.gpg.d/
 sudo cp $DIR/install_scripts/common/aws_deepracer.list /etc/apt/sources.list.d/
@@ -150,12 +163,12 @@ for pkg in $PACKAGES; do
         sed -i "s/Architecture: amd64/Architecture: $TARGET_ARCH/" DEBIAN/control
         sed -i "s/Version: .*/Version: $VERSION/" DEBIAN/control
         sed -i 's/python-apt/python3-apt/' DEBIAN/control
-        sed -i '/Depends/ s/$/, gnupg/' DEBIAN/control
-        sed -i 's/pyclean -p aws-deepracer-core/\/usr\/local\/bin\/pyclean \/opt\/aws\/deepracer\/lib/' DEBIAN/prerm
+        sed -i "/Depends/ s/$/, ros-$ROS_DISTRO-compressed-image-transport, ros-$ROS_DISTRO-pybind11-vendor, gnupg/" DEBIAN/control
         sed -i 's/ExecStop=\/opt\/aws\/deepracer\/util\/otg_eth.sh stop/KillSignal=2/' etc/systemd/system/deepracer-core.service
         rm -rf opt/aws/deepracer/lib/*
         cp $DIR/build_scripts/files/common/start_ros.sh opt/aws/deepracer
         cp -r $DIR/install/* opt/aws/deepracer/lib/
+        cp -r $DIR/build_scripts/files/common/aws-deepracer-core-prerm DEBIAN/prerm
         rm DEBIAN/preinst
         cd ..
         dpkg-deb --root-owner-group -b aws-deepracer-core
