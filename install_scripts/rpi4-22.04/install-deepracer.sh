@@ -69,7 +69,7 @@ pip3 install -U pyudev \
 
 # Install packages
 cp $DIR/install_scripts/rpi4-22.04/aws_deepracer-community.list /etc/apt/sources.list.d/aws_deepracer.list
-cp $DIR/install_scripts/common/deepracer-larsll.asc /etc/apt/trusted.gpg.d/
+cp $DIR/install_scripts/common/deepracer-community.asc /etc/apt/trusted.gpg.d/
 apt update -y && apt install -y aws-deepracer-core aws-deepracer-device-console aws-deepracer-util aws-deepracer-sample-models
 
 # Disable deepracer-core until we are ready

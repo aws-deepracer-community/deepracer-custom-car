@@ -1,2 +1,2 @@
-deb [arch=arm64 signed-by=53E8F72A910FF5A5CB727871E388EE0DC3E499C1] https://larsll-build-artifact-share.s3.eu-north-1.amazonaws.com/deepracer-pi stable jammy
-# deb [arch=arm64 signed-by=53E8F72A910FF5A5CB727871E388EE0DC3E499C1] https://larsll-build-artifact-share.s3.eu-north-1.amazonaws.com/deepracer-pi experimental jammy
+deb [arch=arm64 signed-by=CFB167A8F18DE6A634A6A2E4A63BC335D48DF8C6] https://aws-deepracer-community-sw.s3.eu-west-1.amazonaws.com/deepracer-custom-car stable jammy
+# deb [arch=arm64 signed-by=CFB167A8F18DE6A634A6A2E4A63BC335D48DF8C6] https://aws-deepracer-community-sw.s3.eu-west-1.amazonaws.com/deepracer-custom-car experimental jammy

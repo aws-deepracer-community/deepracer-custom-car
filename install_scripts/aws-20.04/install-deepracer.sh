@@ -14,7 +14,7 @@ fi
 systemctl stop deepracer-core
 
 # DeepRacer Repos
-cp $DIR/install_scripts/common/deepracer-larsll.asc /etc/apt/trusted.gpg.d/
+cp $DIR/install_scripts/common/deepracer-community.asc /etc/apt/trusted.gpg.d/
 cp $DIR/install_scripts/aws-20.04/aws_deepracer-community.list /etc/apt/sources.list.d/
 apt update
 apt upgrade -y
