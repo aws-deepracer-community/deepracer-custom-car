@@ -17,7 +17,15 @@
 #################################################################################
 
 source /opt/aws/deepracer/lib/setup.bash
-source /opt/intel/openvino_2022/setupvars.sh
+
+if [ -f /opt/intel/openvino_2022/setupvars.sh ]; then
+    source /opt/intel/openvino_2022/setupvars.sh
+elif [ -f /opt/intel/openvino_2021/bin/setupvars.sh ]; then
+    source /opt/intel/openvino_2021/bin/setupvars.sh
+else
+    echo "No OpenVINO found!"
+    exit 1
+fi
 
 MYRIAD=$(lsusb | grep "Intel Movidius MyriadX")
 if [ -n "${MYRIAD}" ]; then
