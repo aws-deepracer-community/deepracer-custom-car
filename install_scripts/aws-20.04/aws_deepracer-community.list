@@ -1,2 +1,2 @@
-deb [arch=amd64 signed-by=CFB167A8F18DE6A634A6A2E4A63BC335D48DF8C6] https://aws-deepracer-community-sw.s3.eu-west-1.amazonaws.com/deepracer-custom-car stable focal
-# deb [arch=amd64 signed-by=CFB167A8F18DE6A634A6A2E4A63BC335D48DF8C6] https://aws-deepracer-community-sw.s3.eu-west-1.amazonaws.com/deepracer-custom-car experimental focal
+deb [arch=amd64 signed-by=CFB167A8F18DE6A634A6A2E4A63BC335D48DF8C6] https://aws-deepracer-community-sw.s3.eu-west-1.amazonaws.com/deepracer-custom-car stable dr-focal
+# deb [arch=amd64 signed-by=CFB167A8F18DE6A634A6A2E4A63BC335D48DF8C6] https://aws-deepracer-community-sw.s3.eu-west-1.amazonaws.com/deepracer-custom-car experimental dr-focal

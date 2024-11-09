@@ -4,10 +4,10 @@ The APT repository is hosted at `https://aws-deepracer-community-sw.s3.eu-west-1
 
 There are two codenames `stable` and `experimental`, the former having more stable packages, and experimental hosting any new features in development, which may or may not work at all times.
 
-The component matrics and architecture support is as follows:
+The component matrix / architecture support is as follows:
 
 | Hardware | Ubuntu 20.04 (Focal) + ROS2 Foxy | Ubuntu 22.04 (Jammy) + ROS2 Humble |
 |----------|----------------------------------|------------------------------------| 
-| Original (`amd64`) | Yes                    | No                                 |
-| Raspberry Pi (`arm64`) | No                 | Yes                                | 
-| Other x86 (`amd64`) | No                    | Experimental only                  |                          
+| Original (`amd64`) | `dr-focal`                    | No                                 |
+| Raspberry Pi (`arm64`) | No                 | `rpi4-jammy`                                | 
+| Other x86 (`amd64`) | No                    | Source only                  |                          
