@@ -9,11 +9,14 @@ PREFIX="deepracer-custom-car/"
 REGION="eu-west-1"
 PROFILE="default"
 
-while getopts "c:m:a:r:" opt; do
+while getopts "p:c:m:a:r:v:" opt; do
     case $opt in
     a)
         ARCHITECTURE=$OPTARG
         ;;
+    p)
+        PACKAGE=$OPTARG
+        ;;        
     c)
         CODENAME=$OPTARG
         ;;
@@ -22,6 +25,9 @@ while getopts "c:m:a:r:" opt; do
         ;;      
     r)
         PROFILE=$OPTARG
+        ;;          
+    v)
+        VERSION=$OPTARG
         ;;          
     \?)
         echo "Invalid option -$OPTARG" >&2
@@ -41,4 +47,4 @@ fi
 export AWS_ACCESS_KEY_ID
 export AWS_SECRET_ACCESS_KEY
 
-deb-s3 list --bucket=$BUCKET --prefix=$PREFIX --s3-region=$REGION -m $COMPONENT -c $CODENAME
+deb-s3 delete $PACKAGE --bucket=$BUCKET --prefix=$PREFIX --s3-region=$REGION -m $COMPONENT -c $CODENAME -a $ARCHITECTURE --versions=$VERSION 

@@ -69,6 +69,6 @@ for PKG in $PACKAGES; do
     fi
 
     echo Uploading $FILE_NAME to $CODENAME/$COMPONENT
-    deb-s3 upload dist/$FILE_NAME -c $CODENAME -v public -b $BUCKET --prefix $PREFIX -m $COMPONENT --s3-region=$REGION --sign=$KEY
+    deb-s3 upload dist/$FILE_NAME -c $CODENAME -v public -p -b $BUCKET --prefix $PREFIX -m $COMPONENT --s3-region=$REGION --sign=$KEY
 
 done

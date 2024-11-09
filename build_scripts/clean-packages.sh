@@ -41,4 +41,4 @@ fi
 export AWS_ACCESS_KEY_ID
 export AWS_SECRET_ACCESS_KEY
 
-deb-s3 list --bucket=$BUCKET --prefix=$PREFIX --s3-region=$REGION -m $COMPONENT -c $CODENAME
+deb-s3 clean --bucket=$BUCKET --prefix=$PREFIX --s3-region=$REGION -m $COMPONENT -c $CODENAME
