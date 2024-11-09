@@ -44,7 +44,7 @@ cd src
 
 if [ "$CACHE" != "true" ]; then
 
-    rosdep update --rosdistro=$ROS_DISTRO
+    rosdep update --rosdistro=$ROS_DISTRO -q
 
     # Remove previous builds (gives clean build)
     rm -rf ../install ../build ../log
