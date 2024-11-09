@@ -29,7 +29,7 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
     jq \
     cython3
 
-RUN cd / && curl -O https://larsll-build-artifact-share.s3.eu-north-1.amazonaws.com/openvino/openvino_2022.3.1_amd64.tgz && \
+RUN cd / && curl -O https://aws-deepracer-community-sw.s3.eu-west-1.amazonaws.com/openvino/openvino_2022.3.1_amd64.tgz && \
     tar -xvzf openvino_2022.3.1_amd64.tgz && \
     ln -sf /opt/intel/openvino_2022.3.1 /opt/intel/openvino_2022 && \
     ln -sf /opt/intel/openvino_2022.3.1 /opt/intel/openvino && \

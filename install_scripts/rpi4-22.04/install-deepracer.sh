@@ -42,7 +42,7 @@ pip3 install -U "setuptools<50" pip "cython<3" "wheel==0.42.0" testresources
 # Get OpenVINO
 mkdir -p $DIR/dist/
 cd $DIR/dist/
-[ ! -f "$DIR/dist/openvino_2022.3.1_arm64.tgz" ] && curl -O https://larsll-build-artifact-share.s3.eu-north-1.amazonaws.com/openvino/openvino_2022.3.1_arm64.tgz
+[ ! -f "$DIR/dist/openvino_2022.3.1_arm64.tgz" ] && curl -O https://aws-deepracer-community-sw.s3.eu-west-1.amazonaws.com/openvino/openvino_2022.3.1_arm64.tgz
 cd /
 tar xvzf $DIR/dist/openvino_2022.3.1_arm64.tgz
 ln -sf /opt/intel/openvino_2022.3.1 /opt/intel/openvino_2022
