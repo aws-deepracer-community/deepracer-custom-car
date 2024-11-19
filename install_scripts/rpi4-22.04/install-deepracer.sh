@@ -48,6 +48,7 @@ tar xvzf $DIR/dist/openvino_2022.3.1_arm64.tgz
 ln -sf /opt/intel/openvino_2022.3.1 /opt/intel/openvino_2022
 ln -sf /opt/intel/openvino_2022.3.1 /opt/intel/openvino
 /opt/intel/openvino_2022.3.1/install_dependencies/install_NCS_udev_rules.sh
+systemctl restart systemd-resolved
 
 # Tensorflow and dependencies
 pip3 install -U pyudev \
