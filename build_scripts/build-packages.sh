@@ -157,7 +157,7 @@ for pkg in $PACKAGES; do
 
     PACKAGE_DEPS="gnupg, ros-$ROS_DISTRO-ros-base, ros-$ROS_DISTRO-image-transport, ros-$ROS_DISTRO-compressed-image-transport, ros-$ROS_DISTRO-pybind11-vendor, ros-$ROS_DISTRO-cv-bridge"
     if [ "$ROS_DISTRO" == "humble" ]; then
-        PACKAGE_DEPS="$PACKAGE_DEPS, ros-$ROS_DISTRO-rplidar-ros, ros-$ROS_DISTRO-web-video-server"
+        PACKAGE_DEPS="$PACKAGE_DEPS, ros-$ROS_DISTRO-rplidar-ros, ros-$ROS_DISTRO-web-video-server, ros-$ROS_DISTRO-rosbag2-storage-mcap"
     fi
 
     if [ "$pkg" == "aws-deepracer-core" ]; then

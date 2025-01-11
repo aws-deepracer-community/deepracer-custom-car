@@ -183,6 +183,8 @@ def launch_setup(context, *args, **kwargs):
         parameters=[{
                 'logging_mode': LaunchConfiguration(
                     'logging_mode').perform(context),
+                'logging_provider': LaunchConfiguration(
+                    'logging_provider').perform(context),
                 'monitor_topic_timeout': 15,
                 'output_path': '/opt/aws/deepracer/logs',
                 'monitor_topic': '/deepracer_navigation_pkg/auto_drive',
@@ -239,6 +241,10 @@ def generate_launch_description():
                 name="logging_mode",
                 default_value="usbonly",
                 description="Enable the logging of results to ROS Bag on USB stick"),
+            DeclareLaunchArgument(
+                name="logging_provider",
+                default_value="sqlite3",
+                description="Database provider to use for logging"),                
             DeclareLaunchArgument(
                 name="battery_dummy",
                 default_value="False",

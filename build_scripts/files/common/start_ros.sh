@@ -41,4 +41,12 @@ else
     BATTERY_DUMMY=''
 fi
 
-ros2 launch deepracer_launcher deepracer_launcher.py ${INFERENCE_ENGINE} ${INFERENCE_DEVICE} ${BATTERY_DUMMY}
+if [ -f /opt/aws/deepracer/logging.conf ]; then
+    LOGGING_MODE="logging_mode:=$(cat /opt/aws/deepracer/logging.conf | grep mode | cut -d'=' -f2 | tr -d '[:space:]')"
+    LOGGING_PROVIDER="logging_provider:=$(cat /opt/aws/deepracer/logging.conf | grep provider | cut -d'=' -f2 | tr -d '[:space:]')"
+else
+    LOGGING_MODE='logging_mode:=usbonly'
+    LOGGING_PROVIDER='logging_provider:=sqlite3'
+fi
+
+ros2 launch deepracer_launcher deepracer_launcher.py ${INFERENCE_ENGINE} ${INFERENCE_DEVICE} ${BATTERY_DUMMY} ${LOGGING_MODE} ${LOGGING_PROVIDER}
