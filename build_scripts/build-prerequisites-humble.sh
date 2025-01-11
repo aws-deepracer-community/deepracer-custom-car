@@ -36,8 +36,29 @@ sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list >/dev/null
 
 # Install ROS Core and Development Tools
-sudo apt -y update && sudo apt install -y python3-venv ros-humble-ros-base libopencv-dev python3-argcomplete ros-dev-tools python3-pip libopencv-dev libjsoncpp-dev libhdf5-dev \
-    python3-opencv python3-websocket python3-colcon-common-extensions python3-rosinstall cython3 libuvc0 libboost-all-dev ros-humble-cv-bridge ros-humble-image-transport ros-humble-compressed-image-transport ros-humble-pybind11-vendor ffmpeg ros-humble-test-msgs
+sudo apt -y update && sudo apt install -y \
+    cython3 \
+    ffmpeg \
+    libboost-all-dev \
+    libhdf5-dev \
+    libjsoncpp-dev \
+    libopencv-dev \
+    libpugixml1v5 \
+    libuvc0 \
+    python3-argcomplete \
+    python3-colcon-common-extensions \
+    python3-opencv \
+    python3-pip \
+    python3-rosinstall \
+    python3-venv \
+    python3-websocket \
+    ros-dev-tools \
+    ros-humble-compressed-image-transport \
+    ros-humble-cv-bridge \
+    ros-humble-image-transport \
+    ros-humble-pybind11-vendor \
+    ros-humble-ros-base \
+    ros-humble-test-msgs
 
 sudo pip3 install -U "setuptools==58.2.0" pip catkin_pkg "Cython<3"
 
