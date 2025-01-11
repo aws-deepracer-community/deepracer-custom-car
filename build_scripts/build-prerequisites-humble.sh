@@ -26,7 +26,7 @@ sudo update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
 export LANG=en_US.UTF-8
 
 # First ensure that the Ubuntu Universe repository is enabled.
-sudo apt install software-properties-common curl
+sudo apt install software-properties-common curl jq
 sudo add-apt-repository -y universe
 sudo apt -y update && sudo apt -y upgrade
 
@@ -70,3 +70,7 @@ pip3 install -U pyudev \
     $(find /opt/intel/openvino_2022.3.1/tools/ -name *.whl) \
     "empy==3.3.4" \
     "lark"
+
+sudo rosdep init
+rosdep update --rosdistro humble -q
+
