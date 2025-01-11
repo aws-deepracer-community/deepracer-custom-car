@@ -6,3 +6,11 @@
     uri: https://github.com/ros2/rosbag2
     local-name: rosbag2
     version: foxy-future
+- git:
+    uri: https://github.com/GT-RAIL/async_web_server_cpp.git
+    local-name: async_web_server_cpp
+    version: ros2
+- git:
+    uri: https://github.com/Slamtec/rplidar_ros.git
+    local-name: rplidar_ros
+    version: ros2

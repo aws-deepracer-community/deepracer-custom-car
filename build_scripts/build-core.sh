@@ -192,7 +192,7 @@ cd ..
 
 # Build the core
 export PYTHONWARNINGS=ignore:::setuptools.command.install
-colcon build --packages-up-to deepracer_launcher rplidar_ros
+colcon build --packages-up-to deepracer_launcher
 
 # Build the add-ons
 colcon build --packages-up-to logging_pkg

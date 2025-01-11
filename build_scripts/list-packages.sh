@@ -40,5 +40,5 @@ fi
 
 export AWS_ACCESS_KEY_ID
 export AWS_SECRET_ACCESS_KEY
-
+export THOR_SILENCE_DEPRECATION=1
 deb-s3 list --bucket=$BUCKET --prefix=$PREFIX --s3-region=$REGION -m $COMPONENT -c $CODENAME

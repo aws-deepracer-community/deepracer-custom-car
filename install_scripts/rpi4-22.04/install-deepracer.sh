@@ -31,9 +31,26 @@ curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | tee /etc/apt/sources.list.d/ros2.list >/dev/null
 
 # Install ROS Core and Development Tools
-apt -y update && apt install -y ros-humble-ros-base python3-argcomplete ros-dev-tools python3-pip libopencv-dev libjsoncpp-dev libhdf5-dev \
-    python3-opencv python3-websocket python3-venv python3-colcon-common-extensions python3-rosinstall cython3 libuvc0 \
-    ros-humble-cv-bridge ros-humble-image-transport ros-humble-compressed-image-transport libboost-dev libboost-thread-dev libboost-regex-dev libboost-filesystem-dev libpugixml1v5
+apt -y update && apt install -y --no-install-recommends \
+    cython3 \
+    libboost-dev \
+    libboost-filesystem-dev \
+    libboost-regex-dev \
+    libboost-thread-dev \
+    libhdf5-dev \
+    libjsoncpp-dev \
+    libopencv-dev \
+    libpugixml1v5 \
+    libuvc0 \
+    python3-argcomplete \
+    python3-colcon-common-extensions \
+    python3-opencv \
+    python3-pip \
+    python3-rosinstall \
+    python3-venv \
+    python3-websocket \
+    ros-dev-tools \
+    ros-humble-ros-base
 rosdep init && rosdep update --rosdistro=humble
 
 # Update build tools and utilities for Python

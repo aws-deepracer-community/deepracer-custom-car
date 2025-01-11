@@ -42,7 +42,16 @@ sudo apt -y update && sudo apt install -y python3-venv ros-humble-ros-base libop
 sudo pip3 install -U "setuptools==58.2.0" pip catkin_pkg "Cython<3"
 
 # Builds and installs OpenVINO
-$DIR/build_scripts/build-openvino.sh
+# $DIR/build_scripts/build-openvino.sh
+mkdir -p $DIR/dist/
+cd $DIR/dist/
+[ ! -f "$DIR/dist/openvino_2022.3.1_arm64.tgz" ] && curl -O https://aws-deepracer-community-sw.s3.eu-west-1.amazonaws.com/openvino/openvino_2022.3.1_arm64.tgz
+cd /
+tar xvzf $DIR/dist/openvino_2022.3.1_arm64.tgz
+ln -sf /opt/intel/openvino_2022.3.1 /opt/intel/openvino_2022
+ln -sf /opt/intel/openvino_2022.3.1 /opt/intel/openvino
+/opt/intel/openvino_2022.3.1/install_dependencies/install_NCS_udev_rules.sh
+systemctl restart systemd-resolved
 
 # Tensorflow and dependencies
 pip3 install -U pyudev \

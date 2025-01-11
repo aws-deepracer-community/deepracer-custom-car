@@ -55,18 +55,6 @@
     local-name: aws-deepracer-webserver-pkg
     version: main
 - git:
-    uri: https://github.com/GT-RAIL/async_web_server_cpp.git
-    local-name: async_web_server_cpp
-    version: ros2
-- git:
-    uri: https://github.com/RobotWebTools/web_video_server.git
-    local-name: web_video_server
-    version: c23b9078b614abdde9270ddd5d9f13c1fc4ad172
-- git:
-    uri: https://github.com/Slamtec/rplidar_ros.git
-    local-name: rplidar_ros
-    version: ros2
-- git:
     uri: https://github.com/aws-deepracer/aws-deepracer-launcher.git
     local-name: aws-deepracer-launcher
     version: main
