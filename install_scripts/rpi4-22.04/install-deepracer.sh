@@ -90,5 +90,5 @@ cp $DIR/install_scripts/rpi4-22.04/aws_deepracer-community.list /etc/apt/sources
 cp $DIR/install_scripts/common/deepracer-community.asc /etc/apt/trusted.gpg.d/
 apt update -y && apt install -y aws-deepracer-core aws-deepracer-device-console aws-deepracer-util aws-deepracer-sample-models
 
-# Disable deepracer-core until we are ready
-systemctl disable deepracer-core
+# Uncomment the below to disable deepracer-core automatic start
+# systemctl disable deepracer-core
