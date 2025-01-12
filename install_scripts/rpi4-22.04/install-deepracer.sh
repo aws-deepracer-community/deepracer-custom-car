@@ -52,7 +52,6 @@ apt -y update && apt install -y --no-install-recommends \
     ros-dev-tools \
     ros-humble-ros-core
 
-export ROSDEP_SKIP_SUDO_CHECK=true
 rosdep init && rosdep update --rosdistro=humble -q
 
 # Update build tools and utilities for Python
