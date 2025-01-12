@@ -174,6 +174,9 @@ for pkg in $PACKAGES; do
         cp $DIR/build_scripts/files/common/start_ros.sh opt/aws/deepracer
         cp -r $DIR/install/* opt/aws/deepracer/lib/
         cp -r $DIR/build_scripts/files/common/aws-deepracer-core-prerm DEBIAN/prerm
+        if [ "$ROS_DISTRO" == "humble" ]; then
+            cp -r $DIR/build_scripts/files/pi/aws-deepracer-core-postinst DEBIAN/postinst
+        fi
         rm DEBIAN/preinst
         cd ..
         dpkg-deb --root-owner-group -b aws-deepracer-core

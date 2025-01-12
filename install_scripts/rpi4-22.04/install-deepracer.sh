@@ -51,7 +51,7 @@ apt -y update && apt install -y --no-install-recommends \
     python3-websocket \
     ros-dev-tools \
     ros-humble-ros-core
-rosdep init && rosdep update --rosdistro=humble
+rosdep init && rosdep update --rosdistro=humble -q
 
 # Update build tools and utilities for Python
 pip3 install -U "setuptools<50" pip "cython<3" "wheel==0.42.0" testresources
