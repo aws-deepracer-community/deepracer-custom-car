@@ -6,11 +6,11 @@ KEY_DATA=$(curl -sSL 'https://raw.githubusercontent.com/ros/rosdistro/master/ros
 KEY_ID=$(echo "$KEY_DATA" | base64 -d | gpg --with-colons --import-options show-only --import 2>/dev/null | grep '^pub' | cut -d':' -f5)
 
 # Check if the key is already in the keyring
-if gpg --list-keys "$KEY_ID" /usr/share/keyrings/ros-archive-keyring.gpg > /dev/null 2>&1; then
+if gpg --no-default-keyring --keyring /usr/share/keyrings/ros-archive-keyring.gpg --list-keys "$KEY_ID" > /dev/null 2>&1; then
     echo "ROS key $KEY_ID is already in the keyring."
 else
     # Import the key if it's not in the keyring
-    echo "$KEY_DATA" | gpg --import
+    echo "$KEY_DATA" | gpg --no-default-keyring --keyring /usr/share/keyrings/ros-archive-keyring.gpg --import
     echo "ROS key $KEY_ID has been added to the keyring."
 fi
 
