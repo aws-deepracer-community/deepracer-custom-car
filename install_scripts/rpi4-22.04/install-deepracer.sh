@@ -50,7 +50,7 @@ apt -y update && apt install -y --no-install-recommends \
     python3-venv \
     python3-websocket \
     ros-dev-tools \
-    ros-humble-ros-base
+    ros-humble-ros-core
 rosdep init && rosdep update --rosdistro=humble
 
 # Update build tools and utilities for Python
