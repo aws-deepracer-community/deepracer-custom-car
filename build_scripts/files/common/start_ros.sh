@@ -37,8 +37,10 @@ fi
 
 if [ -f /sys/firmware/devicetree/base/model ] && grep -q "Raspberry Pi" /sys/firmware/devicetree/base/model; then
     BATTERY_DUMMY='battery_dummy:=True'
+    CAMERA_MODE='camera_mode:=modern'
 else
     BATTERY_DUMMY=''
+    CAMERA_MODE=''
 fi
 
 if [ -f /opt/aws/deepracer/logging.conf ]; then
@@ -49,4 +51,4 @@ else
     LOGGING_PROVIDER='logging_provider:=sqlite3'
 fi
 
-ros2 launch deepracer_launcher deepracer_launcher.py ${INFERENCE_ENGINE} ${INFERENCE_DEVICE} ${BATTERY_DUMMY} ${LOGGING_MODE} ${LOGGING_PROVIDER}
+ros2 launch deepracer_launcher deepracer_launcher.py ${INFERENCE_ENGINE} ${INFERENCE_DEVICE} ${BATTERY_DUMMY} ${LOGGING_MODE} ${LOGGING_PROVIDER} ${CAMERA_MODE}

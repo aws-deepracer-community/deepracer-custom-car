@@ -83,19 +83,38 @@ index b82b35e..eb78cfb 100644
 \ No newline at end of file
 +#endif
 diff --git a/ctrl_pkg/src/ctrl_node.cpp b/ctrl_pkg/src/ctrl_node.cpp
-index 78aabe4..a17dae5 100644
+index 78aabe4..86fdfd9 100644
 --- a/ctrl_pkg/src/ctrl_node.cpp
 +++ b/ctrl_pkg/src/ctrl_node.cpp
-@@ -68,7 +68,7 @@ namespace SysCtrl {
+@@ -45,6 +45,11 @@ namespace SysCtrl {
+         numStates
+     };
+ 
++    enum CameraMode {
++        CAMERA_LEGACY_MODE,
++        CAMERA_MODERN_MODE
++    };
++
+     const char* VEHICLE_STATE_SRV = "vehicle_state";
+     const char* ENABLE_STATE_SRV = "enable_state";
+     const char* MODEL_STATE_SRV = "model_state";
+@@ -67,8 +72,13 @@ namespace SysCtrl {
+         : Node(nodeName), initialized_(false)
          {
              RCLCPP_INFO(this->get_logger(), "%s started", nodeName.c_str());
- 
+-
 -            vehicleCtrlModesServiceCbGrp_ = this->create_callback_group(rclcpp::callback_group::CallbackGroupType::Reentrant);
++            this->declare_parameter<std::string>("camera_mode", "legacy");
++            std::string mode_param = this->get_parameter("camera_mode").as_string();
++            mode_ = (mode_param == "modern") ? CAMERA_MODERN_MODE : CAMERA_LEGACY_MODE;
++            if (mode_param != "legacy" && mode_param != "modern") {
++                RCLCPP_ERROR(this->get_logger(), "Invalid mode parameter value. Defaulting to legacy.");
++            }
 +            vehicleCtrlModesServiceCbGrp_ = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
              getVehicleCtrlModesService_ = this->create_service<deepracer_interfaces_pkg::srv::GetCtrlModesSrv>(GET_CTRL_MODES_SRV,
                                                                                                                 std::bind(&SysCtrl::CtrlNodeMgr::getCtrlModesHdl,
                                                                                                                 this,
-@@ -78,7 +78,7 @@ namespace SysCtrl {
+@@ -78,7 +88,7 @@ namespace SysCtrl {
                                                                                                                 ::rmw_qos_profile_default,
                                                                                                                 vehicleCtrlModesServiceCbGrp_);
  
@@ -104,7 +123,7 @@ index 78aabe4..a17dae5 100644
              setVehicleModeService_ = this->create_service<deepracer_interfaces_pkg::srv::ActiveStateSrv>(VEHICLE_STATE_SRV,
                                                                                                           std::bind(&SysCtrl::CtrlNodeMgr::stateHdl,
                                                                                                           this,
-@@ -87,7 +87,7 @@ namespace SysCtrl {
+@@ -87,7 +97,7 @@ namespace SysCtrl {
                                                                                                           std::placeholders::_3),
                                                                                                           ::rmw_qos_profile_default,
                                                                                                           vehicleModeServiceCbGrp_);
@@ -113,7 +132,7 @@ index 78aabe4..a17dae5 100644
              activateVehicleService_ = this->create_service<deepracer_interfaces_pkg::srv::EnableStateSrv>(ENABLE_STATE_SRV,
                                                                                                            std::bind(&SysCtrl::CtrlNodeMgr::ctrlStateHdl,
                                                                                                            this,
-@@ -98,7 +98,7 @@ namespace SysCtrl {
+@@ -98,7 +108,7 @@ namespace SysCtrl {
                                                                                                            activateVehicleServiceCbGrp_);
  
  
@@ -122,7 +141,7 @@ index 78aabe4..a17dae5 100644
              loadModelService_ = this->create_service<deepracer_interfaces_pkg::srv::ModelStateSrv>(MODEL_STATE_SRV,
                                                                                                      std::bind(&SysCtrl::CtrlNodeMgr::loadModelHdl,
                                                                                                      this,
-@@ -107,7 +107,7 @@ namespace SysCtrl {
+@@ -107,7 +117,7 @@ namespace SysCtrl {
                                                                                                      std::placeholders::_3),
                                                                                                      ::rmw_qos_profile_default,
                                                                                                      loadModelCbGrp_);
@@ -131,7 +150,7 @@ index 78aabe4..a17dae5 100644
              isModelLoadingService_ = this->create_service<deepracer_interfaces_pkg::srv::GetModelLoadingStatusSrv>(IS_MODEL_LOADING_SRV,
                                                                                                                      std::bind(&SysCtrl::CtrlNodeMgr::isModelLoadingHdl,
                                                                                                                      this,
-@@ -116,7 +116,7 @@ namespace SysCtrl {
+@@ -116,7 +126,7 @@ namespace SysCtrl {
                                                                                                                      std::placeholders::_3),
                                                                                                                      ::rmw_qos_profile_default,
                                                                                                                      isModelLoadingCbGrp_);
@@ -140,7 +159,7 @@ index 78aabe4..a17dae5 100644
              getCarCalibrationService_ = this->create_service<deepracer_interfaces_pkg::srv::GetCalibrationSrv>(GET_CAL_SRV,
                                                                                                                 std::bind(&SysCtrl::CtrlNodeMgr::getCarCalHdl,
                                                                                                                 this,
-@@ -134,7 +134,7 @@ namespace SysCtrl {
+@@ -134,7 +144,7 @@ namespace SysCtrl {
                                                                                                                 ::rmw_qos_profile_default,
                                                                                                                 vehicleCalibrationCbGrp_);
  
@@ -149,7 +168,7 @@ index 78aabe4..a17dae5 100644
              getCarLedService_ = this->create_service<deepracer_interfaces_pkg::srv::GetLedCtrlSrv>(GET_LED_SRV,
                                                                                                     std::bind(&SysCtrl::CtrlNodeMgr::getCarLedHdl,
                                                                                                     this,
-@@ -152,7 +152,7 @@ namespace SysCtrl {
+@@ -152,7 +162,7 @@ namespace SysCtrl {
                                                                                                      ::rmw_qos_profile_default,
                                                                                                      vehicleLedCbGrp_);
  
@@ -158,7 +177,20 @@ index 78aabe4..a17dae5 100644
              setAutonomousThrottleService_ = this->create_service<deepracer_interfaces_pkg::srv::NavThrottleSrv>(AUTONOMOUS_THROTTLE_SRV,
                                                                                                                  std::bind(&SysCtrl::CtrlNodeMgr::autoThrottleHdl,
                                                                                                                  this,
-@@ -205,7 +205,8 @@ namespace SysCtrl {
+@@ -174,8 +184,10 @@ namespace SysCtrl {
+                 activeState_->second->setStateActive(true);
+                 initialized_ = true;
+                 timer_->cancel();
+-                waitForServices();
+-                enableVideo();
++                if (mode_ == CAMERA_LEGACY_MODE) {
++                    waitForServices();
++                    enableVideo();
++                }
+             }
+         }
+ 
+@@ -205,7 +217,8 @@ namespace SysCtrl {
                                                                                               videoClientCbGrp_);
              while (!videoClient_->wait_for_service(std::chrono::seconds(1))) {
                  if (!rclcpp::ok()) {
@@ -168,7 +200,7 @@ index 78aabe4..a17dae5 100644
                  }
                  RCLCPP_INFO(this->get_logger(), "Camera node not available, waiting again...");
              }
-@@ -262,7 +263,7 @@ namespace SysCtrl {
+@@ -262,7 +275,7 @@ namespace SysCtrl {
          void loadModelHdl(const std::shared_ptr<rmw_request_id_t> request_header,
                            std::shared_ptr<deepracer_interfaces_pkg::srv::ModelStateSrv::Request> req,
                            std::shared_ptr<deepracer_interfaces_pkg::srv::ModelStateSrv::Response> res) {
@@ -177,7 +209,7 @@ index 78aabe4..a17dae5 100644
              res->error = 1;
              if (activeState_ == stateList_.end()) {
                  RCLCPP_ERROR(this->get_logger(), "No active state");
-@@ -403,26 +404,26 @@ namespace SysCtrl {
+@@ -403,27 +416,28 @@ namespace SysCtrl {
          std::unordered_map<int, std::shared_ptr<CtrlStateBase>>::const_iterator activeState_;
  
          /// ROS callback group object to be passed to the videoClient_.
@@ -211,8 +243,10 @@ index 78aabe4..a17dae5 100644
 -        rclcpp::callback_group::CallbackGroup::SharedPtr autonomousThrottleCbGrp_;
 +        rclcpp::CallbackGroup::SharedPtr autonomousThrottleCbGrp_;
          rclcpp::Service<deepracer_interfaces_pkg::srv::NavThrottleSrv>::SharedPtr setAutonomousThrottleService_;
++        CameraMode mode_;
      };
  }
+ 
 diff --git a/ctrl_pkg/src/ctrl_state.cpp b/ctrl_pkg/src/ctrl_state.cpp
 index a75a58a..80fc12d 100644
 --- a/ctrl_pkg/src/ctrl_state.cpp

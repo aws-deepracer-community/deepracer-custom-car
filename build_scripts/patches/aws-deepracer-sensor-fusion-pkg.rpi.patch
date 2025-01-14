@@ -1,8 +1,87 @@
 diff --git a/sensor_fusion_pkg/src/sensor_fusion_node.cpp b/sensor_fusion_pkg/src/sensor_fusion_node.cpp
-index 028191a..ad5430b 100644
+index 028191a..8a48582 100644
 --- a/sensor_fusion_pkg/src/sensor_fusion_node.cpp
 +++ b/sensor_fusion_pkg/src/sensor_fusion_node.cpp
-@@ -283,25 +283,40 @@ namespace SensorFusion {
+@@ -111,6 +111,11 @@ namespace SensorFusion {
+         numLidarPreprocessingType
+     };
+ 
++    enum CameraMode {
++        CAMERA_LEGACY_MODE,
++        CAMERA_MODERN_MODE
++    };
++
+     // Message Topics to publish to.
+     const char* SENSOR_MSG_TOPIC = "sensor_msg";
+     const char* OVERLAY_MSG_TOPIC = "overlay_msg";
+@@ -120,6 +125,7 @@ namespace SensorFusion {
+     // Message topics to subscribe to.
+     const char* CAMERA_MSG_TOPIC = "/camera_pkg/video_mjpeg";
+     const char* DISPLAY_MSG_TOPIC = "/camera_pkg/display_mjpeg";
++    const char* COMP_IMG_MSG_TOPIC = "/camera_pkg/display_mjpeg/compressed";
+     const char* LIDAR_MSG_TOPIC = "/rplidar_ros/scan";
+ 
+     // Sensor configuration file path.
+@@ -162,6 +168,12 @@ namespace SensorFusion {
+ 
+             RCLCPP_INFO(this->get_logger(), "%s started", node_name.c_str());
+             this->declare_parameter<std::string>("image_transport", "raw");
++            this->declare_parameter<std::string>("camera_mode", "legacy");
++            std::string mode_param = this->get_parameter("camera_mode").as_string();
++            mode_ = (mode_param == "modern") ? CAMERA_MODERN_MODE : CAMERA_LEGACY_MODE;
++            if (mode_param != "legacy" && mode_param != "modern") {
++                RCLCPP_ERROR(this->get_logger(), "Invalid mode parameter value. Defaulting to legacy.");
++            }
+             createDefaultSensorConfiguration();
+             if (checkFile(SENSOR_CONFIGURATION_FILE_PATH)) {
+                 setSensorConfigurationFromFile(sensorConfiguration_,
+@@ -212,16 +224,23 @@ namespace SensorFusion {
+                                                                                          this,
+                                                                                          std::placeholders::_1));
+             // Subscriber to subscribe to the camera sensor messages published by the camera_pkg.
+-            cameraSub_ = this->create_subscription<deepracer_interfaces_pkg::msg::CameraMsg>(CAMERA_MSG_TOPIC,
++            if (mode_ == CAMERA_LEGACY_MODE) {
++                cameraSub_ = this->create_subscription<deepracer_interfaces_pkg::msg::CameraMsg>(std::string(CAMERA_MSG_TOPIC),
++                                                                                                sensorMsgQOS,
++                                                                                                std::bind(&SensorFusionNode::cameraCB,
++                                                                                                          this,
++                                                                                                          std::placeholders::_1));
++            } else {
++                cameraModernSub_ = this->create_subscription<sensor_msgs::msg::CompressedImage>(std::string(COMP_IMG_MSG_TOPIC),
+                                                                                              sensorMsgQOS,
+-                                                                                             std::bind(&SensorFusionNode::cameraCB,
++                                                                                             std::bind(&SensorFusionNode::cameraModernCB,
+                                                                                                        this,
+                                                                                                        std::placeholders::_1));
+-
++            }
+             // Subscriber to subscribe to the camera display messages published by the camera_pkg.
+             image_transport::TransportHints ith(this);
+             RCLCPP_INFO(this->get_logger(), "image_transport configured to use %s", ith.getTransport().c_str());
+-            displaySub_ = image_transport_.subscribe<SensorFusionNode>(std::string(DISPLAY_MSG_TOPIC), 1, 
++            displaySub_ = image_transport_.subscribe<SensorFusionNode>(DISPLAY_MSG_TOPIC, 1, 
+                                                                        &SensorFusionNode::displayCB, 
+                                                                        node_handle_, &ith);
+ 
+@@ -279,29 +298,58 @@ namespace SensorFusion {
+             }
+         }
+ 
++
++        /// Callback function for camera message subscription.
++        /// @param msg Message with images from DeepRacer cameras.
++        void cameraModernCB(const sensor_msgs::msg::CompressedImage::ConstSharedPtr & msg) {
++            try {
++                auto camera_msg = std::make_shared<deepracer_interfaces_pkg::msg::CameraMsg>();
++                camera_msg->images.push_back(*msg);
++                cameraCB(camera_msg);
++            }
++            catch (const std::exception &ex) {
++                RCLCPP_ERROR(this->get_logger(), "Camera callback failed: %s", ex.what());
++            }
++        }
++
+         /// Callback function for camera message subscription.
          /// @param msg Message with images from DeepRacer cameras.
          void displayCB(const sensor_msgs::msg::Image::ConstSharedPtr & msg) {
              try {
@@ -59,7 +138,15 @@ index 028191a..ad5430b 100644
                  }
              }
              catch (const std::exception &ex) {
-@@ -560,8 +575,8 @@ namespace SensorFusion {
+@@ -537,6 +585,7 @@ namespace SensorFusion {
+         rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr lidarSub_;
+         rclcpp::Subscription<deepracer_interfaces_pkg::msg::CameraMsg>::SharedPtr cameraSub_;
+         image_transport::Subscriber displaySub_;
++        rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr cameraModernSub_;
+ 
+         rclcpp::Service<deepracer_interfaces_pkg::srv::LidarConfigSrv>::SharedPtr lidarConfigService_;
+         rclcpp::Service<deepracer_interfaces_pkg::srv::SensorStatusCheckSrv>::SharedPtr statusCheckService_;
+@@ -560,9 +609,10 @@ namespace SensorFusion {
          std::chrono::steady_clock::time_point lastLidarMsgRecievedTime;
          std::chrono::steady_clock::time_point lastCameraMsgRecievedTime;
          size_t cameraImageCount_;
@@ -68,5 +155,7 @@ index 028191a..ad5430b 100644
 +        unsigned int imageWidth_;
 +        unsigned int imageHeight_;
          std::mutex lidarMutex_;
++        CameraMode mode_;
  
      };
+ }

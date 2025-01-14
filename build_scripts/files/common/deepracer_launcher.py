@@ -14,6 +14,7 @@
 #   limitations under the License.                                              #
 #################################################################################
 
+import math
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch.substitutions import LaunchConfiguration
@@ -28,21 +29,45 @@ def launch_setup(context, *args, **kwargs):
 
     ld = []
 
-    camera_node = Node(
-        package='camera_pkg',
-        namespace='camera_pkg',
-        executable='camera_node',
-        name='camera_node',
-        parameters=[
-            {'resize_images': str2bool(LaunchConfiguration('camera_resize').perform(context)),
-             'fps': int(LaunchConfiguration('camera_fps').perform(context))}
-        ]
-    )
+    camera_mode = LaunchConfiguration('camera_mode').perform(context)
+    fps = int(LaunchConfiguration('camera_fps').perform(context))
+    resize_images = str2bool(LaunchConfiguration('camera_resize').perform(context))
+    resolution = resize_images and [160, 120] or [640, 480]
+
+    if camera_mode == 'legacy':
+        camera_node = Node(
+            package='camera_pkg',
+            namespace='camera_pkg',
+            executable='camera_node',
+            name='camera_node',
+            parameters=[
+                {'resize_images': resize_images,
+                 'fps': fps}
+            ]
+        )
+    else:
+        camera_node = Node(
+            package='camera_ros',
+            namespace='camera_pkg',
+            executable='camera_node',
+            parameters=[
+                {'format': 'BGR888',
+                 'width': resolution[0],
+                 'height': resolution[1],
+                 'FrameDurationLimits': [math.floor(1e6 / fps), math.ceil(1e6 / fps)]}
+            ],
+            remappings=[
+                ('/camera_pkg/camera/image_raw', '/camera_pkg/display_mjpeg'),
+                ('/camera_pkg/camera/image_raw/compressed', '/camera_pkg/display_mjpeg/compressed')
+            ]
+        )
+
     ctrl_node = Node(
         package='ctrl_pkg',
         namespace='ctrl_pkg',
         executable='ctrl_node',
-        name='ctrl_node'
+        name='ctrl_node',
+        parameters=[{'camera_mode': camera_mode}]
     )
     deepracer_navigation_node = Node(
         package='deepracer_navigation_pkg',
@@ -138,6 +163,7 @@ def launch_setup(context, *args, **kwargs):
         executable='sensor_fusion_node',
         name='sensor_fusion_node',
         parameters=[{
+                'camera_mode': camera_mode,
                 'image_transport': 'compressed'
         }]
     )
@@ -189,8 +215,7 @@ def launch_setup(context, *args, **kwargs):
                 'output_path': '/opt/aws/deepracer/logs',
                 'monitor_topic': '/deepracer_navigation_pkg/auto_drive',
                 'file_name_topic': '/inference_pkg/model_artifact',
-                'log_topics': ['/ctrl_pkg/servo_msg',
-                               '/inference_pkg/rl_results']
+                'log_topics': ['/inference_pkg/rl_results']
         }]
     )
 
@@ -244,10 +269,14 @@ def generate_launch_description():
             DeclareLaunchArgument(
                 name="logging_provider",
                 default_value="sqlite3",
-                description="Database provider to use for logging"),                
+                description="Database provider to use for logging"),
             DeclareLaunchArgument(
                 name="battery_dummy",
                 default_value="False",
                 description="Use static dummy for battery measurements"),
+            DeclareLaunchArgument(
+                name="camera_mode",
+                default_value="legacy",
+                description="Legacy or modern camera integration"),
             OpaqueFunction(function=launch_setup)
         ])

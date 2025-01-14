@@ -69,7 +69,6 @@ systemctl disable systemd-networkd-wait-online
 sed -i 's/wifi.powersave = 3/wifi.powersave = 2/' /etc/NetworkManager/conf.d/default-wifi-powersave-on.conf
 sed -i 's/renderer: networkd/renderer: NetworkManager/' /etc/netplan/50-cloud-init.yaml
 echo -e "\nRestarting the network stack. This might require reconnection. Pi might receive a new IP address."
-echo -e "If using Raspberry Pi Camera please run raspi-config and enable legacy camera support.\n"
 echo -e "After script has finished, reboot.\n"
 systemctl restart NetworkManager
 netplan apply
