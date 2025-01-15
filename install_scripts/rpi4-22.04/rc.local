@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 
-# PiCam is mounted upside down
-v4l2-ctl --set-ctrl=rotate=180
-
 # Fan is on pwm5
 echo 5 > /sys/class/pwm/pwmchip0/export
 PERIOD=20000000
