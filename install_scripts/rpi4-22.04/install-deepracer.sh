@@ -55,7 +55,7 @@ apt -y update && apt install -y --no-install-recommends \
 rosdep init && rosdep update --rosdistro=humble -q
 
 # Update build tools and utilities for Python
-pip3 install -U "setuptools<50" pip "cython<3" "wheel==0.42.0" testresources
+sudo pip3 install -U "setuptools==58.2.0" pip "Cython==0.29.28" testresources
 
 # Get OpenVINO
 mkdir -p $DIR/dist/

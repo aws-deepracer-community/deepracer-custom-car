@@ -60,7 +60,7 @@ sudo apt -y update && sudo apt install -y \
     ros-humble-ros-base \
     ros-humble-test-msgs
 
-sudo pip3 install -U "setuptools==58.2.0" pip catkin_pkg "Cython<3"
+sudo pip3 install -U "setuptools==58.2.0" pip catkin_pkg "Cython==0.29.28"
 
 # Builds and installs OpenVINO
 # $DIR/build_scripts/build-openvino.sh
