@@ -5,9 +5,10 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/install/deepracer_interfaces_pkg/**",
-                "/opt/ros/humble/include/**",
+                "/opt/ros/${env:ROS_DISTRO}/include/**",
                 "/usr/include/opencv4/",
                 "/opt/intel/openvino_2022/runtime/include/**",
+                "/opt/intel/openvino_2021/inference_engine/include/**",
                 "${workspaceFolder}/build/inference_pkg/_deps/tensorflow-lite-src/**",
                 "${workspaceFolder}/build/inference_pkg/flatbuffers/include/"
             ],

@@ -37,8 +37,10 @@ fi
 
 if [ -f /sys/firmware/devicetree/base/model ] && grep -q "Raspberry Pi" /sys/firmware/devicetree/base/model; then
     BATTERY_DUMMY='battery_dummy:=True'
+    CAMERA_MODE='camera_mode:=modern'
 else
     BATTERY_DUMMY=''
+    CAMERA_MODE=''
 fi
 
 if [ -f /opt/aws/deepracer/logging.conf ]; then
@@ -49,4 +51,13 @@ else
     LOGGING_PROVIDER='logging_provider:=sqlite3'
 fi
 
-ros2 launch deepracer_launcher deepracer_launcher.py ${INFERENCE_ENGINE} ${INFERENCE_DEVICE} ${BATTERY_DUMMY} ${LOGGING_MODE} ${LOGGING_PROVIDER}
+CP210X=$(lsusb | grep "CP210x UART Bridge")
+if [ -n "${CP210X}" ]; then
+    echo "RPLIDAR / UART Bridge found!"
+    RPLIDAR="rplidar:=True"
+else
+    RPLIDAR="rplidar:=False"
+    echo "RPLIDAR / UART Bridge not found!"
+fi
+
+ros2 launch deepracer_launcher deepracer_launcher.py ${INFERENCE_ENGINE} ${INFERENCE_DEVICE} ${BATTERY_DUMMY} ${LOGGING_MODE} ${LOGGING_PROVIDER} ${CAMERA_MODE} ${RPLIDAR}

@@ -1,14 +1,3 @@
-diff --git a/status_led_pkg/setup.cfg b/status_led_pkg/setup.cfg
-index f8065d1..3898e11 100644
---- a/status_led_pkg/setup.cfg
-+++ b/status_led_pkg/setup.cfg
-@@ -1,4 +1,4 @@
- [develop]
--script-dir=$base/lib/status_led_pkg
-+script_dir=$base/lib/status_led_pkg
- [install]
--install-scripts=$base/lib/status_led_pkg
-+install_scripts=$base/lib/status_led_pkg
 diff --git a/status_led_pkg/status_led_pkg/constants.py b/status_led_pkg/status_led_pkg/constants.py
 index 9c3676a..be97c1e 100644
 --- a/status_led_pkg/status_led_pkg/constants.py
@@ -26,38 +15,3 @@ index 9c3676a..be97c1e 100644
  )
  
  
-diff --git a/status_led_pkg/status_led_pkg/status_led_node.py b/status_led_pkg/status_led_pkg/status_led_node.py
-index e9a3781..705ec36 100644
---- a/status_led_pkg/status_led_pkg/status_led_node.py
-+++ b/status_led_pkg/status_led_pkg/status_led_node.py
-@@ -289,14 +289,22 @@ class StatusLedNode(Node):
- 
- 
- def main(args=None):
--    rclpy.init(args=args)
--    with StatusLedNode() as status_led_node:
--        rclpy.spin(status_led_node)
--        # Destroy the node explicitly
--        # (optional - otherwise it will be done automatically
--        # when the garbage collector destroys the node object)
--        status_led_node.destroy_node()
--    rclpy.shutdown()
-+
-+    try:
-+        rclpy.init(args=args)
-+        with StatusLedNode() as status_led_node:
-+            rclpy.spin(status_led_node)
-+            # Destroy the node explicitly
-+            # (optional - otherwise it will be done automatically
-+            # when the garbage collector destroys the node object)
-+            status_led_node.destroy_node()
-+
-+    except KeyboardInterrupt:
-+        pass
-+
-+    finally:
-+        if rclpy.ok():
-+            rclpy.shutdown()
- 
- 
- if __name__ == "__main__":

@@ -108,10 +108,7 @@ if [ "$CACHE" != "true" ]; then
     git checkout dummy
     cd ..
 
-    # Patch with aws-deepracer-ctrl-pkg.patch
-    cd aws-deepracer-ctrl-pkg
-    git apply $DIR/build_scripts/patches/aws-deepracer-ctrl-pkg.patch
-    cd ..
+
 
     # Resolve the dependencies
     rosdep install -i --from-path . --ignore-src --rosdistro $ROS_DISTRO -y
@@ -121,9 +118,61 @@ if [ "$CACHE" != "true" ]; then
     #
     #######
 
+    #######
+    #
+    # START - Common patches
+    #
+    #######
+
+    # Apply common improvement patches
+    cd aws-deepracer-ctrl-pkg
+    git apply $DIR/build_scripts/patches/aws-deepracer-ctrl-pkg.patch
+    cd ..
+
+    cd aws-deepracer-device-info-pkg/
+    git apply $DIR/build_scripts/patches/aws-deepracer-device-info-pkg.patch
+    cd ..
+
+    cd aws-deepracer-inference-pkg/
+    git apply $DIR/build_scripts/patches/aws-deepracer-inference-pkg.patch
+    cd ..
+
+    cd aws-deepracer-navigation-pkg/
+    git apply $DIR/build_scripts/patches/aws-deepracer-navigation-pkg.patch
+    cd ..
+
+    cd aws-deepracer-usb-monitor-pkg/
+    git apply $DIR/build_scripts/patches/aws-deepracer-usb-monitor-pkg.patch
+    cd ..
+
+    cd aws-deepracer-status-led-pkg/
+    git apply $DIR/build_scripts/patches/aws-deepracer-status-led-pkg.patch
+    cd ..
+
+    cd aws-deepracer-servo-pkg/
+    git apply $DIR/build_scripts/patches/aws-deepracer-servo-pkg.patch
+    cd ..
+
+    cd aws-deepracer-sensor-fusion-pkg/
+    git apply $DIR/build_scripts/patches/aws-deepracer-sensor-fusion-pkg.patch
+    cd ..
+
+    cd aws-deepracer-systems-pkg/
+    git apply $DIR/build_scripts/patches/aws-deepracer-systems-pkg.patch
+    cd ..
+
+    cd aws-deepracer-webserver-pkg/
+    git apply $DIR/build_scripts/patches/aws-deepracer-webserver-pkg.patch
+    cd ..
+    #######
+    #
+    # END - Common patches
+    #
+    #######
+
     if [ "$ROS_DISTRO" == "humble" ]; then
 
-        echo "Applying patches for ROS 2 Humble"
+        echo "Applying patches for Raspberry Pi / ROS 2 Humble"
 
         #######
         #
@@ -146,32 +195,8 @@ if [ "$CACHE" != "true" ]; then
         git apply $DIR/build_scripts/patches/aws-deepracer-status-led-pkg.rpi.patch
         cd ..
 
-        cd aws-deepracer-webserver-pkg/
-        git apply $DIR/build_scripts/patches/aws-deepracer-webserver-pkg.rpi.patch
-        cd ..
-
-        cd aws-deepracer-inference-pkg/
-        git apply $DIR/build_scripts/patches/aws-deepracer-inference-pkg.rpi.patch
-        cd ..
-
         cd aws-deepracer-model-optimizer-pkg/
         git apply $DIR/build_scripts/patches/aws-deepracer-model-optimizer-pkg.rpi.patch
-        cd ..
-
-        cd aws-deepracer-sensor-fusion-pkg/
-        git apply $DIR/build_scripts/patches/aws-deepracer-sensor-fusion-pkg.rpi.patch
-        cd ..
-
-        cd aws-deepracer-usb-monitor-pkg/
-        git apply $DIR/build_scripts/patches/aws-deepracer-usb-monitor-pkg.rpi.patch
-        cd ..
-
-        cd aws-deepracer-navigation-pkg/
-        git apply $DIR/build_scripts/patches/aws-deepracer-navigation-pkg.rpi.patch
-        cd ..
-
-        cd aws-deepracer-device-info-pkg/
-        git apply $DIR/build_scripts/patches/aws-deepracer-device-info-pkg.rpi.patch
         cd ..
 
         #
