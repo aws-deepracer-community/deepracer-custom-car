@@ -19,15 +19,16 @@ done
 # Detect ROS version
 if [ -f /opt/ros/foxy/setup.bash ]; then
     ROS_DISTRO="foxy"
-    source /opt/ros/foxy/setup.bash
 elif [ -f /opt/ros/humble/setup.bash ]; then
     ROS_DISTRO="humble"
-    source /opt/ros/humble/setup.bash
+elif [ -f /opt/ros/jazzy/setup.bash ]; then
+    ROS_DISTRO="jazzy"
 else
     echo "Unsupported ROS version"
     exit 1
 fi
 echo "Detected ROS version: $ROS_DISTRO"
+source /opt/ros/$ROS_DISTRO/setup.bash
 
 # Set the OpenVINO environment
 if [ -f /opt/intel/openvino_2021/bin/setupvars.sh ]; then
@@ -217,7 +218,7 @@ cd ..
 
 # Build the core
 export PYTHONWARNINGS=ignore:::setuptools.command.install
-if [ "$ROS_DISTRO" == "humble" ]; then
+if [ "$ROS_DISTRO" == "humble" ] || [ "$ROS_DISTRO" == "jazzy" ]; then
     colcon build --packages-up-to deepracer_launcher logging_pkg
 else
     colcon build --packages-up-to deepracer_launcher rplidar_ros logging_pkg
