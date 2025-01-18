@@ -15,8 +15,8 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
     python3-smbus2 \
     python3-opencv \
     python3-autopep8 \
-    python3-rosinstall-generator \
     python3-venv \
+    ros-dev-tools \
     ros-jazzy-cv-bridge \
     ros-jazzy-rqt-console \
     ros-jazzy-rqt-graph \
@@ -42,7 +42,7 @@ RUN cd / && curl -O https://aws-deepracer-community-sw.s3.eu-west-1.amazonaws.co
 # RUN pip3 install -U awscli $(find /opt/intel/openvino_2022.3.1/tools/ -name *.whl)
 
 # Create the user
-RUN userdel ubuntu && groupdel ubuntu && groupadd --gid $USER_GID $USERNAME \
+RUN userdel ubuntu && groupadd --gid $USER_GID $USERNAME \
     && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \
     && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
     && chmod 0440 /etc/sudoers.d/$USERNAME \

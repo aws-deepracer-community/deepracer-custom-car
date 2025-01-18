@@ -65,8 +65,12 @@ if [ "$CACHE" != "true" ]; then
         rosws merge --merge-replace - <.rosinstall-foxy
     fi
 
-    rosws update
-
+    if [ $ROS_DISTRO == "jazzy" ]; then
+        vcs import --input .rosinstall .
+    else  
+        rosws update
+    fi
+    
     #######
     #
     # START - Pull request specific changes
@@ -128,6 +132,10 @@ if [ "$CACHE" != "true" ]; then
     # Apply common improvement patches
     cd aws-deepracer-ctrl-pkg
     git apply $DIR/build_scripts/patches/aws-deepracer-ctrl-pkg.patch
+    cd ..
+
+    cd aws-deepracer-camera-pkg
+    git apply $DIR/build_scripts/patches/aws-deepracer-camera-pkg.patch
     cd ..
 
     cd aws-deepracer-device-info-pkg/
