@@ -1,0 +1,31 @@
+diff --git a/camera_pkg/CMakeLists.txt b/camera_pkg/CMakeLists.txt
+index ded2564..95386cf 100644
+--- a/camera_pkg/CMakeLists.txt
++++ b/camera_pkg/CMakeLists.txt
+@@ -25,6 +25,10 @@ find_package(image_transport REQUIRED)
+ find_package(cv_bridge REQUIRED)
+ find_package(OpenCV REQUIRED)
+ 
++# Check if ROS_DISTRO is jazzy and define a macro
++if("$ENV{ROS_DISTRO}" STREQUAL "jazzy")
++  add_definitions(-DROS_DISTRO_JAZZY)
++endif()
+ 
+ add_executable(camera_node
+     src/camera_node.cpp
+diff --git a/camera_pkg/src/camera_node.cpp b/camera_pkg/src/camera_node.cpp
+index 3740686..acc2abc 100644
+--- a/camera_pkg/src/camera_node.cpp
++++ b/camera_pkg/src/camera_node.cpp
+@@ -17,7 +17,11 @@
+ #include "rclcpp/rclcpp.hpp"
+ #include "sensor_msgs/msg/image.hpp"
+ #include "sensor_msgs/msg/compressed_image.hpp"
++#ifdef ROS_DISTRO_JAZZY
++#include "cv_bridge/cv_bridge.hpp"
++#else
+ #include "cv_bridge/cv_bridge.h"
++#endif
+ #include "deepracer_interfaces_pkg/srv/video_state_srv.hpp"
+ #include "deepracer_interfaces_pkg/msg/camera_msg.hpp"
+ #include "opencv2/opencv.hpp"

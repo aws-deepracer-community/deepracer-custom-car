@@ -1,8 +1,57 @@
+diff --git a/inference_pkg/CMakeLists.txt b/inference_pkg/CMakeLists.txt
+index 2991e4d..a5af771 100644
+--- a/inference_pkg/CMakeLists.txt
++++ b/inference_pkg/CMakeLists.txt
+@@ -3,6 +3,7 @@ project(inference_pkg)
+ include(FetchContent)
+ 
+ set(ABSL_PROPAGATE_CXX_STD ON)
++set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS 1)
+ 
+ # Default to C99
+ if(NOT CMAKE_C_STANDARD)
+@@ -15,7 +16,7 @@ if(NOT CMAKE_CXX_STANDARD)
+ endif()
+ 
+ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+-  add_compile_options(-Wno-deprecated-declarations -Wno-ignored-attributes)
++  add_compile_options(-Wno-deprecated-declarations -Wno-ignored-attributes -Wno-deprecated)
+ endif()
+ 
+ FetchContent_Declare(tensorflow-lite
+@@ -56,6 +57,11 @@ if(NOT OpenCV_FOUND)
+   )
+ endif()
+ 
++# Check if ROS_DISTRO is jazzy and define a macro
++if("$ENV{ROS_DISTRO}" STREQUAL "jazzy")
++  add_definitions(-DROS_DISTRO_JAZZY)
++endif()
++
+ add_executable(inference_node
+     src/inference_node.cpp
+     src/tflite_inference_eng.cpp
+diff --git a/inference_pkg/include/inference_pkg/image_process.hpp b/inference_pkg/include/inference_pkg/image_process.hpp
+index b199b4c..ff12421 100644
+--- a/inference_pkg/include/inference_pkg/image_process.hpp
++++ b/inference_pkg/include/inference_pkg/image_process.hpp
+@@ -20,7 +20,11 @@
+ #include "rclcpp/rclcpp.hpp"
+ #include "sensor_msgs/msg/image.hpp"
+ #include "sensor_msgs/msg/compressed_image.hpp"
++#ifdef ROS_DISTRO_JAZZY
++#include "cv_bridge/cv_bridge.hpp"
++#else
+ #include "cv_bridge/cv_bridge.h"
++#endif
+ #include <unordered_map>
+ 
+ namespace InferTask {
 diff --git a/inference_pkg/src/inference_node.cpp b/inference_pkg/src/inference_node.cpp
-index a5c8a5f..e865e5f 100644
+index d59636d..e5ce9e0 100644
 --- a/inference_pkg/src/inference_node.cpp
 +++ b/inference_pkg/src/inference_node.cpp
-@@ -59,7 +59,7 @@ namespace InferTask {
+@@ -62,7 +62,7 @@ namespace InferTask {
              // Inference Engine name; TFLITE or OPENVINO
              inferenceEngine_ = this->get_parameter("inference_engine").as_string();
  
@@ -11,7 +60,7 @@ index a5c8a5f..e865e5f 100644
              loadModelService_ = this->create_service<deepracer_interfaces_pkg::srv::LoadModelSrv>("load_model",
                                                                                                    std::bind(&InferTask::InferenceNodeMgr::LoadModelHdl,
                                                                                                    this,
-@@ -69,7 +69,7 @@ namespace InferTask {
+@@ -72,7 +72,7 @@ namespace InferTask {
                                                                                                    ::rmw_qos_profile_default,
                                                                                                    loadModelServiceCbGrp_);
  
@@ -20,7 +69,7 @@ index a5c8a5f..e865e5f 100644
              setInferenceStateService_ = this->create_service<deepracer_interfaces_pkg::srv::InferenceStateSrv>("inference_state",
                                                                                                                 std::bind(&InferTask::InferenceNodeMgr::InferStateHdl,
                                                                                                                 this,
-@@ -154,11 +154,11 @@ namespace InferTask {
+@@ -167,11 +167,11 @@ namespace InferTask {
  
      private:
          /// ROS callback group for load model service.
