@@ -1,3 +1,19 @@
+diff --git a/servo_pkg/CMakeLists.txt b/servo_pkg/CMakeLists.txt
+index 54488db..2e13ff2 100644
+--- a/servo_pkg/CMakeLists.txt
++++ b/servo_pkg/CMakeLists.txt
+@@ -22,6 +22,11 @@ find_package(deepracer_interfaces_pkg REQUIRED)
+ # Find the json parser/writer
+ find_package(jsoncpp REQUIRED)
+ 
++# Check if ROS_DISTRO is jazzy and define a macro
++if("$ENV{ROS_DISTRO}" STREQUAL "jazzy")
++  add_definitions(-DROS_DISTRO_JAZZY)
++endif()
++
+ add_executable(servo_node
+     src/servo_node.cpp
+     src/bios_version.cpp
 diff --git a/servo_pkg/src/servo_mgr.cpp b/servo_pkg/src/servo_mgr.cpp
 index e50be4c..64de37a 100644
 --- a/servo_pkg/src/servo_mgr.cpp
@@ -12,7 +28,7 @@ index e50be4c..64de37a 100644
              }
  
 diff --git a/servo_pkg/src/servo_node.cpp b/servo_pkg/src/servo_node.cpp
-index 631af08..9f265ba 100644
+index 631af08..95b1ada 100644
 --- a/servo_pkg/src/servo_node.cpp
 +++ b/servo_pkg/src/servo_node.cpp
 @@ -45,6 +45,13 @@ int main(int argc, char **argv) {
@@ -20,8 +36,8 @@ index 631af08..9f265ba 100644
      auto qos = rclcpp::QoS(rclcpp::KeepLast(1));
      qos.best_effort();
 +
-+    #ifdef ROS2_JAZZY
-+    auto qos_default = rclcpp::QoS(rclcpp::SystemDefaultsQoS())
++    #ifdef ROS_DISTRO_JAZZY
++    auto qos_default = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
 +    #else
 +    auto qos_default = ::rmw_qos_profile_default;
 +    #endif

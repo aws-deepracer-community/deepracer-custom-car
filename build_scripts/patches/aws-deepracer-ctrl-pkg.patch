@@ -1,3 +1,18 @@
+diff --git a/ctrl_pkg/CMakeLists.txt b/ctrl_pkg/CMakeLists.txt
+index 0429a10..7e99d4b 100644
+--- a/ctrl_pkg/CMakeLists.txt
++++ b/ctrl_pkg/CMakeLists.txt
+@@ -20,6 +20,10 @@ find_package(ament_cmake REQUIRED)
+ find_package(rclcpp REQUIRED)
+ find_package(deepracer_interfaces_pkg REQUIRED)
+ 
++# Check if ROS_DISTRO is jazzy and define a macro
++if("$ENV{ROS_DISTRO}" STREQUAL "jazzy")
++  add_definitions(-DROS_DISTRO_JAZZY)
++endif()
+ 
+ add_executable(ctrl_node
+     src/ctrl_node.cpp
 diff --git a/ctrl_pkg/include/ctrl_pkg/ctrl_state.hpp b/ctrl_pkg/include/ctrl_pkg/ctrl_state.hpp
 index b82b35e..eb78cfb 100644
 --- a/ctrl_pkg/include/ctrl_pkg/ctrl_state.hpp
@@ -83,7 +98,7 @@ index b82b35e..eb78cfb 100644
 \ No newline at end of file
 +#endif
 diff --git a/ctrl_pkg/src/ctrl_node.cpp b/ctrl_pkg/src/ctrl_node.cpp
-index 78aabe4..b7615c2 100644
+index 78aabe4..8bd314c 100644
 --- a/ctrl_pkg/src/ctrl_node.cpp
 +++ b/ctrl_pkg/src/ctrl_node.cpp
 @@ -45,6 +45,11 @@ namespace SysCtrl {
@@ -110,11 +125,11 @@ index 78aabe4..b7615c2 100644
 +            if (mode_param != "legacy" && mode_param != "modern") {
 +                RCLCPP_ERROR(this->get_logger(), "Invalid mode parameter value. Defaulting to legacy.");
 +            }
-+            #ifdef ROS2_JAZZY
-+            auto qos_default = rclcpp::QoS(rclcpp::SystemDefaultsQoS())
++            #ifdef ROS_DISTRO_JAZZY
++            auto qos_default = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
 +            #else
 +            auto qos_default = ::rmw_qos_profile_default;
-+            #endif       
++            #endif
 +            vehicleCtrlModesServiceCbGrp_ = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
              getVehicleCtrlModesService_ = this->create_service<deepracer_interfaces_pkg::srv::GetCtrlModesSrv>(GET_CTRL_MODES_SRV,
                                                                                                                 std::bind(&SysCtrl::CtrlNodeMgr::getCtrlModesHdl,
@@ -244,8 +259,8 @@ index 78aabe4..b7615c2 100644
           }
  
          void waitForServices(){
-+            #ifdef ROS2_JAZZY
-+            auto qos_default = rclcpp::QoS(rclcpp::SystemDefaultsQoS())
++            #ifdef ROS_DISTRO_JAZZY
++            auto qos_default = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
 +            #else
 +            auto qos_default = ::rmw_qos_profile_default;
 +            #endif
@@ -310,7 +325,7 @@ index 78aabe4..b7615c2 100644
  }
  
 diff --git a/ctrl_pkg/src/ctrl_state.cpp b/ctrl_pkg/src/ctrl_state.cpp
-index a75a58a..b2a9e0b 100644
+index a75a58a..0952660 100644
 --- a/ctrl_pkg/src/ctrl_state.cpp
 +++ b/ctrl_pkg/src/ctrl_state.cpp
 @@ -49,7 +49,8 @@ namespace {
@@ -327,8 +342,8 @@ index a75a58a..b2a9e0b 100644
          // Subscribe to the appropriate servo topic.
          auto qos = rclcpp::QoS(rclcpp::KeepLast(1));
          qos.best_effort();
-+        #ifdef ROS2_JAZZY
-+        auto qos_default = rclcpp::QoS(rclcpp::SystemDefaultsQoS())
++        #ifdef ROS_DISTRO_JAZZY
++        auto qos_default = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
 +        #else
 +        auto qos_default = ::rmw_qos_profile_default;
 +        #endif
@@ -391,8 +406,8 @@ index a75a58a..b2a9e0b 100644
          // Subscribe to the appropriate servo topic.
          auto qos = rclcpp::QoS(rclcpp::KeepLast(1));
          qos.best_effort();
-+        #ifdef ROS2_JAZZY
-+        auto qos_default = rclcpp::QoS(rclcpp::SystemDefaultsQoS())
++        #ifdef ROS_DISTRO_JAZZY
++        auto qos_default = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
 +        #else
 +        auto qos_default = ::rmw_qos_profile_default;
 +        #endif
@@ -415,8 +430,8 @@ index a75a58a..b2a9e0b 100644
          // Subscribe to the appropriate servo topic.
          auto qos = rclcpp::QoS(rclcpp::KeepLast(1));
          qos.best_effort();
-+        #ifdef ROS2_JAZZY
-+        auto qos_default = rclcpp::QoS(rclcpp::SystemDefaultsQoS())
++        #ifdef ROS_DISTRO_JAZZY
++        auto qos_default = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
 +        #else
 +        auto qos_default = ::rmw_qos_profile_default;
 +        #endif
