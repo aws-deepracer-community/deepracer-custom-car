@@ -33,14 +33,6 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
     cython3-legacy \
     pipx
 
-RUN cd / && curl -O https://aws-deepracer-community-sw.s3.eu-west-1.amazonaws.com/openvino/openvino_2022.3.1_amd64.tgz && \
-    tar -xvzf openvino_2022.3.1_amd64.tgz && \
-    ln -sf /opt/intel/openvino_2022.3.1 /opt/intel/openvino_2022 && \
-    ln -sf /opt/intel/openvino_2022.3.1 /opt/intel/openvino && \
-    rm /openvino_2022.3.1_amd64.tgz
-
-# RUN pip3 install -U awscli $(find /opt/intel/openvino_2022.3.1/tools/ -name *.whl)
-
 # Create the user
 RUN userdel ubuntu && groupadd --gid $USER_GID $USERNAME \
     && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \

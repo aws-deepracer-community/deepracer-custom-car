@@ -36,8 +36,7 @@ if [ -f /opt/intel/openvino_2021/bin/setupvars.sh ]; then
 elif [ -f /opt/intel/openvino_2022/setupvars.sh ]; then
     source /opt/intel/openvino_2022/setupvars.sh
 else
-    echo "Unsupported OpenVINO version"
-    exit 1
+    echo "No OpenVINO in the environment."
 fi
 
 # Change to build directory
