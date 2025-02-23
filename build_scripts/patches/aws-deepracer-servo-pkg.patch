@@ -12,10 +12,24 @@ index e50be4c..64de37a 100644
              }
  
 diff --git a/servo_pkg/src/servo_node.cpp b/servo_pkg/src/servo_node.cpp
-index 631af08..b83b786 100644
+index 631af08..9f265ba 100644
 --- a/servo_pkg/src/servo_node.cpp
 +++ b/servo_pkg/src/servo_node.cpp
-@@ -62,7 +62,7 @@ int main(int argc, char **argv) {
+@@ -45,6 +45,13 @@ int main(int argc, char **argv) {
+     auto ledMgr = std::make_unique<PWM::LedMgr>(node->get_logger());
+     auto qos = rclcpp::QoS(rclcpp::KeepLast(1));
+     qos.best_effort();
++
++    #ifdef ROS2_JAZZY
++    auto qos_default = rclcpp::QoS(rclcpp::SystemDefaultsQoS())
++    #else
++    auto qos_default = ::rmw_qos_profile_default;
++    #endif
++
+     auto servoMsgStrategy = std::make_shared<rclcpp::strategies::message_pool_memory_strategy::MessagePoolMemoryStrategy<deepracer_interfaces_pkg::msg::ServoCtrlMsg, 1>>();
+     auto rawPWMMsgStrategy = std::make_shared<rclcpp::strategies::message_pool_memory_strategy::MessagePoolMemoryStrategy<deepracer_interfaces_pkg::msg::ServoCtrlMsg, 1>>();
+ 
+@@ -62,7 +69,7 @@ int main(int argc, char **argv) {
                                                                                                   std::placeholders::_1),
                                                                                          rclcpp::SubscriptionOptions(),
                                                                                          rawPWMMsgStrategy);
@@ -24,12 +38,12 @@ index 631af08..b83b786 100644
      rclcpp::Service<deepracer_interfaces_pkg::srv::SetCalibrationSrv>::SharedPtr servoCalService =
          node->create_service<deepracer_interfaces_pkg::srv::SetCalibrationSrv>(SET_CAL_SERVICE_NAME,
                                                                                 std::bind(&PWM::ServoMgr::setCalHdl,
-@@ -70,10 +70,10 @@ int main(int argc, char **argv) {
+@@ -70,10 +77,10 @@ int main(int argc, char **argv) {
                                                                                 std::placeholders::_1,
                                                                                 std::placeholders::_2,
                                                                                 std::placeholders::_3),
 -                                                                               ::rmw_qos_profile_default,
-+                                                                               rclcpp::QoS(rclcpp::SystemDefaultsQoS()),
++                                                                               qos_default,
                                                                                 servoCalServiceCbGrp_);
  
 -    auto setGPIOServiceCbGrp_ = node->create_callback_group(rclcpp::callback_group::CallbackGroupType::MutuallyExclusive);                                                                                          
@@ -37,12 +51,12 @@ index 631af08..b83b786 100644
      rclcpp::Service<deepracer_interfaces_pkg::srv::ServoGPIOSrv>::SharedPtr setGPIOService =
          node->create_service<deepracer_interfaces_pkg::srv::ServoGPIOSrv>(SERVO_GPIO_SERVICE_NAME,
                                                                            std::bind(&PWM::ServoMgr::setGPIOHdl,
-@@ -81,10 +81,10 @@ int main(int argc, char **argv) {
+@@ -81,10 +88,10 @@ int main(int argc, char **argv) {
                                                                            std::placeholders::_1,
                                                                            std::placeholders::_2,
                                                                            std::placeholders::_3),
 -                                                                          ::rmw_qos_profile_default,
-+                                                                          rclcpp::QoS(rclcpp::SystemDefaultsQoS()),
++                                                                          qos_default,
                                                                            setGPIOServiceCbGrp_);
  
 -    auto getCalServiceCbGrp_ = node->create_callback_group(rclcpp::callback_group::CallbackGroupType::Reentrant);                                                                                          
@@ -50,12 +64,12 @@ index 631af08..b83b786 100644
      rclcpp::Service<deepracer_interfaces_pkg::srv::GetCalibrationSrv>::SharedPtr getCalService =
          node->create_service<deepracer_interfaces_pkg::srv::GetCalibrationSrv>(GET_CAL_SERVICE_NAME,
                                                                         std::bind(&PWM::ServoMgr::getCalHdl,
-@@ -92,10 +92,10 @@ int main(int argc, char **argv) {
+@@ -92,10 +99,10 @@ int main(int argc, char **argv) {
                                                                         std::placeholders::_1,
                                                                         std::placeholders::_2,
                                                                         std::placeholders::_3),
 -                                                                       ::rmw_qos_profile_default,
-+                                                                       rclcpp::QoS(rclcpp::SystemDefaultsQoS()),
++                                                                       qos_default,
                                                                         getCalServiceCbGrp_);
  
 -    auto setLedCtrlCbGrp_ = node->create_callback_group(rclcpp::callback_group::CallbackGroupType::Reentrant);                                                                                          
@@ -63,12 +77,12 @@ index 631af08..b83b786 100644
      rclcpp::Service<deepracer_interfaces_pkg::srv::SetLedCtrlSrv>::SharedPtr setLedCtrlService =
          node->create_service<deepracer_interfaces_pkg::srv::SetLedCtrlSrv>(SET_LED_STATE_SERVICE_NAME,
                                                                             std::bind(&PWM::LedMgr::setLedCtrlHdl,
-@@ -103,10 +103,10 @@ int main(int argc, char **argv) {
+@@ -103,10 +110,10 @@ int main(int argc, char **argv) {
                                                                             std::placeholders::_1,
                                                                             std::placeholders::_2,
                                                                             std::placeholders::_3),
 -                                                                           ::rmw_qos_profile_default,
-+                                                                           rclcpp::QoS(rclcpp::SystemDefaultsQoS()),
++                                                                           qos_default,
                                                                             setLedCtrlCbGrp_);
  
 -    auto getLedCtrlCbGrp_ = node->create_callback_group(rclcpp::callback_group::CallbackGroupType::Reentrant);                                                                                          
@@ -76,12 +90,12 @@ index 631af08..b83b786 100644
      rclcpp::Service<deepracer_interfaces_pkg::srv::GetLedCtrlSrv>::SharedPtr getLedCtrlService =
          node->create_service<deepracer_interfaces_pkg::srv::GetLedCtrlSrv>(GET_LED_STATE_SERVICE_NAME,
                                                                             std::bind(&PWM::LedMgr::getLedCtrlHdl,
-@@ -114,7 +114,7 @@ int main(int argc, char **argv) {
+@@ -114,7 +121,7 @@ int main(int argc, char **argv) {
                                                                             std::placeholders::_1,
                                                                             std::placeholders::_2,
                                                                             std::placeholders::_3),
 -                                                                           ::rmw_qos_profile_default,
-+                                                                           rclcpp::QoS(rclcpp::SystemDefaultsQoS()),
++                                                                           qos_default,
                                                                             getLedCtrlCbGrp_);
  
      RCLCPP_INFO(node->get_logger(), "servo_node started");
