@@ -125,8 +125,8 @@ index 028191a..0bbaf27 100644
 +                // Subscriber to subscribe to the camera display messages published by the camera_pkg.
 +                image_transport::TransportHints ith(this);
 +                RCLCPP_INFO(this->get_logger(), "image_transport configured to use %s", ith.getTransport().c_str());
-+                displaySub_ = image_transport_.subscribe<SensorFusionNode>(DISPLAY_MSG_TOPIC, 1, 
-+                                                                        &SensorFusionNode::displayCB, 
++                displaySub_ = image_transport_.subscribe<SensorFusionNode>(DISPLAY_MSG_TOPIC, 1,
++                                                                        &SensorFusionNode::displayCB,
 +                                                                        node_handle_, &ith);
 +            }
              cameraImageCount_ = 0;
