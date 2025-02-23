@@ -170,9 +170,11 @@ for pkg in $PACKAGES; do
         sed -i "/Depends/ s/$/, $PACKAGE_DEPS/" DEBIAN/control
         sed -i 's/ExecStop=\/opt\/aws\/deepracer\/util\/otg_eth.sh stop/KillSignal=2/' etc/systemd/system/deepracer-core.service
         rm -rf opt/aws/deepracer/lib/*
-        cp $DIR/build_scripts/files/common/start_ros.sh opt/aws/deepracer
+        cp $DIR/build_scripts/files/common/start_ros.sh opt/aws/deepracer/
+        cp $DIR/build_scripts/files/common/logging.conf opt/aws/deepracer/
+        cp $DIR/build_scripts/files/common/aws-deepracer-core-prerm DEBIAN/prerm
+        cp $DIR/build_scripts/files/common/aws-deepracer-core-conffiles DEBIAN/conffiles
         cp -r $DIR/install/* opt/aws/deepracer/lib/
-        cp -r $DIR/build_scripts/files/common/aws-deepracer-core-prerm DEBIAN/prerm
         if [ "$ROS_DISTRO" == "humble" ]; then
             cp -r $DIR/build_scripts/files/pi/aws-deepracer-core-postinst DEBIAN/postinst
         fi
