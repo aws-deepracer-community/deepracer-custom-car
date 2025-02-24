@@ -57,7 +57,7 @@ index 2991e4d..5b14bc0 100644
 +    tensorflow-lite
 +  )
 +
-+  ament_target_dependencies(inference_node rclcpp deepracer_interfaces_pkg sensor_msgs std_msgs cv_bridge image_transport OpenCV) 
++  ament_target_dependencies(inference_node rclcpp deepracer_interfaces_pkg sensor_msgs std_msgs cv_bridge image_transport OpenCV)
 +
 +else()
 +
@@ -91,11 +91,11 @@ index 2991e4d..5b14bc0 100644
 +    ${OpenCV_LIBRARIES}
 +    tensorflow-lite
 +    ${InferenceEngine_LIBRARIES}
-+    ${NGRAPH_LIBRARIES}  
++    ${NGRAPH_LIBRARIES}
 +    )
  
 -ament_target_dependencies(inference_node rclcpp deepracer_interfaces_pkg sensor_msgs std_msgs cv_bridge image_transport OpenCV InferenceEngine ngraph) 
-+  ament_target_dependencies(inference_node rclcpp deepracer_interfaces_pkg sensor_msgs std_msgs cv_bridge image_transport OpenCV InferenceEngine ngraph) 
++  ament_target_dependencies(inference_node rclcpp deepracer_interfaces_pkg sensor_msgs std_msgs cv_bridge image_transport OpenCV InferenceEngine ngraph)
 +
 +endif()
  
