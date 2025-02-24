@@ -178,9 +178,9 @@ if [ "$CACHE" != "true" ]; then
     #
     #######
 
-    if [ "$ROS_DISTRO" == "humble" ]; then
+    if [ "$ROS_DISTRO" == "humble" ] || [ "$ROS_DISTRO" == "jazzy" ]; then
 
-        echo "Applying patches for Raspberry Pi / ROS 2 Humble"
+        echo "Applying patches for Raspberry Pi / ROS 2 Humble & Jazzy"
 
         #######
         #
