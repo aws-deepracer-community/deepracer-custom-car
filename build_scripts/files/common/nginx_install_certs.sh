@@ -20,12 +20,20 @@ is_cert_valid_for_365_days() {
     [ $diff_days -ge 365 ]
 }
 
+# Function to convert subject format
+convert_subject_format() {
+    local subject=$1
+    echo "$subject" | sed -e 's/subject=/\//' -e 's/, /\//g' -e 's/ = /=/g'
+}
+
 # Check if the certificate and key exist
 if [ -f "$CERT_FILE" ] && [ -f "$KEY_FILE" ]; then
     # Check if the certificate and key match
-    if openssl x509 -noout -modulus -in "$CERT_FILE" | openssl md5 == openssl rsa -noout -modulus -in "$KEY_FILE" | openssl md5; then
+    if [ "$(openssl x509 -noout -modulus -in "$CERT_FILE" | openssl md5)" == "$(openssl rsa -noout -modulus -in "$KEY_FILE" | openssl md5)" ]
         # Check if the certificate is issued by the required subject
-        if openssl x509 -in "$CERT_FILE" -noout -subject | grep -q "$SUBJECT"; then
+        cert_subject=$(openssl x509 -in "$CERT_FILE" -noout -subject)
+        normalized_subject=$(convert_subject_format "$cert_subject")
+        if [ "$normalized_subject" == "$SUBJECT" ]; then
             # Check if the certificate is valid for at least 365 days
             if is_cert_valid_for_365_days "$CERT_FILE"; then
                 echo "Existing certificate is valid and matches the required criteria. Skipping certificate creation."
