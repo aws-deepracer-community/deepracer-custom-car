@@ -1,0 +1,44 @@
+{
+    "build": {
+        "dockerfile": "Dockerfile",
+        "args": {
+            "USERNAME": "${localEnv:USER}"
+        }
+    },
+    "containerEnv": {
+        "DISPLAY": "${localEnv:DISPLAY}",
+        "QT_X11_NO_MITSHM": "1"
+    },
+    "containerUser": "${localEnv:USER}",
+    "runArgs": [
+        "--privileged",
+        "--network",
+        "host"
+    ],
+    "mounts": [
+        "source=deepracer-ros-bashhistory,target=/commandhistory,type=volume",
+        "source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind",
+        "source=${localEnv:HOME}/.aws,target=/home/${localEnv:USER}/.aws,type=bind"
+    ],
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "terminal.integrated.profiles.linux": {
+                    "bash (ROS)": {
+                        "path": "/bin/bash",
+                        "args": [
+                            "--init-file",
+                            ".devcontainer/bashrc"
+                        ]
+                    }
+                },
+                "terminal.integrated.defaultProfile.linux": "bash (ROS)"
+            },
+            "extensions": [
+                "ms-python.python",
+                "ms-vscode.cpptools-extension-pack",
+                "ms-python.autopep8"
+            ]
+        }
+    }
+}

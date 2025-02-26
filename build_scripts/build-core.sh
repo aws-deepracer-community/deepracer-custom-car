@@ -19,15 +19,16 @@ done
 # Detect ROS version
 if [ -f /opt/ros/foxy/setup.bash ]; then
     ROS_DISTRO="foxy"
-    source /opt/ros/foxy/setup.bash
 elif [ -f /opt/ros/humble/setup.bash ]; then
     ROS_DISTRO="humble"
-    source /opt/ros/humble/setup.bash
+elif [ -f /opt/ros/jazzy/setup.bash ]; then
+    ROS_DISTRO="jazzy"
 else
     echo "Unsupported ROS version"
     exit 1
 fi
 echo "Detected ROS version: $ROS_DISTRO"
+source /opt/ros/$ROS_DISTRO/setup.bash
 
 # Set the OpenVINO environment
 if [ -f /opt/intel/openvino_2021/bin/setupvars.sh ]; then
@@ -35,8 +36,7 @@ if [ -f /opt/intel/openvino_2021/bin/setupvars.sh ]; then
 elif [ -f /opt/intel/openvino_2022/setupvars.sh ]; then
     source /opt/intel/openvino_2022/setupvars.sh
 else
-    echo "Unsupported OpenVINO version"
-    exit 1
+    echo "No OpenVINO in the environment."
 fi
 
 # Change to build directory
@@ -64,8 +64,12 @@ if [ "$CACHE" != "true" ]; then
         rosws merge --merge-replace - <.rosinstall-foxy
     fi
 
-    rosws update
-
+    if [ $ROS_DISTRO == "jazzy" ]; then
+        vcs import --input .rosinstall .
+    else  
+        rosws update
+    fi
+    
     #######
     #
     # START - Pull request specific changes
@@ -129,6 +133,10 @@ if [ "$CACHE" != "true" ]; then
     git apply $DIR/build_scripts/patches/aws-deepracer-ctrl-pkg.patch
     cd ..
 
+    cd aws-deepracer-camera-pkg
+    git apply $DIR/build_scripts/patches/aws-deepracer-camera-pkg.patch
+    cd ..
+
     cd aws-deepracer-device-info-pkg/
     git apply $DIR/build_scripts/patches/aws-deepracer-device-info-pkg.patch
     cd ..
@@ -170,9 +178,9 @@ if [ "$CACHE" != "true" ]; then
     #
     #######
 
-    if [ "$ROS_DISTRO" == "humble" ]; then
+    if [ "$ROS_DISTRO" == "humble" ] || [ "$ROS_DISTRO" == "jazzy" ]; then
 
-        echo "Applying patches for Raspberry Pi / ROS 2 Humble"
+        echo "Applying patches for Raspberry Pi / ROS 2 Humble & Jazzy"
 
         #######
         #
@@ -217,7 +225,7 @@ cd ..
 
 # Build the core
 export PYTHONWARNINGS=ignore:::setuptools.command.install
-if [ "$ROS_DISTRO" == "humble" ]; then
+if [ "$ROS_DISTRO" == "humble" ] || [ "$ROS_DISTRO" == "jazzy" ]; then
     colcon build --packages-up-to deepracer_launcher logging_pkg
 else
     colcon build --packages-up-to deepracer_launcher rplidar_ros logging_pkg
