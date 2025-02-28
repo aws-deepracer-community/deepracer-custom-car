@@ -64,8 +64,12 @@ if [ "$CACHE" != "true" ]; then
         rosws merge --merge-replace - <.rosinstall-foxy
     fi
 
-    rosws update
+    if [ $ROS_DISTRO == "humble" ]; then
+        rosws merge --merge-replace - < .rosinstall-humble
+    fi
 
+    rosws update
+    
     #######
     #
     # START - Pull request specific changes
@@ -218,7 +222,7 @@ cd ..
 # Build the core
 export PYTHONWARNINGS=ignore:::setuptools.command.install
 if [ "$ROS_DISTRO" == "humble" ]; then
-    colcon build --packages-up-to deepracer_launcher logging_pkg
+    colcon build --packages-up-to deepracer_launcher logging_pkg camera_ros
 else
     colcon build --packages-up-to deepracer_launcher rplidar_ros logging_pkg
 fi
