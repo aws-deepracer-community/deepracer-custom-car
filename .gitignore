@@ -71,6 +71,7 @@ pkg-build/
 src/*
 !src/.rosinstall-core
 !src/.rosinstall-foxy
+!src/.rosinstall-humble
 
 # Test module
 test/install/

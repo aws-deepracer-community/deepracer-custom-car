@@ -1,0 +1,4 @@
+- git:
+    uri: https://github.com/larsll/camera_ros.git
+    local-name: camera_ros
+    version: scale-raw

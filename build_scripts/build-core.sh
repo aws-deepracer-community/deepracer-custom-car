@@ -64,12 +64,16 @@ if [ "$CACHE" != "true" ]; then
         rosws merge --merge-replace - <.rosinstall-foxy
     fi
 
+    if [ $ROS_DISTRO == "humble" ]; then
+        rosws merge --merge-replace - < .rosinstall-humble
+    fi
+
     if [ $ROS_DISTRO == "jazzy" ]; then
         vcs import --input .rosinstall .
-    else  
+    else
         rosws update
     fi
-    
+
     #######
     #
     # START - Pull request specific changes
@@ -225,8 +229,13 @@ cd ..
 
 # Build the core
 export PYTHONWARNINGS=ignore:::setuptools.command.install
+<<<<<<< HEAD
 if [ "$ROS_DISTRO" == "humble" ] || [ "$ROS_DISTRO" == "jazzy" ]; then
     colcon build --packages-up-to deepracer_launcher logging_pkg
+=======
+if [ "$ROS_DISTRO" == "humble" ]; then
+    colcon build --packages-up-to deepracer_launcher logging_pkg camera_ros
+>>>>>>> main
 else
     colcon build --packages-up-to deepracer_launcher rplidar_ros logging_pkg
 fi
