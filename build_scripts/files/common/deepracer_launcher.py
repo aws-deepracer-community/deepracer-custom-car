@@ -54,8 +54,7 @@ def launch_setup(context, *args, **kwargs):
                 {'format': 'BGR888',
                  'width': resolution[0],
                  'height': resolution[1],
-                 'mode_width': 1640,
-                 'mode_height': 1232,
+                 'sensor_mode': '1640:1232',
                  'FrameDurationLimits': [math.floor(1e6 / fps), math.ceil(1e6 / fps)]}
             ],
             remappings=[
