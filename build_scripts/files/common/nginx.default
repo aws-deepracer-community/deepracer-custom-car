@@ -1,0 +1,96 @@
+#
+# Default server configuration
+#
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    server_name _;
+    return 302 https://$http_host;
+}
+
+server {
+    listen 443 ssl http2 default_server;
+    listen [::]:443 ssl http2 default_server;
+    include snippets/self-signed.conf;
+
+    # Define error page for 500 errors
+    error_page 500 502 503 504 /500.html;
+
+    # Static error page location
+    location = /500.html {
+        root /opt/aws/deepracer/lib/device_console/static/error_pages;
+        internal;
+    }
+
+    root /opt/aws/deepracer/lib/device_console/;
+    server_name webserver;
+
+    location /static/ {
+        expires 1D;
+        allow all;
+    }
+
+    location = /favicon.ico {
+        log_not_found off;
+    }
+
+    location /login {
+        auth_request_set $user $upstream_http_x_forwarded_user;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-User $user;
+        proxy_pass http://0.0.0.0:5001/login;
+    }
+
+    location =/ {
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-User $user;
+        proxy_pass http://0.0.0.0:5001/;
+    }
+ 
+    location =/home {
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-User $user;
+        proxy_pass http://0.0.0.0:5001/home;
+    }
+
+    location /route {
+        auth_request /auth;
+        proxy_pass http://127.0.0.1:8080/stream;
+    }
+
+    location / {
+        auth_request /auth;
+
+        auth_request_set $user $upstream_http_x_forwarded_user;
+        proxy_set_header X-Forwarded-User $user;
+        proxy_pass http://0.0.0.0:5001/;
+
+        proxy_set_header Connection '';
+        proxy_http_version 1.1;
+        chunked_transfer_encoding off;
+        proxy_buffering off;
+        proxy_cache off;
+
+        proxy_set_header   Host $host;
+        proxy_set_header   X-Real-IP $remote_addr;
+        proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Host $server_name;
+        proxy_redirect     off;
+
+        add_header 'Access-Control-Allow-Origin' "*";
+        add_header 'Access-Control-Allow-Methods' 'GET, PUT, POST, OPTIONS, DELETE';
+        add_header 'Access-Control-Allow-Headers' 'Origin, X-Requested-With, Content-Type, Accept';
+    }
+
+    location /auth {
+        internal;
+        proxy_pass_request_body off;
+        proxy_set_header Host $host;
+        proxy_set_header Content-Length "";
+        proxy_pass http://0.0.0.0:5001/auth;
+        
+        add_header 'Access-Control-Allow-Origin' "*";
+        add_header 'Access-Control-Allow-Methods' 'GET, PUT, POST, OPTIONS, DELETE';
+        add_header 'Access-Control-Allow-Headers' 'Origin, X-Requested-With, Content-Type, Accept';
+    }
+}
