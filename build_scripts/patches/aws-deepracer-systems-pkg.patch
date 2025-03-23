@@ -1,3 +1,16 @@
+diff --git a/deepracer_systems_pkg/deepracer_systems_pkg/network_monitor_module/network_config.py b/deepracer_systems_pkg/deepracer_systems_pkg/network_monitor_module/network_config.py
+index c4ff558..76f73a3 100644
+--- a/deepracer_systems_pkg/deepracer_systems_pkg/network_monitor_module/network_config.py
++++ b/deepracer_systems_pkg/deepracer_systems_pkg/network_monitor_module/network_config.py
+@@ -56,7 +56,7 @@ WIFI_CONFIG_DEFAULTS = {
+ DEVICE_STATUS_NAME = "device-status.txt"
+ 
+ # Set to True to set hostname to the chassis serial number.
+-SET_HOSTNAME_TO_CHASSIS_SERIAL_NUMBER = True
++SET_HOSTNAME_TO_CHASSIS_SERIAL_NUMBER = False
+ CHASSIS_SERIAL = os.path.join(os.sep, "sys", "class", "dmi", "id", "chassis_serial")
+ 
+ SCHEDULE_CONFIG_UPDATE_CB = "schedule_config_update"
 diff --git a/deepracer_systems_pkg/deepracer_systems_pkg/deepracer_systems_scripts_module/deepracer_systems_scripts_node.py b/deepracer_systems_pkg/deepracer_systems_pkg/deepracer_systems_scripts_module/deepracer_systems_scripts_node.py
 index d0c7722..fa1a446 100755
 --- a/deepracer_systems_pkg/deepracer_systems_pkg/deepracer_systems_scripts_module/deepracer_systems_scripts_node.py

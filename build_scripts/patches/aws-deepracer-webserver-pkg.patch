@@ -22,20 +22,6 @@ index 8738ede..203cbde 100644
              return jsonify(data)
          else:
              return jsonify(success=False, reason="Error")
-diff --git a/webserver_pkg/webserver_pkg/login.py b/webserver_pkg/webserver_pkg/login.py
-index b5fe8bb..317b265 100755
---- a/webserver_pkg/webserver_pkg/login.py
-+++ b/webserver_pkg/webserver_pkg/login.py
-@@ -193,7 +193,8 @@ def check_authentication():
- 
-     cookie_val = str(request.cookies.get(DEEPRACER_TOKEN))
-     status = True if(hmac.compare_digest(cookie_val, token)) else False
--    webserver_node.get_logger().info(f"Cookie compare status: {status}")
-+    if webserver_node is not None:
-+        webserver_node.get_logger().debug(f"Cookie compare status: {status}")
-     return status, cookie_val
- 
- 
 diff --git a/webserver_pkg/webserver_pkg/ssh_api.py b/webserver_pkg/webserver_pkg/ssh_api.py
 index 0c856a3..6747c02 100644
 --- a/webserver_pkg/webserver_pkg/ssh_api.py
@@ -209,3 +195,154 @@ index a9582f4..c106a49 100755
      return {"success": True, "is_usb_connected": is_usb_connected}
  
  
+diff --git a/webserver_pkg/webserver_pkg/login.py b/webserver_pkg/webserver_pkg/login.py
+index b5fe8bb..f83ba93 100755
+--- a/webserver_pkg/webserver_pkg/login.py
++++ b/webserver_pkg/webserver_pkg/login.py
+@@ -26,6 +26,7 @@ import hmac
+ import os
+ import uuid
+ import hashlib
++import json
+ from flask import (Blueprint,
+                    request,
+                    make_response,
+@@ -55,7 +56,7 @@ def home_page():
+     """
+     webserver_node = webserver_publisher_node.get_webserver_node()
+ 
+-    status, _ = check_authentication()
++    status, _, _ = check_authentication()
+     if status:
+         webserver_node.get_logger().info("Authenticated")
+         return render_template("index.html")
+@@ -72,6 +73,7 @@ def login():
+     Returns:
+         flask.Response: Response object with login page or home page details.
+     """
++    COOKIE_DURATION = 12
+     webserver_node = webserver_publisher_node.get_webserver_node()
+     webserver_node.get_logger().info(f"Called /login with {request.method}")
+     if request.method == "POST":
+@@ -85,12 +87,30 @@ def login():
+                 webserver_node.get_logger().info("Password check passed")
+                 token = str(uuid.uuid4())
+                 try:
++                    # Create expiry timestamp (1 hour from now)
++                    expires_at = (datetime.datetime.now() + datetime.timedelta(hours=COOKIE_DURATION)).isoformat()
++
++                    # Load existing tokens or create new structure
++                    tokens_data = {"tokens": []}
++                    if os.path.exists(TOKEN_PATH) and os.path.getsize(TOKEN_PATH) > 0:
++                        try:
++                            with open(TOKEN_PATH, "r") as token_file:
++                                tokens_data = json.load(token_file)
++                        except json.JSONDecodeError:
++                            # If file exists but isn't valid JSON, start fresh
++                            tokens_data = {"tokens": []}
++
++                    # Add new token
++                    tokens_data["tokens"].append({"token": token, "expires_at": expires_at})
++
++                    # Write updated tokens to file
+                     with open(TOKEN_PATH, "w") as token_file:
+-                        token_file.write(token)
++                        json.dump(tokens_data, token_file)
++
+                     webserver_node.get_logger().info("Token set")
+                     response.set_cookie("deepracer_token",
+                                         token,
+-                                        max_age=datetime.timedelta(hours=1),
++                                        max_age=datetime.timedelta(hours=COOKIE_DURATION),
+                                         secure=True)
+                     return response
+                 except IOError:
+@@ -123,12 +143,16 @@ def auth():
+         resp = jsonify("")
+     else:
+         resp = make_response("")
+-    status, cookie_val = check_authentication()
++    status, cookie_val, max_age = check_authentication()
+     if not status:
+         return resp, 401
++    
++    # Use the token's remaining time if available, otherwise default to 1 hours
++    cookie_max_age = max_age if max_age is not None else int(datetime.timedelta(hours=1).total_seconds())
++    
+     resp.set_cookie("deepracer_token",
+                     cookie_val,
+-                    max_age=datetime.timedelta(hours=1),
++                    max_age=cookie_max_age,
+                     secure=True)
+     return resp, 200
+ 
+@@ -180,21 +204,60 @@ def check_authentication():
+     """Helper function to validate the token sent in the request object.
+ 
+     Returns:
+-        tuple: A tuple of validation flag and cookie value.
++        tuple: A tuple of validation flag, cookie value, and max_age in seconds.
+     """
+     webserver_node = webserver_publisher_node.get_webserver_node()
+     if not os.path.exists(TOKEN_PATH):
+         webserver_node.get_logger().error("Token path not found")
+-        return False, None
+-
+-    token = ""
+-    with open(TOKEN_PATH, "r") as file_ptr:
+-        token = file_ptr.readline()
++        return False, None, None
+ 
+     cookie_val = str(request.cookies.get(DEEPRACER_TOKEN))
+-    status = True if(hmac.compare_digest(cookie_val, token)) else False
+-    webserver_node.get_logger().info(f"Cookie compare status: {status}")
+-    return status, cookie_val
++    if not cookie_val:
++        return False, None, None
++
++    try:
++        with open(TOKEN_PATH, "r") as file_ptr:
++            tokens_data = json.load(file_ptr)
++
++        # Get current time
++        current_time = datetime.datetime.now()
++
++        # Create list to store valid tokens
++        valid_tokens = []
++        status = False
++        max_age = None
++
++        for token_entry in tokens_data.get("tokens", []):
++            token = token_entry.get("token")
++            expires_at = token_entry.get("expires_at")
++
++            # Parse expiry date
++            expiry_date = datetime.datetime.fromisoformat(expires_at)
++
++            # Keep token if not expired
++            if expiry_date > current_time:
++                valid_tokens.append(token_entry)
++
++                # Check if this token matches the cookie
++                if hmac.compare_digest(cookie_val, token):
++                    status = True
++                    # Calculate max_age in seconds
++                    max_age = int((expiry_date - current_time).total_seconds())
++
++        # Update token file to remove expired tokens
++        if len(valid_tokens) != len(tokens_data.get("tokens", [])):
++            tokens_data["tokens"] = valid_tokens
++            with open(TOKEN_PATH, "w") as file_ptr:
++                json.dump(tokens_data, file_ptr)
++
++        if webserver_node is not None:
++            webserver_node.get_logger().debug(f"Cookie compare status: {status}")
++
++        return status, cookie_val, max_age
++
++    except (json.JSONDecodeError, IOError) as e:
++        webserver_node.get_logger().error(f"Error reading tokens: {str(e)}")
++        return False, None, None
+ 
+ 
+ def compute_password_digest(message):
