@@ -14,19 +14,18 @@ server {
     include snippets/self-signed.conf;
 
     # Define error page for 500 errors
-    error_page 500 502 503 504 /500.html;
+    error_page 500 502 503 504 /error/500.html;
 
     # Static error page location
-    location = /500.html {
-        root /opt/aws/deepracer/lib/device_console/static/error_pages;
-        internal;
+    location /error/ {
+        root /opt/aws/deepracer/nginx/data;
     }
 
     root /opt/aws/deepracer/lib/device_console/;
     server_name webserver;
 
     location /static/ {
-        expires 1D;
+        expires 1d;
         allow all;
     }
 
@@ -39,18 +38,21 @@ server {
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-User $user;
         proxy_pass http://0.0.0.0:5001/login;
+        proxy_intercept_errors on;
     }
 
     location =/ {
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-User $user;
         proxy_pass http://0.0.0.0:5001/;
+        proxy_intercept_errors on;
     }
  
     location =/home {
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-User $user;
         proxy_pass http://0.0.0.0:5001/home;
+        proxy_intercept_errors on;
     }
 
     location /route {

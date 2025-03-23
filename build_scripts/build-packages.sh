@@ -125,6 +125,9 @@ for pkg in $PACKAGES; do
         cp $DIR/build_scripts/files/pi/isc-dhcp-server opt/aws/deepracer/util/isc-dhcp-server
         cp $DIR/build_scripts/files/pi/deepracer_dhcp.conf opt/aws/deepracer/util/deepracer_dhcp.conf
         cp $DIR/build_scripts/files/common/nginx_install_certs.sh opt/aws/deepracer/nginx/nginx_install_certs.sh
+        cp $DIR/build_scripts/files/common/nginx_configure.sh opt/aws/deepracer/nginx/nginx_configure.sh
+        cp $DIR/build_scripts/files/common/nginx.default opt/aws/deepracer/nginx/data/nginx.default
+        cp -r $DIR/build_scripts/files/common/error opt/aws/deepracer/nginx/data/
         sed -i "s/Architecture: amd64/Architecture: $TARGET_ARCH/" DEBIAN/control
         sed -i "s/Version: .*/Version: $VERSION/" DEBIAN/control
         sed -i 's/pyclean -p aws-deepracer-util/ /' DEBIAN/prerm
