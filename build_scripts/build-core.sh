@@ -220,9 +220,6 @@ if [ "$CACHE" != "true" ]; then
     # Update deepracer_launcher.py (fix an issue in the file)
     cp $DIR/build_scripts/files/common/deepracer_launcher.py ./aws-deepracer-launcher/deepracer_launcher/launch/deepracer_launcher.py
 
-    # Turn off SW update
-    sed -i "s/ENABLE_PERIODIC_SOFTWARE_UPDATE = True/ENABLE_PERIODIC_SOFTWARE_UPDATE = False/" aws-deepracer-systems-pkg/deepracer_systems_pkg/deepracer_systems_pkg/software_update_module/software_update_config.py
-
 fi
 
 cd ..
