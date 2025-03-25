@@ -1,6 +1,6 @@
 # Copyright (C) 2019-2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
-FROM ros:humble-ros-base
+FROM --platform=${TARGETPLATFORM} ros:humble-ros-base
 
 ARG USERNAME=user-name-goes-here
 ARG USER_UID=1000
@@ -29,11 +29,11 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
     jq \
     cython3
 
-RUN cd / && curl -O https://aws-deepracer-community-sw.s3.eu-west-1.amazonaws.com/openvino/openvino_2022.3.1_amd64.tgz && \
-    tar -xvzf openvino_2022.3.1_amd64.tgz && \
+RUN cd / && curl -O https://aws-deepracer-community-sw.s3.eu-west-1.amazonaws.com/openvino/openvino_2022.3.1_$(dpkg --print-architecture).tgz && \
+    tar -xvzf openvino_2022.3.1_$(dpkg --print-architecture).tgz && \
     ln -sf /opt/intel/openvino_2022.3.1 /opt/intel/openvino_2022 && \
     ln -sf /opt/intel/openvino_2022.3.1 /opt/intel/openvino && \
-    rm /openvino_2022.3.1_amd64.tgz
+    rm /openvino_2022.3.1_$(dpkg --print-architecture).tgz
 
 # Add deb-s3
 RUN wget -O /etc/apt/trusted.gpg.d/deb-s3-archive-keyring.gpg https://raw.githubusercontent.com/deb-s3/deb-s3/master/deb-s3-archive-keyring.gpg && \

@@ -1,8 +1,47 @@
+diff --git a/sensor_fusion_pkg/CMakeLists.txt b/sensor_fusion_pkg/CMakeLists.txt
+index 2c4dd4f..a6344d4 100644
+--- a/sensor_fusion_pkg/CMakeLists.txt
++++ b/sensor_fusion_pkg/CMakeLists.txt
+@@ -25,6 +25,11 @@ find_package(deepracer_interfaces_pkg REQUIRED)
+ # Find the json parser/writer
+ find_package(jsoncpp REQUIRED)
+ 
++# Check if ROS_DISTRO is jazzy and define a macro
++if("$ENV{ROS_DISTRO}" STREQUAL "jazzy")
++  add_definitions(-DROS_DISTRO_JAZZY)
++endif()
++
+ add_executable(sensor_fusion_node
+ src/sensor_fusion_node.cpp
+ src/utility.cpp
 diff --git a/sensor_fusion_pkg/src/sensor_fusion_node.cpp b/sensor_fusion_pkg/src/sensor_fusion_node.cpp
-index 028191a..b6d02c3 100644
+index 028191a..0bbaf27 100644
 --- a/sensor_fusion_pkg/src/sensor_fusion_node.cpp
 +++ b/sensor_fusion_pkg/src/sensor_fusion_node.cpp
-@@ -111,6 +111,11 @@ namespace SensorFusion {
+@@ -57,7 +57,11 @@ The node defines:
+ #include "sensor_msgs/msg/laser_scan.hpp"
+ #include "sensor_msgs/msg/image.hpp"
+ #include "sensor_msgs/msg/compressed_image.hpp"
++#ifdef ROS_DISTRO_JAZZY
++#include "cv_bridge/cv_bridge.hpp"
++#else
+ #include "cv_bridge/cv_bridge.h"
++#endif
+ #include "opencv2/opencv.hpp"
+ #include "image_transport/image_transport.hpp"
+ 
+@@ -73,8 +77,8 @@ The node defines:
+ #define RAD2DEG(x) ((x)*180./M_PI)
+ 
+ namespace SensorFusion {
+-    #define DEFAULT_IMAGE_WIDTH 640
+-    #define DEFAULT_IMAGE_HEIGHT 480
++    #define DEFAULT_IMAGE_WIDTH 480
++    #define DEFAULT_IMAGE_HEIGHT 360
+ 
+     // Default lidar configuration
+     #define DEFAULT_LIDAR_CONFIGURATION_MIN_LIDAR_ANGLE -60.0
+@@ -111,6 +115,11 @@ namespace SensorFusion {
          numLidarPreprocessingType
      };
  
@@ -14,7 +53,7 @@ index 028191a..b6d02c3 100644
      // Message Topics to publish to.
      const char* SENSOR_MSG_TOPIC = "sensor_msg";
      const char* OVERLAY_MSG_TOPIC = "overlay_msg";
-@@ -120,6 +125,7 @@ namespace SensorFusion {
+@@ -120,6 +129,7 @@ namespace SensorFusion {
      // Message topics to subscribe to.
      const char* CAMERA_MSG_TOPIC = "/camera_pkg/video_mjpeg";
      const char* DISPLAY_MSG_TOPIC = "/camera_pkg/display_mjpeg";
@@ -22,7 +61,7 @@ index 028191a..b6d02c3 100644
      const char* LIDAR_MSG_TOPIC = "/rplidar_ros/scan";
  
      // Sensor configuration file path.
-@@ -155,13 +161,21 @@ namespace SensorFusion {
+@@ -155,13 +165,21 @@ namespace SensorFusion {
            node_handle_(std::shared_ptr<SensorFusionNode>(this, [](auto *) {})),
            image_transport_(std::shared_ptr<rclcpp::Node>(this, [](auto *) {})),
            lidarOverlayProcessingObj_(LidarOverlay()),
@@ -45,7 +84,7 @@ index 028191a..b6d02c3 100644
              createDefaultSensorConfiguration();
              if (checkFile(SENSOR_CONFIGURATION_FILE_PATH)) {
                  setSensorConfigurationFromFile(sensorConfiguration_,
-@@ -185,7 +199,8 @@ namespace SensorFusion {
+@@ -185,7 +203,8 @@ namespace SensorFusion {
  
              // Publisher to publish the overlay message with sector LiDAR information
              // overlayed over the camera image frame.
@@ -55,7 +94,7 @@ index 028191a..b6d02c3 100644
              
              statusCheckService_ = this->create_service<deepracer_interfaces_pkg::srv::SensorStatusCheckSrv>(
                                                                                  SENSOR_DATA_STATUS_SERVICE_NAME,
-@@ -212,19 +227,27 @@ namespace SensorFusion {
+@@ -212,19 +231,27 @@ namespace SensorFusion {
                                                                                           this,
                                                                                           std::placeholders::_1));
              // Subscriber to subscribe to the camera sensor messages published by the camera_pkg.
@@ -93,7 +132,7 @@ index 028191a..b6d02c3 100644
              cameraImageCount_ = 0;
          }
          ~SensorFusionNode() = default;
-@@ -279,30 +302,56 @@ namespace SensorFusion {
+@@ -279,30 +306,56 @@ namespace SensorFusion {
              }
          }
  
@@ -166,7 +205,7 @@ index 028191a..b6d02c3 100644
              }
              catch (const std::exception &ex) {
                  RCLCPP_ERROR(this->get_logger(), "Display callback failed: %s", ex.what());
-@@ -537,6 +586,7 @@ namespace SensorFusion {
+@@ -537,6 +590,7 @@ namespace SensorFusion {
          rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr lidarSub_;
          rclcpp::Subscription<deepracer_interfaces_pkg::msg::CameraMsg>::SharedPtr cameraSub_;
          image_transport::Subscriber displaySub_;
@@ -174,7 +213,7 @@ index 028191a..b6d02c3 100644
  
          rclcpp::Service<deepracer_interfaces_pkg::srv::LidarConfigSrv>::SharedPtr lidarConfigService_;
          rclcpp::Service<deepracer_interfaces_pkg::srv::SensorStatusCheckSrv>::SharedPtr statusCheckService_;
-@@ -556,13 +606,14 @@ namespace SensorFusion {
+@@ -556,13 +610,14 @@ namespace SensorFusion {
          /// Hash map that stores the min/max of each servo.
          std::unordered_map<std::string, std::unordered_map<std::string, float>> sensorConfiguration_;
          /// Flag to enable publishing the overlay image.

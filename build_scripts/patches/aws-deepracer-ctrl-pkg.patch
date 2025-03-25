@@ -1,3 +1,18 @@
+diff --git a/ctrl_pkg/CMakeLists.txt b/ctrl_pkg/CMakeLists.txt
+index 0429a10..7e99d4b 100644
+--- a/ctrl_pkg/CMakeLists.txt
++++ b/ctrl_pkg/CMakeLists.txt
+@@ -20,6 +20,10 @@ find_package(ament_cmake REQUIRED)
+ find_package(rclcpp REQUIRED)
+ find_package(deepracer_interfaces_pkg REQUIRED)
+ 
++# Check if ROS_DISTRO is jazzy and define a macro
++if("$ENV{ROS_DISTRO}" STREQUAL "jazzy")
++  add_definitions(-DROS_DISTRO_JAZZY)
++endif()
+ 
+ add_executable(ctrl_node
+     src/ctrl_node.cpp
 diff --git a/ctrl_pkg/include/ctrl_pkg/ctrl_state.hpp b/ctrl_pkg/include/ctrl_pkg/ctrl_state.hpp
 index b82b35e..eb78cfb 100644
 --- a/ctrl_pkg/include/ctrl_pkg/ctrl_state.hpp
@@ -83,7 +98,7 @@ index b82b35e..eb78cfb 100644
 \ No newline at end of file
 +#endif
 diff --git a/ctrl_pkg/src/ctrl_node.cpp b/ctrl_pkg/src/ctrl_node.cpp
-index 78aabe4..86fdfd9 100644
+index 78aabe4..8bd314c 100644
 --- a/ctrl_pkg/src/ctrl_node.cpp
 +++ b/ctrl_pkg/src/ctrl_node.cpp
 @@ -45,6 +45,11 @@ namespace SysCtrl {
@@ -98,7 +113,7 @@ index 78aabe4..86fdfd9 100644
      const char* VEHICLE_STATE_SRV = "vehicle_state";
      const char* ENABLE_STATE_SRV = "enable_state";
      const char* MODEL_STATE_SRV = "model_state";
-@@ -67,8 +72,13 @@ namespace SysCtrl {
+@@ -67,63 +72,73 @@ namespace SysCtrl {
          : Node(nodeName), initialized_(false)
          {
              RCLCPP_INFO(this->get_logger(), "%s started", nodeName.c_str());
@@ -110,12 +125,20 @@ index 78aabe4..86fdfd9 100644
 +            if (mode_param != "legacy" && mode_param != "modern") {
 +                RCLCPP_ERROR(this->get_logger(), "Invalid mode parameter value. Defaulting to legacy.");
 +            }
++            #ifdef ROS_DISTRO_JAZZY
++            auto qos_default = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
++            #else
++            auto qos_default = ::rmw_qos_profile_default;
++            #endif
 +            vehicleCtrlModesServiceCbGrp_ = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
              getVehicleCtrlModesService_ = this->create_service<deepracer_interfaces_pkg::srv::GetCtrlModesSrv>(GET_CTRL_MODES_SRV,
                                                                                                                 std::bind(&SysCtrl::CtrlNodeMgr::getCtrlModesHdl,
                                                                                                                 this,
-@@ -78,7 +88,7 @@ namespace SysCtrl {
-                                                                                                                ::rmw_qos_profile_default,
+                                                                                                                std::placeholders::_1,
+                                                                                                                std::placeholders::_2,
+                                                                                                                std::placeholders::_3),
+-                                                                                                               ::rmw_qos_profile_default,
++                                                                                                               qos_default,
                                                                                                                 vehicleCtrlModesServiceCbGrp_);
  
 -            vehicleModeServiceCbGrp_ = this->create_callback_group(rclcpp::callback_group::CallbackGroupType::Reentrant);
@@ -123,16 +146,22 @@ index 78aabe4..86fdfd9 100644
              setVehicleModeService_ = this->create_service<deepracer_interfaces_pkg::srv::ActiveStateSrv>(VEHICLE_STATE_SRV,
                                                                                                           std::bind(&SysCtrl::CtrlNodeMgr::stateHdl,
                                                                                                           this,
-@@ -87,7 +97,7 @@ namespace SysCtrl {
+                                                                                                          std::placeholders::_1,
+                                                                                                          std::placeholders::_2,
                                                                                                           std::placeholders::_3),
-                                                                                                          ::rmw_qos_profile_default,
+-                                                                                                         ::rmw_qos_profile_default,
++                                                                                                         qos_default,
                                                                                                           vehicleModeServiceCbGrp_);
 -            activateVehicleServiceCbGrp_ = this->create_callback_group(rclcpp::callback_group::CallbackGroupType::Reentrant);
 +            activateVehicleServiceCbGrp_ = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
              activateVehicleService_ = this->create_service<deepracer_interfaces_pkg::srv::EnableStateSrv>(ENABLE_STATE_SRV,
                                                                                                            std::bind(&SysCtrl::CtrlNodeMgr::ctrlStateHdl,
                                                                                                            this,
-@@ -98,7 +108,7 @@ namespace SysCtrl {
+                                                                                                           std::placeholders::_1,
+                                                                                                           std::placeholders::_2,
+                                                                                                           std::placeholders::_3),
+-                                                                                                          ::rmw_qos_profile_default,
++                                                                                                          qos_default,
                                                                                                            activateVehicleServiceCbGrp_);
  
  
@@ -141,26 +170,42 @@ index 78aabe4..86fdfd9 100644
              loadModelService_ = this->create_service<deepracer_interfaces_pkg::srv::ModelStateSrv>(MODEL_STATE_SRV,
                                                                                                      std::bind(&SysCtrl::CtrlNodeMgr::loadModelHdl,
                                                                                                      this,
-@@ -107,7 +117,7 @@ namespace SysCtrl {
+                                                                                                     std::placeholders::_1,
+                                                                                                     std::placeholders::_2,
                                                                                                      std::placeholders::_3),
-                                                                                                     ::rmw_qos_profile_default,
+-                                                                                                    ::rmw_qos_profile_default,
++                                                                                                    qos_default,
                                                                                                      loadModelCbGrp_);
 -            isModelLoadingCbGrp_ = this->create_callback_group(rclcpp::callback_group::CallbackGroupType::Reentrant);
 +            isModelLoadingCbGrp_ = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
              isModelLoadingService_ = this->create_service<deepracer_interfaces_pkg::srv::GetModelLoadingStatusSrv>(IS_MODEL_LOADING_SRV,
                                                                                                                      std::bind(&SysCtrl::CtrlNodeMgr::isModelLoadingHdl,
                                                                                                                      this,
-@@ -116,7 +126,7 @@ namespace SysCtrl {
+                                                                                                                     std::placeholders::_1,
+                                                                                                                     std::placeholders::_2,
                                                                                                                      std::placeholders::_3),
-                                                                                                                     ::rmw_qos_profile_default,
+-                                                                                                                    ::rmw_qos_profile_default,
++                                                                                                                    qos_default,
                                                                                                                      isModelLoadingCbGrp_);
 -            vehicleCalibrationCbGrp_ = this->create_callback_group(rclcpp::callback_group::CallbackGroupType::MutuallyExclusive);
 +            vehicleCalibrationCbGrp_ = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
              getCarCalibrationService_ = this->create_service<deepracer_interfaces_pkg::srv::GetCalibrationSrv>(GET_CAL_SRV,
                                                                                                                 std::bind(&SysCtrl::CtrlNodeMgr::getCarCalHdl,
                                                                                                                 this,
-@@ -134,7 +144,7 @@ namespace SysCtrl {
-                                                                                                                ::rmw_qos_profile_default,
+                                                                                                                std::placeholders::_1,
+                                                                                                                std::placeholders::_2,
+                                                                                                                std::placeholders::_3),
+-                                                                                                               ::rmw_qos_profile_default,
++                                                                                                               qos_default,
+                                                                                                                vehicleCalibrationCbGrp_);
+             setCarCalibrationService_ = this->create_service<deepracer_interfaces_pkg::srv::SetCalibrationSrv>(SET_CAL_SRV,
+                                                                                                                std::bind(&SysCtrl::CtrlNodeMgr::setCarCalHdl,
+@@ -131,17 +146,17 @@ namespace SysCtrl {
+                                                                                                                std::placeholders::_1,
+                                                                                                                std::placeholders::_2,
+                                                                                                                std::placeholders::_3),
+-                                                                                                               ::rmw_qos_profile_default,
++                                                                                                               qos_default,
                                                                                                                 vehicleCalibrationCbGrp_);
  
 -            vehicleLedCbGrp_ = this->create_callback_group(rclcpp::callback_group::CallbackGroupType::MutuallyExclusive);
@@ -168,8 +213,20 @@ index 78aabe4..86fdfd9 100644
              getCarLedService_ = this->create_service<deepracer_interfaces_pkg::srv::GetLedCtrlSrv>(GET_LED_SRV,
                                                                                                     std::bind(&SysCtrl::CtrlNodeMgr::getCarLedHdl,
                                                                                                     this,
-@@ -152,7 +162,7 @@ namespace SysCtrl {
-                                                                                                     ::rmw_qos_profile_default,
+                                                                                                    std::placeholders::_1,
+                                                                                                    std::placeholders::_2,
+                                                                                                    std::placeholders::_3),
+-                                                                                                   ::rmw_qos_profile_default,
++                                                                                                   qos_default,
+                                                                                                    vehicleLedCbGrp_);
+             setCarLedService_ = this->create_service<deepracer_interfaces_pkg::srv::SetLedCtrlSrv>(SET_LED_SRV,
+                                                                                                     std::bind(&SysCtrl::CtrlNodeMgr::setCarLedHdl,
+@@ -149,17 +164,17 @@ namespace SysCtrl {
+                                                                                                     std::placeholders::_1,
+                                                                                                     std::placeholders::_2,
+                                                                                                     std::placeholders::_3),
+-                                                                                                    ::rmw_qos_profile_default,
++                                                                                                    qos_default,
                                                                                                      vehicleLedCbGrp_);
  
 -            autonomousThrottleCbGrp_ = this->create_callback_group(rclcpp::callback_group::CallbackGroupType::Reentrant);
@@ -177,7 +234,15 @@ index 78aabe4..86fdfd9 100644
              setAutonomousThrottleService_ = this->create_service<deepracer_interfaces_pkg::srv::NavThrottleSrv>(AUTONOMOUS_THROTTLE_SRV,
                                                                                                                  std::bind(&SysCtrl::CtrlNodeMgr::autoThrottleHdl,
                                                                                                                  this,
-@@ -174,8 +184,10 @@ namespace SysCtrl {
+                                                                                                                 std::placeholders::_1,
+                                                                                                                 std::placeholders::_2,
+                                                                                                                 std::placeholders::_3),
+-                                                                                                                ::rmw_qos_profile_default,
++                                                                                                                qos_default,
+                                                                                                                 autonomousThrottleCbGrp_);
+             // TODO: Find better way to initialize requiring to exit constructor to use shared_from_this()
+             timer_ = this->create_wall_timer(std::chrono::seconds(1), std::bind(&SysCtrl::CtrlNodeMgr::init, this));
+@@ -174,8 +189,10 @@ namespace SysCtrl {
                  activeState_->second->setStateActive(true);
                  initialized_ = true;
                  timer_->cancel();
@@ -190,7 +255,19 @@ index 78aabe4..86fdfd9 100644
              }
          }
  
-@@ -205,7 +217,8 @@ namespace SysCtrl {
+@@ -199,13 +216,19 @@ namespace SysCtrl {
+          }
+ 
+         void waitForServices(){
++            #ifdef ROS_DISTRO_JAZZY
++            auto qos_default = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
++            #else
++            auto qos_default = ::rmw_qos_profile_default;
++            #endif
+             videoClientCbGrp_ = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
+             videoClient_ = this->create_client<deepracer_interfaces_pkg::srv::VideoStateSrv>("/camera_pkg/media_state",
+-                                                                                             rmw_qos_profile_services_default,
++                                                                                             qos_default,
                                                                                               videoClientCbGrp_);
              while (!videoClient_->wait_for_service(std::chrono::seconds(1))) {
                  if (!rclcpp::ok()) {
@@ -200,7 +277,7 @@ index 78aabe4..86fdfd9 100644
                  }
                  RCLCPP_INFO(this->get_logger(), "Camera node not available, waiting again...");
              }
-@@ -262,7 +275,7 @@ namespace SysCtrl {
+@@ -262,7 +285,7 @@ namespace SysCtrl {
          void loadModelHdl(const std::shared_ptr<rmw_request_id_t> request_header,
                            std::shared_ptr<deepracer_interfaces_pkg::srv::ModelStateSrv::Request> req,
                            std::shared_ptr<deepracer_interfaces_pkg::srv::ModelStateSrv::Response> res) {
@@ -209,7 +286,7 @@ index 78aabe4..86fdfd9 100644
              res->error = 1;
              if (activeState_ == stateList_.end()) {
                  RCLCPP_ERROR(this->get_logger(), "No active state");
-@@ -403,27 +416,28 @@ namespace SysCtrl {
+@@ -403,27 +426,28 @@ namespace SysCtrl {
          std::unordered_map<int, std::shared_ptr<CtrlStateBase>>::const_iterator activeState_;
  
          /// ROS callback group object to be passed to the videoClient_.
@@ -248,7 +325,7 @@ index 78aabe4..86fdfd9 100644
  }
  
 diff --git a/ctrl_pkg/src/ctrl_state.cpp b/ctrl_pkg/src/ctrl_state.cpp
-index a75a58a..80fc12d 100644
+index a75a58a..0952660 100644
 --- a/ctrl_pkg/src/ctrl_state.cpp
 +++ b/ctrl_pkg/src/ctrl_state.cpp
 @@ -49,7 +49,8 @@ namespace {
@@ -261,93 +338,147 @@ index a75a58a..80fc12d 100644
              }
              RCLCPP_INFO(ctrlNode->get_logger(), "%s not available, waiting again...", client->get_service_name());
          }
-@@ -85,37 +86,37 @@ namespace SysCtrl {
+@@ -74,6 +75,11 @@ namespace SysCtrl {
+         // Subscribe to the appropriate servo topic.
+         auto qos = rclcpp::QoS(rclcpp::KeepLast(1));
+         qos.best_effort();
++        #ifdef ROS_DISTRO_JAZZY
++        auto qos_default = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
++        #else
++        auto qos_default = ::rmw_qos_profile_default;
++        #endif
+         auto servoMsgStrategy = std::make_shared<rclcpp::strategies::message_pool_memory_strategy::MessagePoolMemoryStrategy<deepracer_interfaces_pkg::msg::ServoCtrlMsg, 1>>();
+         servoPub_ = ctrlNode->create_publisher<deepracer_interfaces_pkg::msg::ServoCtrlMsg>(SERVO_TOPIC, qos);
+ 
+@@ -85,39 +91,39 @@ namespace SysCtrl {
                                                                                                 rclcpp::SubscriptionOptions(),
                                                                                                 servoMsgStrategy);
          
 -        servoGPIOClientCbGrp_ = ctrlNode->create_callback_group(rclcpp::callback_group::CallbackGroupType::Reentrant);                                                                                          
 +        servoGPIOClientCbGrp_ = ctrlNode->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
          servoGPIOClient_ = ctrlNode->create_client<deepracer_interfaces_pkg::srv::ServoGPIOSrv>(SERVO_GPIO_SRV,
-                                                                                                 rmw_qos_profile_services_default,
+-                                                                                                rmw_qos_profile_services_default,
++                                                                                                qos_default,
                                                                                                  servoGPIOClientCbGrp_);
          waitForService(servoGPIOClient_, ctrlNode);
          
 -        modelOptimizerClientCbGrp_ = ctrlNode->create_callback_group(rclcpp::callback_group::CallbackGroupType::Reentrant);                                                                                          
 +        modelOptimizerClientCbGrp_ = ctrlNode->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
          modelOptimizerClient_ = ctrlNode->create_client<deepracer_interfaces_pkg::srv::ModelOptimizeSrv>(MODEL_OPT_SRV,
-                                                                                           rmw_qos_profile_services_default,
+-                                                                                          rmw_qos_profile_services_default,
++                                                                                          qos_default,
                                                                                            modelOptimizerClientCbGrp_);
          waitForService(modelOptimizerClient_, ctrlNode);
          
 -        loadModelClientCbGrp_ = ctrlNode->create_callback_group(rclcpp::callback_group::CallbackGroupType::Reentrant);                                                                                          
 +        loadModelClientCbGrp_ = ctrlNode->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
          loadModelClient_ = ctrlNode->create_client<deepracer_interfaces_pkg::srv::LoadModelSrv>(MODEL_SRV,
-                                                                                           rmw_qos_profile_services_default,
+-                                                                                          rmw_qos_profile_services_default,
++                                                                                          qos_default,
                                                                                            loadModelClientCbGrp_);
          waitForService(loadModelClient_, ctrlNode);
  
 -        loadActionSpaceClientCbGrp_ = ctrlNode->create_callback_group(rclcpp::callback_group::CallbackGroupType::Reentrant);                                                                                          
 +        loadActionSpaceClientCbGrp_ = ctrlNode->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
          loadActionSpaceClient_ = ctrlNode->create_client<deepracer_interfaces_pkg::srv::LoadModelSrv>(NAV_ACTION_SPACE_SRV,
-                                                                                           rmw_qos_profile_services_default,
+-                                                                                          rmw_qos_profile_services_default,
++                                                                                          qos_default,
                                                                                            loadActionSpaceClientCbGrp_);
          waitForService(loadActionSpaceClient_, ctrlNode);
  
 -        inferStateClientCbGrp_ = ctrlNode->create_callback_group(rclcpp::callback_group::CallbackGroupType::Reentrant);                                                                                          
 +        inferStateClientCbGrp_ = ctrlNode->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
          inferStateClient_ = ctrlNode->create_client<deepracer_interfaces_pkg::srv::InferenceStateSrv>(INFER_SRV,
-                                                                                           rmw_qos_profile_services_default,
+-                                                                                          rmw_qos_profile_services_default,
++                                                                                          qos_default,
                                                                                            inferStateClientCbGrp_);
          waitForService(inferStateClient_, ctrlNode);
  
 -        navigationThrottleClientCbGrp_ = ctrlNode->create_callback_group(rclcpp::callback_group::CallbackGroupType::Reentrant);                                                                                          
 +        navigationThrottleClientCbGrp_ = ctrlNode->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
          navigationThrottleClient_ = ctrlNode->create_client<deepracer_interfaces_pkg::srv::NavThrottleSrv>(NAV_THROTTLE_SRV,
-                                                                                           rmw_qos_profile_services_default,
+-                                                                                          rmw_qos_profile_services_default,
++                                                                                          qos_default,
                                                                                            navigationThrottleClientCbGrp_);
-@@ -323,7 +324,7 @@ namespace SysCtrl {
+         waitForService(navigationThrottleClient_, ctrlNode);
+     }
+@@ -312,6 +318,11 @@ namespace SysCtrl {
+         // Subscribe to the appropriate servo topic.
+         auto qos = rclcpp::QoS(rclcpp::KeepLast(1));
+         qos.best_effort();
++        #ifdef ROS_DISTRO_JAZZY
++        auto qos_default = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
++        #else
++        auto qos_default = ::rmw_qos_profile_default;
++        #endif
+         auto servoMsgStrategy = std::make_shared<rclcpp::strategies::message_pool_memory_strategy::MessagePoolMemoryStrategy<deepracer_interfaces_pkg::msg::ServoCtrlMsg, 1>>();
+         servoPub_ = ctrlNode->create_publisher<deepracer_interfaces_pkg::msg::ServoCtrlMsg>(SERVO_TOPIC, qos);
+ 
+@@ -323,9 +334,9 @@ namespace SysCtrl {
                                                                                                 rclcpp::SubscriptionOptions(),
                                                                                                 servoMsgStrategy);
  
 -        servoGPIOClientCbGrp_ = ctrlNode->create_callback_group(rclcpp::callback_group::CallbackGroupType::Reentrant);                                                                                          
 +        servoGPIOClientCbGrp_ = ctrlNode->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
          servoGPIOClient_ = ctrlNode->create_client<deepracer_interfaces_pkg::srv::ServoGPIOSrv>(SERVO_GPIO_SRV,
-                                                                                                 rmw_qos_profile_services_default,
+-                                                                                                rmw_qos_profile_services_default,
++                                                                                                qos_default,
                                                                                                  servoGPIOClientCbGrp_);
-@@ -424,31 +425,31 @@ namespace SysCtrl {
+         waitForService(servoGPIOClient_, ctrlNode);
+    }
+@@ -413,6 +424,11 @@ namespace SysCtrl {
+         // Subscribe to the appropriate servo topic.
+         auto qos = rclcpp::QoS(rclcpp::KeepLast(1));
+         qos.best_effort();
++        #ifdef ROS_DISTRO_JAZZY
++        auto qos_default = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
++        #else
++        auto qos_default = ::rmw_qos_profile_default;
++        #endif
+         auto servoMsgStrategy = std::make_shared<rclcpp::strategies::message_pool_memory_strategy::MessagePoolMemoryStrategy<deepracer_interfaces_pkg::msg::ServoCtrlMsg, 1>>();
+         calibrationPub_ = ctrlNode->create_publisher<deepracer_interfaces_pkg::msg::ServoCtrlMsg>(RAW_PWM_TOPIC, qos);
+ 
+@@ -424,33 +440,33 @@ namespace SysCtrl {
                                                                                                 rclcpp::SubscriptionOptions(),
                                                                                                 servoMsgStrategy);
  
 -        servoGPIOClientCbGrp_ = ctrlNode->create_callback_group(rclcpp::callback_group::CallbackGroupType::Reentrant);                                                                                          
 +        servoGPIOClientCbGrp_ = ctrlNode->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
          servoGPIOClient_ = ctrlNode->create_client<deepracer_interfaces_pkg::srv::ServoGPIOSrv>(SERVO_GPIO_SRV,
-                                                                                                 rmw_qos_profile_services_default,
+-                                                                                                rmw_qos_profile_services_default,
++                                                                                                qos_default,
                                                                                                  servoGPIOClientCbGrp_);
          waitForService(servoGPIOClient_, ctrlNode);
          
 -        servoGetCalClientCbGrp_ = ctrlNode->create_callback_group(rclcpp::callback_group::CallbackGroupType::Reentrant);                                                                                                
 +        servoGetCalClientCbGrp_ = ctrlNode->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
          servoGetCalClient_ = ctrlNode->create_client<deepracer_interfaces_pkg::srv::GetCalibrationSrv>(GET_SERVO_CAL_SRV,
-                                                                                                        rmw_qos_profile_services_default,
+-                                                                                                       rmw_qos_profile_services_default,
++                                                                                                       qos_default,
                                                                                                         servoGetCalClientCbGrp_);
          waitForService(servoGetCalClient_, ctrlNode);
          
 -        servoSetCalClientCbGrp_ = ctrlNode->create_callback_group(rclcpp::callback_group::CallbackGroupType::Reentrant);                                                                                               
 +        servoSetCalClientCbGrp_ = ctrlNode->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
          servoSetCalClient_ = ctrlNode->create_client<deepracer_interfaces_pkg::srv::SetCalibrationSrv>(SET_SERVO_CAL_SRV,
-                                                                                                        rmw_qos_profile_services_default,
+-                                                                                                       rmw_qos_profile_services_default,
++                                                                                                       qos_default,
                                                                                                         servoSetCalClientCbGrp_);
          waitForService(servoSetCalClient_, ctrlNode);
  
 -        servoGetLedClientCbGrp_ = ctrlNode->create_callback_group(rclcpp::callback_group::CallbackGroupType::Reentrant);                                                                                                 
 +        servoGetLedClientCbGrp_ = ctrlNode->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
          servoGetLedClient_ = ctrlNode->create_client<deepracer_interfaces_pkg::srv::GetLedCtrlSrv>(GET_LED_PWM_SRV,
-                                                                                                    rmw_qos_profile_services_default,
+-                                                                                                   rmw_qos_profile_services_default,
++                                                                                                   qos_default,
                                                                                                     servoGetLedClientCbGrp_);
          waitForService(servoGetLedClient_, ctrlNode);
          
 -        servoSetLedClientCbGrp_ = ctrlNode->create_callback_group(rclcpp::callback_group::CallbackGroupType::Reentrant);                                                                                                   
 +        servoSetLedClientCbGrp_ = ctrlNode->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
          servoSetLedClient_ = ctrlNode->create_client<deepracer_interfaces_pkg::srv::SetLedCtrlSrv>(SET_LED_PWM_SRV,
-                                                                                                    rmw_qos_profile_services_default,
+-                                                                                                   rmw_qos_profile_services_default,
++                                                                                                   qos_default,
                                                                                                     servoSetLedClientCbGrp_);
+         waitForService(servoSetLedClient_, ctrlNode);
+     }

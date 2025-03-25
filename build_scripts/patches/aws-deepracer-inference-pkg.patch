@@ -1,8 +1,137 @@
+diff --git a/inference_pkg/CMakeLists.txt b/inference_pkg/CMakeLists.txt
+index 2991e4d..5b14bc0 100644
+--- a/inference_pkg/CMakeLists.txt
++++ b/inference_pkg/CMakeLists.txt
+@@ -3,6 +3,7 @@ project(inference_pkg)
+ include(FetchContent)
+ 
+ set(ABSL_PROPAGATE_CXX_STD ON)
++set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS 1)
+ 
+ # Default to C99
+ if(NOT CMAKE_C_STANDARD)
+@@ -15,7 +16,7 @@ if(NOT CMAKE_CXX_STANDARD)
+ endif()
+ 
+ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+-  add_compile_options(-Wno-deprecated-declarations -Wno-ignored-attributes)
++  add_compile_options(-Wno-deprecated-declarations -Wno-ignored-attributes -Wno-deprecated)
+ endif()
+ 
+ FetchContent_Declare(tensorflow-lite
+@@ -37,8 +38,6 @@ find_package(image_transport REQUIRED)
+ find_package(cv_bridge REQUIRED)
+ find_package(sensor_msgs REQUIRED)
+ find_package(std_msgs REQUIRED)
+-find_package(ngraph REQUIRED)
+-find_package(InferenceEngine REQUIRED)
+ find_package(OpenCV 4.2 QUIET
+   COMPONENTS
+     opencv_core
+@@ -56,29 +55,60 @@ if(NOT OpenCV_FOUND)
+   )
+ endif()
+ 
+-add_executable(inference_node
++# Check if ROS_DISTRO is jazzy and define a macro
++if("$ENV{ROS_DISTRO}" STREQUAL "jazzy")
++  add_definitions(-DROS_DISTRO_JAZZY)
++
++  add_executable(inference_node
+     src/inference_node.cpp
+     src/tflite_inference_eng.cpp
+-    src/intel_inference_eng.cpp
+     src/image_process.cpp
+-)
++  )
++
++  target_include_directories(inference_node PRIVATE
++    include
++    ${OpenCV_INCLUDE_DIRS}
++    ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers/include
++    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
++  )
++
++  target_link_libraries(inference_node  -lm -ldl
++    ${OpenCV_LIBRARIES}
++    tensorflow-lite
++  )
++
++  ament_target_dependencies(inference_node rclcpp deepracer_interfaces_pkg sensor_msgs std_msgs cv_bridge image_transport OpenCV)
++
++else()
++
++  find_package(ngraph REQUIRED)
++  find_package(InferenceEngine REQUIRED)
++
++  add_executable(inference_node
++      src/inference_node.cpp
++      src/tflite_inference_eng.cpp
++      src/intel_inference_eng.cpp
++      src/image_process.cpp
++      )
+ 
+-target_include_directories(inference_node PRIVATE
++  target_include_directories(inference_node PRIVATE
+     include
+     ${OpenCV_INCLUDE_DIRS}
+     ${InferenceEngine_INCLUDE_DIRS}
+     ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers/include
+     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+-)
++  )
+ 
+-target_link_libraries(inference_node  -lm -ldl
+-  ${OpenCV_LIBRARIES}
+-  tensorflow-lite
+-  ${InferenceEngine_LIBRARIES}
+-  ${NGRAPH_LIBRARIES}  
+-)
++  target_link_libraries(inference_node  -lm -ldl
++    ${OpenCV_LIBRARIES}
++    tensorflow-lite
++    ${InferenceEngine_LIBRARIES}
++    ${NGRAPH_LIBRARIES}
++    )
+ 
+-ament_target_dependencies(inference_node rclcpp deepracer_interfaces_pkg sensor_msgs std_msgs cv_bridge image_transport OpenCV InferenceEngine ngraph) 
++  ament_target_dependencies(inference_node rclcpp deepracer_interfaces_pkg sensor_msgs std_msgs cv_bridge image_transport OpenCV InferenceEngine ngraph)
++
++endif()
+ 
+ install(TARGETS
+   inference_node
+diff --git a/inference_pkg/include/inference_pkg/image_process.hpp b/inference_pkg/include/inference_pkg/image_process.hpp
+index b199b4c..ff12421 100644
+--- a/inference_pkg/include/inference_pkg/image_process.hpp
++++ b/inference_pkg/include/inference_pkg/image_process.hpp
+@@ -20,7 +20,11 @@
+ #include "rclcpp/rclcpp.hpp"
+ #include "sensor_msgs/msg/image.hpp"
+ #include "sensor_msgs/msg/compressed_image.hpp"
++#ifdef ROS_DISTRO_JAZZY
++#include "cv_bridge/cv_bridge.hpp"
++#else
+ #include "cv_bridge/cv_bridge.h"
++#endif
+ #include <unordered_map>
+ 
+ namespace InferTask {
 diff --git a/inference_pkg/src/inference_node.cpp b/inference_pkg/src/inference_node.cpp
-index a5c8a5f..e865e5f 100644
+index d59636d..ff7324b 100644
 --- a/inference_pkg/src/inference_node.cpp
 +++ b/inference_pkg/src/inference_node.cpp
-@@ -59,7 +59,7 @@ namespace InferTask {
+@@ -14,7 +14,9 @@
+ //   limitations under the License.                                              //
+ ///////////////////////////////////////////////////////////////////////////////////
+ 
++#ifndef ROS_DISTRO_JAZZY
+ #include "inference_pkg/intel_inference_eng.hpp"
++#endif
+ #include "inference_pkg/tflite_inference_eng.hpp"
+ #include "std_msgs/msg/string.hpp"
+ #include "deepracer_interfaces_pkg/srv/inference_state_srv.hpp"
+@@ -62,7 +64,7 @@ namespace InferTask {
              // Inference Engine name; TFLITE or OPENVINO
              inferenceEngine_ = this->get_parameter("inference_engine").as_string();
  
@@ -11,7 +140,7 @@ index a5c8a5f..e865e5f 100644
              loadModelService_ = this->create_service<deepracer_interfaces_pkg::srv::LoadModelSrv>("load_model",
                                                                                                    std::bind(&InferTask::InferenceNodeMgr::LoadModelHdl,
                                                                                                    this,
-@@ -69,7 +69,7 @@ namespace InferTask {
+@@ -72,7 +74,7 @@ namespace InferTask {
                                                                                                    ::rmw_qos_profile_default,
                                                                                                    loadModelServiceCbGrp_);
  
@@ -20,7 +149,17 @@ index a5c8a5f..e865e5f 100644
              setInferenceStateService_ = this->create_service<deepracer_interfaces_pkg::srv::InferenceStateSrv>("inference_state",
                                                                                                                 std::bind(&InferTask::InferenceNodeMgr::InferStateHdl,
                                                                                                                 this,
-@@ -154,11 +154,11 @@ namespace InferTask {
+@@ -141,7 +143,9 @@ namespace InferTask {
+                         if (inferenceEngine_.compare("TFLITE") == 0) {
+                             itInferTask->second.reset(new TFLiteInferenceEngine::RLInferenceModel(this->shared_from_this(), "/sensor_fusion_pkg/sensor_msg"));
+                         } else {
++                            #ifndef ROS_DISTRO_JAZZY
+                             itInferTask->second.reset(new IntelInferenceEngine::RLInferenceModel(this->shared_from_this(), "/sensor_fusion_pkg/sensor_msg"));
++                            #endif
+                         }
+                         
+                         break;
+@@ -167,11 +171,11 @@ namespace InferTask {
  
      private:
          /// ROS callback group for load model service.

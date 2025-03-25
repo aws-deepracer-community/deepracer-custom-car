@@ -1,18 +1,49 @@
 {
     "configurations": [
         {
-            "name": "Linux",
+            "name": "Ubuntu 20.04",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/install/deepracer_interfaces_pkg/**",
+                "/opt/ros/${env:ROS_DISTRO}/include/**",
+                "/usr/include/opencv4/",
+                "/opt/intel/openvino_2021/inference_engine/include/**",
+                "${workspaceFolder}/build/inference_pkg/_deps/tensorflow-lite-src/**",
+                "${workspaceFolder}/build/inference_pkg/flatbuffers/include/"
+            ],
+            "defines": [],
+            "cStandard": "gnu17",
+            "cppStandard": "gnu++14",
+            "intelliSenseMode": "linux-gcc-x64"
+        },
+        {
+            "name": "Ubuntu 22.04",
             "includePath": [
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/install/deepracer_interfaces_pkg/**",
                 "/opt/ros/${env:ROS_DISTRO}/include/**",
                 "/usr/include/opencv4/",
                 "/opt/intel/openvino_2022/runtime/include/**",
-                "/opt/intel/openvino_2021/inference_engine/include/**",
                 "${workspaceFolder}/build/inference_pkg/_deps/tensorflow-lite-src/**",
                 "${workspaceFolder}/build/inference_pkg/flatbuffers/include/"
             ],
             "defines": [],
+            "cStandard": "gnu17",
+            "cppStandard": "gnu++14",
+            "intelliSenseMode": "linux-gcc-x64"
+        },
+        {
+            "name": "Ubuntu 24.04",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/install/deepracer_interfaces_pkg/**",
+                "/opt/ros/${env:ROS_DISTRO}/include/**",
+                "/usr/include/opencv4/",
+                "/opt/intel/openvino_2022/runtime/include/**",
+                "${workspaceFolder}/build/inference_pkg/_deps/tensorflow-lite-src/**",
+                "${workspaceFolder}/build/inference_pkg/flatbuffers/include/"
+            ],
+            "defines": ["ROS_DISTRO_JAZZY"],
             "cStandard": "gnu17",
             "cppStandard": "gnu++14",
             "intelliSenseMode": "linux-gcc-x64"

@@ -55,15 +55,16 @@ fi
 # Detect ROS version
 if [ -f /opt/ros/foxy/setup.bash ]; then
     ROS_DISTRO="foxy"
-    source /opt/ros/foxy/setup.bash
 elif [ -f /opt/ros/humble/setup.bash ]; then
     ROS_DISTRO="humble"
-    source /opt/ros/humble/setup.bash
+elif [ -f /opt/ros/jazzy/setup.bash ]; then
+    ROS_DISTRO="jazzy"
 else
     echo "Unsupported ROS version"
     exit 1
 fi
 echo "Detected ROS version: $ROS_DISTRO"
+source /opt/ros/$ROS_DISTRO/setup.bash
 
 # DeepRacer Repos
 sudo cp $DIR/install_scripts/common/deepracer.asc /etc/apt/trusted.gpg.d/
