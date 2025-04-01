@@ -346,3 +346,61 @@ index b5fe8bb..f83ba93 100755
  
  
  def compute_password_digest(message):
+
+
+diff --git a/webserver_pkg/webserver_pkg/vehicle_control.py b/webserver_pkg/webserver_pkg/vehicle_control.py
+index 4a87265..d259956 100755
+--- a/webserver_pkg/webserver_pkg/vehicle_control.py
++++ b/webserver_pkg/webserver_pkg/vehicle_control.py
+@@ -24,6 +24,7 @@ the servo/motor.
+ """
+ 
+ import math
++import subprocess
+ from flask import (Blueprint,
+                    jsonify,
+                    request)
+@@ -312,3 +313,43 @@ def control_modes_available():
+     except Exception as ex:
+         webserver_node.get_logger().error(f"Unable to reach get ctrl modes service: {ex}")
+         return jsonify(success=False, reason="Error")
++
++@VEHICLE_CONTROL_BLUEPRINT.route("/api/emergency_stop", methods=["POST"])
++def api_emergency_stop():
++    """API that performs an emergency stop by restarting the deepracer-core service.
++
++    Returns:
++        dict: Execution status and reason if the API call failed.
++    """
++    try:
++        retcode = subprocess.call(['sudo', 'systemctl', 'restart', 'deepracer-core'])
++        if retcode == 0:
++            return jsonify({"success": True})
++        else:
++            return jsonify({
++                "success": False,
++                "reason": f"Failed to restart service with return code: {retcode}"
++            })
++    except Exception as ex:
++        return jsonify({
++            "success": False,
++            "reason": f"Failed to restart service: {str(ex)}"
++        })
++    
++@VEHICLE_CONTROL_BLUEPRINT.route("/api/emergency_stop_exists", methods=["GET"])
++def api_emergency_stop_exists():
++    """API that responds simply to confirm the emergency stop capability exists on the car.
++
++    Returns:
++        dict: Execution status if the API call was successful, and error reason if call fails.
++    """
++    try:
++        data = {
++            "success": True
++        }
++        return jsonify(data)
++    except Exception as ex:
++        return jsonify({
++            "success": False,
++            "reason": f"Failed to confirm emergency stop capability exists: {str(ex)}"
++        })
