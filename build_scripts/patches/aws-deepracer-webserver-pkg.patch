@@ -402,7 +402,7 @@ index 4a87265..126e671 100755
 +        dict: Execution status and reason if the API call failed.
 +    """
 +    try:
-+        retcode = subprocess.call(['sudo', 'systemctl', 'restart', 'deepracer-core'])
++        retcode = subprocess.call(['systemctl', 'restart', 'deepracer-core'])
 +        if retcode == 0:
 +            return jsonify({"success": True})
 +        else:
