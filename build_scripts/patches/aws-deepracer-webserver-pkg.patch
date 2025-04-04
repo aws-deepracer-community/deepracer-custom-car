@@ -29,7 +29,7 @@ index 8738ede..203cbde 100644
 +
 +def get_registered_apis():
 +    """Helper function that collects all registered API routes from the Flask application.
-+    
++
 +    Returns:
 +        list: List of registered API endpoints
 +    """
@@ -295,10 +295,10 @@ index b5fe8bb..f83ba93 100755
 +    status, cookie_val, max_age = check_authentication()
      if not status:
          return resp, 401
-+    
++
 +    # Use the token's remaining time if available, otherwise default to 1 hours
 +    cookie_max_age = max_age if max_age is not None else int(datetime.timedelta(hours=1).total_seconds())
-+    
++
      resp.set_cookie("deepracer_token",
                      cookie_val,
 -                    max_age=datetime.timedelta(hours=1),
@@ -413,10 +413,10 @@ index 4a87265..3346bdf 100755
 +        done
 +        """
 +        usb_retcode = subprocess.call(['bash', '-c', usb_reset_cmd])
-+        
++
 +        # Restart deepracer service
 +        service_retcode = subprocess.call(['systemctl', 'restart', 'deepracer-core'])
-+        
++
 +        if usb_retcode == 0 and service_retcode == 0:
 +            return jsonify({"success": True})
 +        else:
