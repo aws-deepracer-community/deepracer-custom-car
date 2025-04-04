@@ -378,7 +378,7 @@ index b5fe8bb..f83ba93 100755
  def compute_password_digest(message):
 
 diff --git a/webserver_pkg/webserver_pkg/vehicle_control.py b/webserver_pkg/webserver_pkg/vehicle_control.py
-index 4a87265..3346bdf 100755
+index 4a87265..394585a 100755
 --- a/webserver_pkg/webserver_pkg/vehicle_control.py
 +++ b/webserver_pkg/webserver_pkg/vehicle_control.py
 @@ -24,6 +24,7 @@ the servo/motor.
@@ -389,39 +389,40 @@ index 4a87265..3346bdf 100755
  from flask import (Blueprint,
                     jsonify,
                     request)
-@@ -312,3 +313,39 @@ def control_modes_available():
+@@ -312,3 +313,40 @@ def control_modes_available():
      except Exception as ex:
          webserver_node.get_logger().error(f"Unable to reach get ctrl modes service: {ex}")
          return jsonify(success=False, reason="Error")
 +
-+
 +@VEHICLE_CONTROL_BLUEPRINT.route("/api/emergency_stop", methods=["POST"])
 +def api_emergency_stop():
-+    """API that performs an emergency stop by running USB resets and restarting the deepracer-core service.
++    """API that performs an emergency stop by optionally running USB resets and restarting the deepracer-core service.
 +
 +    Returns:
 +        dict: Execution status and reason if the API call failed.
 +    """
 +    try:
-+        # Run USB reset script
-+        usb_reset_cmd = """
-+        i=0
-+        while [ $i -ne 20 ]
-+        do
-+            usbreset 001/00$i
-+            i=$(($i+1))
-+        done
-+        """
-+        usb_retcode = subprocess.call(['bash', '-c', usb_reset_cmd])
-+
++        usb_retcode = 0
++        # Only run USB reset if explicitly requested
++        if request.json.get("usb_reset", False):
++            usb_reset_cmd = """
++            i=0
++            while [ $i -ne 20 ]
++            do
++                usbreset 001/00$i
++                i=$(($i+1))
++            done
++            """
++            usb_retcode = subprocess.call(['bash', '-c', usb_reset_cmd])
++        
 +        # Restart deepracer service
 +        service_retcode = subprocess.call(['systemctl', 'restart', 'deepracer-core'])
-+
++        
 +        if usb_retcode == 0 and service_retcode == 0:
 +            return jsonify({"success": True})
 +        else:
 +            return jsonify({
-+                "success": False,
++                "success": False, 
 +                "reason": f"Failed with return codes: usb_reset={usb_retcode}, service={service_retcode}"
 +            })
 +    except Exception as ex:
