@@ -1,5 +1,5 @@
 diff --git a/inference_pkg/CMakeLists.txt b/inference_pkg/CMakeLists.txt
-index 2991e4d..5b14bc0 100644
+index 97f8134..1a83ac2 100644
 --- a/inference_pkg/CMakeLists.txt
 +++ b/inference_pkg/CMakeLists.txt
 @@ -3,6 +3,7 @@ project(inference_pkg)
@@ -19,7 +19,7 @@ index 2991e4d..5b14bc0 100644
  endif()
  
  FetchContent_Declare(tensorflow-lite
-@@ -37,8 +38,6 @@ find_package(image_transport REQUIRED)
+@@ -38,8 +39,6 @@ find_package(image_transport REQUIRED)
  find_package(cv_bridge REQUIRED)
  find_package(sensor_msgs REQUIRED)
  find_package(std_msgs REQUIRED)
@@ -28,7 +28,7 @@ index 2991e4d..5b14bc0 100644
  find_package(OpenCV 4.2 QUIET
    COMPONENTS
      opencv_core
-@@ -56,29 +55,60 @@ if(NOT OpenCV_FOUND)
+@@ -57,29 +56,60 @@ if(NOT OpenCV_FOUND)
    )
  endif()
  
@@ -102,17 +102,18 @@ index 2991e4d..5b14bc0 100644
  install(TARGETS
    inference_node
 diff --git a/inference_pkg/include/inference_pkg/image_process.hpp b/inference_pkg/include/inference_pkg/image_process.hpp
-index b199b4c..ff12421 100644
+index b199b4c..0cba248 100644
 --- a/inference_pkg/include/inference_pkg/image_process.hpp
 +++ b/inference_pkg/include/inference_pkg/image_process.hpp
 @@ -20,7 +20,11 @@
  #include "rclcpp/rclcpp.hpp"
  #include "sensor_msgs/msg/image.hpp"
  #include "sensor_msgs/msg/compressed_image.hpp"
-+#ifdef ROS_DISTRO_JAZZY
-+#include "cv_bridge/cv_bridge.hpp"
-+#else
- #include "cv_bridge/cv_bridge.h"
+-#include "cv_bridge/cv_bridge.h"
++#if __has_include(<cv_bridge/cv_bridge.hpp>)
++#include <cv_bridge/cv_bridge.hpp>
++#elif __has_include(<cv_bridge/cv_bridge.h>)
++#include <cv_bridge/cv_bridge.h>
 +#endif
  #include <unordered_map>
  

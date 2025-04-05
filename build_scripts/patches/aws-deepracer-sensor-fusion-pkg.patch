@@ -1,31 +1,16 @@
-diff --git a/sensor_fusion_pkg/CMakeLists.txt b/sensor_fusion_pkg/CMakeLists.txt
-index 2c4dd4f..a6344d4 100644
---- a/sensor_fusion_pkg/CMakeLists.txt
-+++ b/sensor_fusion_pkg/CMakeLists.txt
-@@ -25,6 +25,11 @@ find_package(deepracer_interfaces_pkg REQUIRED)
- # Find the json parser/writer
- find_package(jsoncpp REQUIRED)
- 
-+# Check if ROS_DISTRO is jazzy and define a macro
-+if("$ENV{ROS_DISTRO}" STREQUAL "jazzy")
-+  add_definitions(-DROS_DISTRO_JAZZY)
-+endif()
-+
- add_executable(sensor_fusion_node
- src/sensor_fusion_node.cpp
- src/utility.cpp
 diff --git a/sensor_fusion_pkg/src/sensor_fusion_node.cpp b/sensor_fusion_pkg/src/sensor_fusion_node.cpp
-index 028191a..0bbaf27 100644
+index 028191a..022f03c 100644
 --- a/sensor_fusion_pkg/src/sensor_fusion_node.cpp
 +++ b/sensor_fusion_pkg/src/sensor_fusion_node.cpp
 @@ -57,7 +57,11 @@ The node defines:
  #include "sensor_msgs/msg/laser_scan.hpp"
  #include "sensor_msgs/msg/image.hpp"
  #include "sensor_msgs/msg/compressed_image.hpp"
-+#ifdef ROS_DISTRO_JAZZY
-+#include "cv_bridge/cv_bridge.hpp"
-+#else
- #include "cv_bridge/cv_bridge.h"
+-#include "cv_bridge/cv_bridge.h"
++#if __has_include(<cv_bridge/cv_bridge.hpp>)
++#include <cv_bridge/cv_bridge.hpp>
++#elif __has_include(<cv_bridge/cv_bridge.h>)
++#include <cv_bridge/cv_bridge.h>
 +#endif
  #include "opencv2/opencv.hpp"
  #include "image_transport/image_transport.hpp"
