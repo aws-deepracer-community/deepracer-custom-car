@@ -83,18 +83,10 @@ index b82b35e..eb78cfb 100644
 \ No newline at end of file
 +#endif
 diff --git a/ctrl_pkg/src/ctrl_node.cpp b/ctrl_pkg/src/ctrl_node.cpp
-index 78aabe4..293d0a1 100644
+index 78aabe4..4dec330 100644
 --- a/ctrl_pkg/src/ctrl_node.cpp
 +++ b/ctrl_pkg/src/ctrl_node.cpp
-@@ -30,6 +30,7 @@
- #include <memory>
- #include <unordered_map>
- #include <vector>
-+#include <rmw/rmw.h>
- 
- namespace SysCtrl {
-     /// Topics and Services names
-@@ -45,6 +46,11 @@ namespace SysCtrl {
+@@ -45,6 +45,11 @@ namespace SysCtrl {
          numStates
      };
  
@@ -106,7 +98,7 @@ index 78aabe4..293d0a1 100644
      const char* VEHICLE_STATE_SRV = "vehicle_state";
      const char* ENABLE_STATE_SRV = "enable_state";
      const char* MODEL_STATE_SRV = "model_state";
-@@ -68,62 +74,70 @@ namespace SysCtrl {
+@@ -68,62 +73,70 @@ namespace SysCtrl {
          {
              RCLCPP_INFO(this->get_logger(), "%s started", nodeName.c_str());
  
@@ -189,7 +181,7 @@ index 78aabe4..293d0a1 100644
                                                                                                                 vehicleCalibrationCbGrp_);
              setCarCalibrationService_ = this->create_service<deepracer_interfaces_pkg::srv::SetCalibrationSrv>(SET_CAL_SRV,
                                                                                                                 std::bind(&SysCtrl::CtrlNodeMgr::setCarCalHdl,
-@@ -131,17 +145,17 @@ namespace SysCtrl {
+@@ -131,17 +144,17 @@ namespace SysCtrl {
                                                                                                                 std::placeholders::_1,
                                                                                                                 std::placeholders::_2,
                                                                                                                 std::placeholders::_3),
@@ -210,7 +202,7 @@ index 78aabe4..293d0a1 100644
                                                                                                     vehicleLedCbGrp_);
              setCarLedService_ = this->create_service<deepracer_interfaces_pkg::srv::SetLedCtrlSrv>(SET_LED_SRV,
                                                                                                      std::bind(&SysCtrl::CtrlNodeMgr::setCarLedHdl,
-@@ -149,17 +163,17 @@ namespace SysCtrl {
+@@ -149,17 +162,17 @@ namespace SysCtrl {
                                                                                                      std::placeholders::_1,
                                                                                                      std::placeholders::_2,
                                                                                                      std::placeholders::_3),
@@ -231,7 +223,7 @@ index 78aabe4..293d0a1 100644
                                                                                                                  autonomousThrottleCbGrp_);
              // TODO: Find better way to initialize requiring to exit constructor to use shared_from_this()
              timer_ = this->create_wall_timer(std::chrono::seconds(1), std::bind(&SysCtrl::CtrlNodeMgr::init, this));
-@@ -174,8 +188,10 @@ namespace SysCtrl {
+@@ -174,8 +187,10 @@ namespace SysCtrl {
                  activeState_->second->setStateActive(true);
                  initialized_ = true;
                  timer_->cancel();
@@ -244,7 +236,7 @@ index 78aabe4..293d0a1 100644
              }
          }
  
-@@ -199,13 +215,15 @@ namespace SysCtrl {
+@@ -199,13 +214,15 @@ namespace SysCtrl {
           }
  
          void waitForServices(){
@@ -262,7 +254,7 @@ index 78aabe4..293d0a1 100644
                  }
                  RCLCPP_INFO(this->get_logger(), "Camera node not available, waiting again...");
              }
-@@ -262,7 +280,7 @@ namespace SysCtrl {
+@@ -262,7 +279,7 @@ namespace SysCtrl {
          void loadModelHdl(const std::shared_ptr<rmw_request_id_t> request_header,
                            std::shared_ptr<deepracer_interfaces_pkg::srv::ModelStateSrv::Request> req,
                            std::shared_ptr<deepracer_interfaces_pkg::srv::ModelStateSrv::Response> res) {
@@ -271,7 +263,7 @@ index 78aabe4..293d0a1 100644
              res->error = 1;
              if (activeState_ == stateList_.end()) {
                  RCLCPP_ERROR(this->get_logger(), "No active state");
-@@ -403,27 +421,28 @@ namespace SysCtrl {
+@@ -403,27 +420,28 @@ namespace SysCtrl {
          std::unordered_map<int, std::shared_ptr<CtrlStateBase>>::const_iterator activeState_;
  
          /// ROS callback group object to be passed to the videoClient_.
