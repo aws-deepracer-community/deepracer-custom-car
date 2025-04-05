@@ -83,7 +83,7 @@ index b82b35e..eb78cfb 100644
 \ No newline at end of file
 +#endif
 diff --git a/ctrl_pkg/src/ctrl_node.cpp b/ctrl_pkg/src/ctrl_node.cpp
-index 78aabe4..b7f0ad3 100644
+index 78aabe4..293d0a1 100644
 --- a/ctrl_pkg/src/ctrl_node.cpp
 +++ b/ctrl_pkg/src/ctrl_node.cpp
 @@ -30,6 +30,7 @@
@@ -106,26 +106,19 @@ index 78aabe4..b7f0ad3 100644
      const char* VEHICLE_STATE_SRV = "vehicle_state";
      const char* ENABLE_STATE_SRV = "enable_state";
      const char* MODEL_STATE_SRV = "model_state";
-@@ -67,63 +73,77 @@ namespace SysCtrl {
-         : Node(nodeName), initialized_(false)
+@@ -68,62 +74,70 @@ namespace SysCtrl {
          {
              RCLCPP_INFO(this->get_logger(), "%s started", nodeName.c_str());
+ 
+-            vehicleCtrlModesServiceCbGrp_ = this->create_callback_group(rclcpp::callback_group::CallbackGroupType::Reentrant);
 +            this->declare_parameter<std::string>("camera_mode", "legacy");
 +            std::string mode_param = this->get_parameter("camera_mode").as_string();
 +            mode_ = (mode_param == "modern") ? CAMERA_MODERN_MODE : CAMERA_LEGACY_MODE;
 +            if (mode_param != "legacy" && mode_param != "modern") {
 +                RCLCPP_ERROR(this->get_logger(), "Invalid mode parameter value. Defaulting to legacy.");
 +            }
- 
--            vehicleCtrlModesServiceCbGrp_ = this->create_callback_group(rclcpp::callback_group::CallbackGroupType::Reentrant);
-+            #if defined(RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_TOPIC_DEPRECATED) || !defined(RMW_QOS_PROFILE_DEFAULT)
-+            // For newer ROS 2 versions (Humble and later)
-+            auto qos_default = rclcpp::QoS(rclcpp::SystemDefaultsQoS()).get_rmw_qos_profile();
-+            #else
-+            // For older ROS 2 versions
-+            auto qos_default = ::rmw_qos_profile_default;
-+            #endif
 +
++            auto qos_default = rclcpp::QoS(rclcpp::SystemDefaultsQoS()).get_rmw_qos_profile();
 +            vehicleCtrlModesServiceCbGrp_ = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
              getVehicleCtrlModesService_ = this->create_service<deepracer_interfaces_pkg::srv::GetCtrlModesSrv>(GET_CTRL_MODES_SRV,
                                                                                                                 std::bind(&SysCtrl::CtrlNodeMgr::getCtrlModesHdl,
@@ -196,7 +189,7 @@ index 78aabe4..b7f0ad3 100644
                                                                                                                 vehicleCalibrationCbGrp_);
              setCarCalibrationService_ = this->create_service<deepracer_interfaces_pkg::srv::SetCalibrationSrv>(SET_CAL_SRV,
                                                                                                                 std::bind(&SysCtrl::CtrlNodeMgr::setCarCalHdl,
-@@ -131,17 +151,17 @@ namespace SysCtrl {
+@@ -131,17 +145,17 @@ namespace SysCtrl {
                                                                                                                 std::placeholders::_1,
                                                                                                                 std::placeholders::_2,
                                                                                                                 std::placeholders::_3),
@@ -217,7 +210,7 @@ index 78aabe4..b7f0ad3 100644
                                                                                                     vehicleLedCbGrp_);
              setCarLedService_ = this->create_service<deepracer_interfaces_pkg::srv::SetLedCtrlSrv>(SET_LED_SRV,
                                                                                                      std::bind(&SysCtrl::CtrlNodeMgr::setCarLedHdl,
-@@ -149,17 +169,17 @@ namespace SysCtrl {
+@@ -149,17 +163,17 @@ namespace SysCtrl {
                                                                                                      std::placeholders::_1,
                                                                                                      std::placeholders::_2,
                                                                                                      std::placeholders::_3),
@@ -238,7 +231,7 @@ index 78aabe4..b7f0ad3 100644
                                                                                                                  autonomousThrottleCbGrp_);
              // TODO: Find better way to initialize requiring to exit constructor to use shared_from_this()
              timer_ = this->create_wall_timer(std::chrono::seconds(1), std::bind(&SysCtrl::CtrlNodeMgr::init, this));
-@@ -174,8 +194,10 @@ namespace SysCtrl {
+@@ -174,8 +188,10 @@ namespace SysCtrl {
                  activeState_->second->setStateActive(true);
                  initialized_ = true;
                  timer_->cancel();
@@ -251,17 +244,11 @@ index 78aabe4..b7f0ad3 100644
              }
          }
  
-@@ -199,13 +221,21 @@ namespace SysCtrl {
+@@ -199,13 +215,15 @@ namespace SysCtrl {
           }
  
          void waitForServices(){
-+            #if defined(RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_TOPIC_DEPRECATED) || !defined(RMW_QOS_PROFILE_DEFAULT)
-+            // For newer ROS 2 versions (Humble and later)
 +            auto qos_default = rclcpp::QoS(rclcpp::SystemDefaultsQoS()).get_rmw_qos_profile();
-+            #else
-+            // For older ROS 2 versions
-+            auto qos_default = ::rmw_qos_profile_default;
-+            #endif
              videoClientCbGrp_ = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
              videoClient_ = this->create_client<deepracer_interfaces_pkg::srv::VideoStateSrv>("/camera_pkg/media_state",
 -                                                                                             rmw_qos_profile_services_default,
@@ -275,7 +262,7 @@ index 78aabe4..b7f0ad3 100644
                  }
                  RCLCPP_INFO(this->get_logger(), "Camera node not available, waiting again...");
              }
-@@ -262,7 +292,7 @@ namespace SysCtrl {
+@@ -262,7 +280,7 @@ namespace SysCtrl {
          void loadModelHdl(const std::shared_ptr<rmw_request_id_t> request_header,
                            std::shared_ptr<deepracer_interfaces_pkg::srv::ModelStateSrv::Request> req,
                            std::shared_ptr<deepracer_interfaces_pkg::srv::ModelStateSrv::Response> res) {
@@ -284,7 +271,7 @@ index 78aabe4..b7f0ad3 100644
              res->error = 1;
              if (activeState_ == stateList_.end()) {
                  RCLCPP_ERROR(this->get_logger(), "No active state");
-@@ -403,27 +433,28 @@ namespace SysCtrl {
+@@ -403,27 +421,28 @@ namespace SysCtrl {
          std::unordered_map<int, std::shared_ptr<CtrlStateBase>>::const_iterator activeState_;
  
          /// ROS callback group object to be passed to the videoClient_.

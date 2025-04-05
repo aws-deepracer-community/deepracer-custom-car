@@ -72,6 +72,7 @@ src/*
 !src/.rosinstall-core
 !src/.rosinstall-foxy
 !src/.rosinstall-humble
+!src/.rosinstall-jazzy
 
 # Test module
 test/install/
