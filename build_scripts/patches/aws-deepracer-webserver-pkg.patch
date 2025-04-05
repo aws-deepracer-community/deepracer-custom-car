@@ -414,15 +414,15 @@ index 4a87265..394585a 100755
 +            done
 +            """
 +            usb_retcode = subprocess.call(['bash', '-c', usb_reset_cmd])
-+        
++
 +        # Restart deepracer service
 +        service_retcode = subprocess.call(['systemctl', 'restart', 'deepracer-core'])
-+        
++
 +        if usb_retcode == 0 and service_retcode == 0:
 +            return jsonify({"success": True})
 +        else:
 +            return jsonify({
-+                "success": False, 
++                "success": False,
 +                "reason": f"Failed with return codes: usb_reset={usb_retcode}, service={service_retcode}"
 +            })
 +    except Exception as ex:
