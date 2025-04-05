@@ -124,6 +124,8 @@ for pkg in $PACKAGES; do
             cp $DIR/build_scripts/files/pi/otg_eth.sh opt/aws/deepracer/util/otg_eth.sh
             cp $DIR/build_scripts/files/pi/isc-dhcp-server opt/aws/deepracer/util/isc-dhcp-server
             cp $DIR/build_scripts/files/pi/deepracer_dhcp.conf opt/aws/deepracer/util/deepracer_dhcp.conf
+        else
+            cp $DIR/install_scripts/aws-20.04/aws_deepracer-community.list etc/apt/sources.list.d/aws_deepracer-community.list
         fi
         cp $DIR/build_scripts/files/common/nginx_install_certs.sh opt/aws/deepracer/nginx/nginx_install_certs.sh
         cp $DIR/build_scripts/files/common/nginx_configure.sh opt/aws/deepracer/nginx/nginx_configure.sh

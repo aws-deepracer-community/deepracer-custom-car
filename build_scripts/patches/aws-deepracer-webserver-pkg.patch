@@ -22,6 +22,36 @@ index 8738ede..203cbde 100644
              return jsonify(data)
          else:
              return jsonify(success=False, reason="Error")
+@@ -140,3 +140,29 @@ def get_sensor_status():
+                                          f"Stereo status: {data['stereo_status']}, "
+                                          f"Lidar status: {data['lidar_status']}")
+         return jsonify(data)
++
++def get_registered_apis():
++    """Helper function that collects all registered API routes from the Flask application.
++
++    Returns:
++        list: List of registered API endpoints
++    """
++    from webserver_pkg.webserver import app
++    api_routes = []
++    for rule in app.url_map.iter_rules():
++        # Only include API routes, excluding static files
++        if "api" in rule.rule and "static" not in rule.rule:
++            api_routes.append(rule.rule)
++    return sorted(api_routes)
++
++@DEVICE_INFO_API_BLUEPRINT.route("/api/supported_apis", methods=["GET"])
++def get_supported_apis():
++    """API to get a list of all supported API endpoints.
++
++    Returns:
++        dict: JSON object containing success status and list of supported APIs.
++    """
++    return jsonify({
++        "success": True,
++        "apis_supported": get_registered_apis()
++    })
 diff --git a/webserver_pkg/webserver_pkg/ssh_api.py b/webserver_pkg/webserver_pkg/ssh_api.py
 index 0c856a3..6747c02 100644
 --- a/webserver_pkg/webserver_pkg/ssh_api.py
@@ -265,10 +295,10 @@ index b5fe8bb..f83ba93 100755
 +    status, cookie_val, max_age = check_authentication()
      if not status:
          return resp, 401
-+    
++
 +    # Use the token's remaining time if available, otherwise default to 1 hours
 +    cookie_max_age = max_age if max_age is not None else int(datetime.timedelta(hours=1).total_seconds())
-+    
++
      resp.set_cookie("deepracer_token",
                      cookie_val,
 -                    max_age=datetime.timedelta(hours=1),
@@ -346,3 +376,57 @@ index b5fe8bb..f83ba93 100755
  
  
  def compute_password_digest(message):
+
+diff --git a/webserver_pkg/webserver_pkg/vehicle_control.py b/webserver_pkg/webserver_pkg/vehicle_control.py
+index 4a87265..394585a 100755
+--- a/webserver_pkg/webserver_pkg/vehicle_control.py
++++ b/webserver_pkg/webserver_pkg/vehicle_control.py
+@@ -24,6 +24,7 @@ the servo/motor.
+ """
+ 
+ import math
++import subprocess
+ from flask import (Blueprint,
+                    jsonify,
+                    request)
+@@ -312,3 +313,40 @@ def control_modes_available():
+     except Exception as ex:
+         webserver_node.get_logger().error(f"Unable to reach get ctrl modes service: {ex}")
+         return jsonify(success=False, reason="Error")
++
++@VEHICLE_CONTROL_BLUEPRINT.route("/api/emergency_stop", methods=["POST"])
++def api_emergency_stop():
++    """API that performs an emergency stop by optionally running USB resets and restarting the deepracer-core service.
++
++    Returns:
++        dict: Execution status and reason if the API call failed.
++    """
++    try:
++        usb_retcode = 0
++        # Only run USB reset if explicitly requested
++        if request.json.get("usb_reset", False):
++            usb_reset_cmd = """
++            i=0
++            while [ $i -ne 20 ]
++            do
++                usbreset 001/00$i
++                i=$(($i+1))
++            done
++            """
++            usb_retcode = subprocess.call(['bash', '-c', usb_reset_cmd])
++        
++        # Restart deepracer service
++        service_retcode = subprocess.call(['systemctl', 'restart', 'deepracer-core'])
++        
++        if usb_retcode == 0 and service_retcode == 0:
++            return jsonify({"success": True})
++        else:
++            return jsonify({
++                "success": False, 
++                "reason": f"Failed with return codes: usb_reset={usb_retcode}, service={service_retcode}"
++            })
++    except Exception as ex:
++        return jsonify({
++            "success": False,
++            "reason": f"Failed to execute emergency stop: {str(ex)}"
++        })
