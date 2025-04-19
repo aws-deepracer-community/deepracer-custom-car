@@ -1,16 +1,3 @@
-diff --git a/src/aws-deepracer-systems-pkg/deepracer_systems_pkg/deepracer_systems_pkg/network_monitor_module/network_utils.py b/src/aws-deepracer-systems-pkg/deepracer_systems_pkg/deepracer_systems_pkg/network_monitor_module/network_utils.py
-index d1a6ff0..d69acbd 100644
---- a/src/aws-deepracer-systems-pkg/deepracer_systems_pkg/deepracer_systems_pkg/network_monitor_module/network_utils.py
-+++ b/src/aws-deepracer-systems-pkg/deepracer_systems_pkg/deepracer_systems_pkg/network_monitor_module/network_utils.py
-@@ -57,7 +57,7 @@ def get_chassis_serial():
-     """
-     serial = file_system_utils.read_line(network_config.CHASSIS_SERIAL).strip()
-     if serial == "":
--        serial = software_update_config.PACKAGE_MASK.strip()
-+        serial = software_update_config.VERSION_MASK.strip()
- 
-     serial = serial.lower()
-     serial = serial.replace(" ", "-")
 diff --git a/src/aws-deepracer-systems-pkg/deepracer_systems_pkg/deepracer_systems_pkg/otg_module/otg_config.py b/src/aws-deepracer-systems-pkg/deepracer_systems_pkg/deepracer_systems_pkg/otg_module/otg_config.py
 index dd6670d..68f884a 100644
 --- a/src/aws-deepracer-systems-pkg/deepracer_systems_pkg/deepracer_systems_pkg/otg_module/otg_config.py
@@ -27,23 +14,10 @@ index dd6670d..68f884a 100644
 +OTG_STATE_DIRECTORY = os.path.join(os.sep, "sys", "class", "net", "usb0")
 +OTG_LINK_STATE = "operstate"
 diff --git a/src/aws-deepracer-systems-pkg/deepracer_systems_pkg/deepracer_systems_pkg/otg_module/otg_control_node.py b/src/aws-deepracer-systems-pkg/deepracer_systems_pkg/deepracer_systems_pkg/otg_module/otg_control_node.py
-index 3235515..444a4a4 100644
+index 481e4e5..444a4a4 100644
 --- a/src/aws-deepracer-systems-pkg/deepracer_systems_pkg/deepracer_systems_pkg/otg_module/otg_control_node.py
 +++ b/src/aws-deepracer-systems-pkg/deepracer_systems_pkg/deepracer_systems_pkg/otg_module/otg_control_node.py
-@@ -124,16 +124,19 @@ class OTGControlNode(Node):
-     def __exit__(self, exc_type, exc_value, traceback):
-         """Called when the object is destroyed.
-         """
-+        self.destroy_timer(self.timer)
-+        self.scheduler.schedule_exit()
-+
-         if otg_config.ENABLE_OTG_PERIODIC_CHECK:
-             self.disable_otg()
--            self.otg_check_timer.__exit__(exc_type, exc_value, traceback)
-+            self.destroy_timer(self.otg_check_timer)
- 
-     def check_otg_connection(self):
-         """Wrapper function to schedule the otg_connection_change function whenver
+@@ -136,7 +136,7 @@ class OTGControlNode(Node):
             there is a chagne in the host connecton status.
          """
          with utility.AutoLock(self.otg_guard):
@@ -52,7 +26,7 @@ index 3235515..444a4a4 100644
                                                      os.path.join(otg_config.OTG_STATE_DIRECTORY,
                                                                   otg_config.OTG_LINK_STATE))
              if host_connected != self.otg_connected:
-@@ -179,7 +182,6 @@ class OTGControlNode(Node):
+@@ -182,7 +182,6 @@ class OTGControlNode(Node):
          """
          # Setup connectivity from  Windows
          usb0 = False
@@ -60,7 +34,7 @@ index 3235515..444a4a4 100644
  
          # Setup connectivity from Windows
          if self.execute("ip link set usb0 up"):
-@@ -191,16 +193,6 @@ class OTGControlNode(Node):
+@@ -194,16 +193,6 @@ class OTGControlNode(Node):
          if not usb0:
                  self.get_logger().error("Ethernet Over OTG enable failed for Windows.")
  
@@ -77,7 +51,7 @@ index 3235515..444a4a4 100644
          return True
  
      def disable_otg(self):
-@@ -208,8 +200,6 @@ class OTGControlNode(Node):
+@@ -211,8 +200,6 @@ class OTGControlNode(Node):
          """
          if not self.execute("ip link set usb0 down"):
              self.get_logger().error("Ethernet Over OTG disable failed for Windows!")
@@ -86,30 +60,3 @@ index 3235515..444a4a4 100644
          self.get_logger().info("Ethernet Over OTG disabled!!!")
  
      def execute(self, cmd):
-@@ -231,14 +221,18 @@ class OTGControlNode(Node):
- 
- 
- def main(args=None):
--    rclpy.init(args=args)
--    with OTGControlNode() as otg_control_node:
--        rclpy.spin(otg_control_node)
--        # Destroy the node explicitly
--        # (optional - otherwise it will be done automatically
--        # when the garbage collector destroys the node object)
--        otg_control_node.destroy_node()
--    rclpy.shutdown()
-+    try:
-+        rclpy.init(args=args)
-+        with OTGControlNode() as otg_control_node:
-+            rclpy.spin(otg_control_node)
-+            otg_control_node.destroy_node()
-+
-+    except KeyboardInterrupt:
-+        pass
-+
-+    finally:
-+        if rclpy.ok():
-+            rclpy.shutdown()
- 
- 
- if __name__ == "__main__":

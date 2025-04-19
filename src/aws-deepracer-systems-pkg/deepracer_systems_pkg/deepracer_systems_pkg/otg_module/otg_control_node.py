@@ -124,9 +124,12 @@ class OTGControlNode(Node):
     def __exit__(self, exc_type, exc_value, traceback):
         """Called when the object is destroyed.
         """
+        self.destroy_timer(self.timer)
+        self.scheduler.schedule_exit()
+
         if otg_config.ENABLE_OTG_PERIODIC_CHECK:
             self.disable_otg()
-            self.otg_check_timer.__exit__(exc_type, exc_value, traceback)
+            self.destroy_timer(self.otg_check_timer)
 
     def check_otg_connection(self):
         """Wrapper function to schedule the otg_connection_change function whenver
@@ -231,14 +234,18 @@ class OTGControlNode(Node):
 
 
 def main(args=None):
-    rclpy.init(args=args)
-    with OTGControlNode() as otg_control_node:
-        rclpy.spin(otg_control_node)
-        # Destroy the node explicitly
-        # (optional - otherwise it will be done automatically
-        # when the garbage collector destroys the node object)
-        otg_control_node.destroy_node()
-    rclpy.shutdown()
+    try:
+        rclpy.init(args=args)
+        with OTGControlNode() as otg_control_node:
+            rclpy.spin(otg_control_node)
+            otg_control_node.destroy_node()
+
+    except KeyboardInterrupt:
+        pass
+
+    finally:
+        if rclpy.ok():
+            rclpy.shutdown()
 
 
 if __name__ == "__main__":

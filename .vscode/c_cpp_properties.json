@@ -13,7 +13,7 @@
             ],
             "defines": [],
             "cStandard": "gnu17",
-            "cppStandard": "gnu++14",
+            "cppStandard": "gnu++17",
             "intelliSenseMode": "linux-gcc-x64"
         },
         {
@@ -29,7 +29,7 @@
             ],
             "defines": [],
             "cStandard": "gnu17",
-            "cppStandard": "gnu++14",
+            "cppStandard": "gnu++17",
             "intelliSenseMode": "linux-gcc-x64"
         },
         {
@@ -45,7 +45,7 @@
             ],
             "defines": ["ROS_DISTRO_JAZZY"],
             "cStandard": "gnu17",
-            "cppStandard": "gnu++14",
+            "cppStandard": "gnu++17",
             "intelliSenseMode": "linux-gcc-x64"
         }
     ],

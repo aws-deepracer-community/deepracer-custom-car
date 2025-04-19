@@ -57,7 +57,7 @@ def get_chassis_serial():
     """
     serial = file_system_utils.read_line(network_config.CHASSIS_SERIAL).strip()
     if serial == "":
-        serial = software_update_config.PACKAGE_MASK.strip()
+        serial = "deepracer"
 
     serial = serial.lower()
     serial = serial.replace(" ", "-")

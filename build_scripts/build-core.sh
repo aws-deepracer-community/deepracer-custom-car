@@ -44,8 +44,6 @@ cd src
 
 if [ "$CACHE" != "true" ]; then
 
-    rosdep update --rosdistro=$ROS_DISTRO -q
-
     # Remove previous builds (gives clean build)
     rm -rf ../install ../build ../log
 
@@ -79,10 +77,6 @@ if [ "$CACHE" != "true" ]; then
     fi
     cd ..
     
-
-    # Resolve the dependencies
-    rosdep install -i --from-path . --ignore-src --rosdistro $ROS_DISTRO -y
-
     #
     # END - Pull request specific changes
     #
@@ -111,8 +105,12 @@ if [ "$CACHE" != "true" ]; then
 
 fi
 
+# Resolve the dependencies
+rosdep update --rosdistro=$ROS_DISTRO -q
+rosdep install -i --from-path . --ignore-src --rosdistro $ROS_DISTRO -y
+
 cd $DIR
- 
+
 # Build the core
 export PYTHONWARNINGS=ignore:::setuptools.command.install
 if [ "$ROS_DISTRO" == "humble" ] || [ "$ROS_DISTRO" == "jazzy" ]; then

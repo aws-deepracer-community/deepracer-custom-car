@@ -29,7 +29,7 @@ index 1a6d51e..55d1936 100644
      OUT_DIR = "--output_dir"
      INPUT_SHAPE = "--input_shape"
 diff --git a/src/aws-deepracer-model-optimizer-pkg/model_optimizer_pkg/model_optimizer_pkg/model_optimizer_node.py b/src/aws-deepracer-model-optimizer-pkg/model_optimizer_pkg/model_optimizer_pkg/model_optimizer_node.py
-index 2fabe02..7d8f387 100644
+index 481cc2e..7d8f387 100644
 --- a/src/aws-deepracer-model-optimizer-pkg/model_optimizer_pkg/model_optimizer_pkg/model_optimizer_node.py
 +++ b/src/aws-deepracer-model-optimizer-pkg/model_optimizer_pkg/model_optimizer_pkg/model_optimizer_node.py
 @@ -179,7 +179,8 @@ class ModelOptimizerNode(Node):
@@ -60,7 +60,7 @@ index 2fabe02..7d8f387 100644
                  self.get_logger().info(f"Using float16 quantization.")
                  converter.optimizations = [tf.lite.Optimize.DEFAULT]
                  converter.target_spec.supported_types = [tf.float16]
-@@ -436,22 +437,28 @@ class ModelOptimizerNode(Node):
+@@ -436,7 +437,7 @@ class ModelOptimizerNode(Node):
          if self._inference_engine == "TFLITE":
              return self.run_optimizer_tflite(common_params, training_algorithm)
          else:
@@ -69,34 +69,3 @@ index 2fabe02..7d8f387 100644
                                           self.set_platform_param(tf_params, aux_inputs))
  
  
- def main(args=None):
--   
--    rclpy.init(args=args)
--    model_optimizer_node = ModelOptimizerNode()
--    executor = MultiThreadedExecutor()
--    rclpy.spin(model_optimizer_node, executor)
--    # Destroy the node explicitly
--    # (optional - otherwise it will be done automatically
--    # when the garbage collector destroys the node object)
--    model_optimizer_node.destroy_node()
--    rclpy.shutdown()
- 
-+    try:
-+        rclpy.init(args=args)
-+        model_optimizer_node = ModelOptimizerNode()
-+        executor = MultiThreadedExecutor()
-+        rclpy.spin(model_optimizer_node, executor)
-+        # Destroy the node explicitly
-+        # (optional - otherwise it will be done automatically
-+        # when the garbage collector destroys the node object)
-+        model_optimizer_node.destroy_node()
-+
-+    except KeyboardInterrupt:
-+        pass
-+
-+    finally:
-+        if rclpy.ok():
-+            rclpy.shutdown()
- 
- if __name__ == "__main__":
-     main()

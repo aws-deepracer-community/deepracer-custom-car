@@ -15,6 +15,7 @@
   <depend>deepracer_interfaces_pkg</depend>
   <depend>status_led_pkg</depend>
   <depend>usb_monitor_pkg</depend>
+  <depend>python3-apt</depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>

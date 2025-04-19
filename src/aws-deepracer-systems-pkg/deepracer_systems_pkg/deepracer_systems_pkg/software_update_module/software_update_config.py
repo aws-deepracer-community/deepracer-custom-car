@@ -38,12 +38,14 @@ SOFTWARE_UPDATE_RETRY_SLEEP_IN_SECONDS = (30.0 * 15)
 MAX_UPDATE_VERIFICATION_RETRY_COUNT = 5
 
 # Apt repository information.
-DEEPRACER_SOURCE_LIST_PATH = "/etc/apt/sources.list.d/aws_deepracer.list"
+DEEPRACER_SOURCE_LIST_PATH = ["/etc/apt/sources.list.d/aws_deepracer.list", 
+                              "/etc/apt/sources.list.d/aws_deepracer-community.list"]
 
 DEEPRACER_PACKAGES = ["aws-deepracer-sample-models",
                       "aws-deepracer-util",
                       "aws-deepracer-device-console",
-                      "aws-deepracer-core"]
+                      "aws-deepracer-core",
+                      "aws-deepracer-community-device-console"]
 VERSION_MASK = "2."
 
 

@@ -1,13 +1,15 @@
 {
     "cmake.configureOnOpen": false,
-    "files.exclude": {
-        "**/build": true
-    },
     "search.exclude": {
-      "**/build": true
+      "**/build": true,
+      "**/pkg-build": true
     },
     "autopep8.args": [
         "--max-line-length=120"
     ],
     "python.analysis.autoImportCompletions": true,
+    "python.analysis.exclude": [
+        "**/build",
+        "**/pkg-build"
+    ],
 }

@@ -464,9 +464,14 @@ class SoftwareUpdateNode(Node):
         """
         # Update and open the cache.
         try:
-            self.get_logger().info("Updating the cache...")
-            self.cache.update(fetch_progress=cache_update_progress.CacheUpdateProgress(self.get_logger()),
-                              sources_list=software_update_config.DEEPRACER_SOURCE_LIST_PATH)
+            for sources_list in software_update_config.DEEPRACER_SOURCE_LIST_PATH:
+                if not os.path.exists(sources_list):
+                    self.get_logger().warn(f"Sources list {sources_list} does not exist.")
+                    continue
+                self.get_logger().info(f"Updating the cache for {sources_list}...")
+                self.cache.update(fetch_progress=cache_update_progress.CacheUpdateProgress(self.get_logger()),
+                                sources_list=sources_list)
+                
             self.get_logger().info("Cache updated. Re-opening the cache...")
             self.cache.open(cache_open_progress.CacheOpenProgress(self.get_logger()))
         except Exception as ex:
@@ -484,6 +489,17 @@ class SoftwareUpdateNode(Node):
             if package_name in self.cache:
                 package = self.cache[package_name]
                 self.get_logger().info(f"Verifying package {package.name}...")
+
+                # Skip if already provided by another package that's installed
+                already_provided = False
+                for other_package in self.cache:
+                    if other_package.is_installed and self.check_package_provides(other_package.name, package_name):
+                        already_provided = True
+                        break
+
+                if already_provided:
+                    self.get_logger().info(f"Package {package_name} is provided by installed {other_package.name}")
+                    continue
 
                 if not package.candidate.version.startswith(software_update_config.VERSION_MASK):
                     self.get_logger().info(f"* {package.name} package is not built for the Ubuntu and ROS packages; "
@@ -770,6 +786,38 @@ class SoftwareUpdateNode(Node):
         pct_obj.update_pct = pct_dict[software_update_config.PROG_PCT_KEY]
         pct_obj.status = pct_dict[software_update_config.PROG_STATE_KEY]
         self.software_update_pct_publisher.publish(pct_obj)
+
+    def check_package_provides(self, package_name, provided_package_name):
+        """Checks if a package provides another package (acts as a substitute).
+        
+        Args:
+            package_name (str): Name of the package to check
+            provided_package_name (str): Name of the package that might be provided
+            
+        Returns:
+            bool: True if package_name provides provided_package_name, False otherwise
+        """
+        if package_name not in self.cache:
+            self.get_logger().error(f"Package {package_name} not found in cache")
+            return False
+            
+        package = self.cache[package_name]
+        
+        # Check installed version first if available
+        if package.is_installed and hasattr(package.installed, 'provides'):
+            for provided in package.installed.provides:
+                if provided == provided_package_name:
+                    self.get_logger().debug(f"Installed {package_name} provides {provided_package_name}")
+                    return True
+                    
+        # Also check candidate version
+        if hasattr(package.candidate, 'provides'):
+            for provided in package.candidate.provides:
+                if provided == provided_package_name:
+                    self.get_logger().debug(f"Candidate {package_name} provides {provided_package_name}")
+                    return True
+                    
+        return False
 
 
 def main(args=None):

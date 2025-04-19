@@ -53,10 +53,20 @@ def get_device_info():
             data = {
                 "hardware_version": get_revision_info_res.hardware_version,
                 "software_version": get_revision_info_res.software_version,
+                "cpu_model": get_revision_info_res.cpu_model,
+                "os_version": get_revision_info_res.os_version,
+                "disk_amount": get_revision_info_res.disk_amount,
+                "ram_amount": get_revision_info_res.ram_amount,
+                "ros_distro": get_revision_info_res.ros_distro,
                 "success": True
             }
             webserver_node.get_logger().info(f"Hardware version: {data['hardware_version']}, "
-                                             f"Software version: {data['software_version']}")
+                                             f"Software version: {data['software_version']}, "
+                                             f"CPU model: {data['cpu_model']}, "
+                                             f"OS version: {data['os_version']}, "
+                                             f"Disk amount: {data['disk_amount']}, "
+                                             f"RAM amount: {data['ram_amount']}, "
+                                             f"ROS distro: {data['ros_distro']}")
         else:
             webserver_node.get_logger().error("Get device info service call failed")
             data = {
