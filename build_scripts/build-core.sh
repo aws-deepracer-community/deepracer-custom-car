@@ -45,7 +45,7 @@ cd src
 if [ "$CACHE" != "true" ]; then
 
     # Remove previous builds (gives clean build)
-    rm -rf ../install ../build ../log
+    rm -rf ../install ../build ../log ../pkg-build/aws-deepracer-core
 
     cd external
 

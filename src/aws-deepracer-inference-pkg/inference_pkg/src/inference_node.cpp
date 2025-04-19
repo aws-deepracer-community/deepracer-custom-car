@@ -64,6 +64,11 @@ namespace InferTask {
             // Inference Engine name; TFLITE or OPENVINO
             inferenceEngine_ = this->get_parameter("inference_engine").as_string();
 
+            RCLCPP_INFO(this->get_logger(), "Using inference engine: %s", inferenceEngine_.c_str());
+            if (inferenceEngine_.compare("OV") == 0) {
+                RCLCPP_INFO(this->get_logger(), "Using device: %s", deviceName_.c_str());
+            }
+
             loadModelServiceCbGrp_ = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
             loadModelService_ = this->create_service<deepracer_interfaces_pkg::srv::LoadModelSrv>("load_model",
                                                                                                   std::bind(&InferTask::InferenceNodeMgr::LoadModelHdl,

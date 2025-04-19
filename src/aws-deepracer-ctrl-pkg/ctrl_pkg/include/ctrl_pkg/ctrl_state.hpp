@@ -19,7 +19,6 @@
 
 #include "ctrl_pkg/ctrl_state_base.hpp"
 #include "rclcpp/rclcpp.hpp"
-#include <rclcpp/strategies/message_pool_memory_strategy.hpp>
 #include "deepracer_interfaces_pkg/msg/servo_ctrl_msg.hpp"
 #include "deepracer_interfaces_pkg/srv/servo_gpio_srv.hpp"
 #include "deepracer_interfaces_pkg/srv/model_optimize_srv.hpp"
