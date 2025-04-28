@@ -23,10 +23,11 @@ This repository contains a few different things:
 
 The main features of the custom software stack is
 - Performance improvement through using compressed image transport for main processing pipeline
+- Modern user-interface from [Deepracer Custom Console](https://github.com/aws-deepracer-community/deepracer-custom-console).
 - Inference using OpenVINO with Intel GPU (original DeepRacer), OpenVino with Myriad Neural Compute Stick (NCS), or Tensorflow Lite
 - Model Optimizer caching, speeding up switching of models
 - Capture in-car camera and inference results to a ROS Bag for logfile analysis
-- UI tweaks and fixes
+- Car health and latency analysis both in console and the ROS Bag
 - Reduced log output from chatty nodes
 
 Additionally there are OS level tweaks for the original DeepRacer and Raspberry Pi4 alike:
@@ -34,10 +35,13 @@ Additionally there are OS level tweaks for the original DeepRacer and Raspberry 
  - RPi: Minimal install, required packages only
  - Disable wifi power-save to avoid disconnects
  - Disable suspend
+ - CPU governors in performance mode to ensure that CPU is running at max frequency during inference.
 
 In the `utils/` folder there are utilities to create a USB flash stick for the original DeepRacer. See [documentation](docs/utilities.md).
 
 ## Installation
+
+### Installation scripts
 
 There are separate installation scripts for the original DeepRacer on Ubuntu 20.04/ROS2 Foxy, and the Raspberry Pi4 based car on Ubuntu 22.04/ROS2 Humble. Basic installation depends on pre-packages apt/deb packages, and does not require any packages to be compiled on the car itself.
 
@@ -52,6 +56,17 @@ For the Raspberry Pi4:
         sudo install_scripts/rpi4-22.04/install-deepracer.sh
 
 See also [building instructions](docs/raspberry_pi.md) for the Raspberry Pi4.
+
+### Custom Flash image (Original Car)
+
+It is also possible to flash the Original Car using a custom flash image:
+* Enter the utils directory
+* Run `./usb-build.ubuntu.sh -d [drive] -r https://larsll-build-artifact-share.s3.eu-north-1.amazonaws.com/car-image/custom_factory_reset.zip`
+* Drive is `sdb`, `sdc` or similar. Use `lsblk` to look for the available drives.
+
+This builds on the original flashing procedure, but is including the steps in both `install-prerequisites.sh` and `install-deepracer.sh` giving you a much
+leaner DR install which already has already been upgraded to Ubuntu 20.04.6 LTS, and with most packages up-to-date. (The original image is providing 20.04.1 LTS, 
+and requires a long time to bring up to the latest version.)
 
 ## Usage
 
@@ -79,12 +94,12 @@ Example custom `/opt/aws/deepracer/start_ros.sh`:
 
 The different combinations of `inference_engine` and `inference_device` is not all compatible with the RPi4, and each option comes with pros and cons. The original car software only supports OpenVINO CPU.
 
-| Type | Original | RPi4 | Comment |
-|------|----------|------|---------|
-| Tensorflow Lite CPU | Yes | Yes  | Default for RPi4
-| OpenVINO CPU | Yes | No | Default for Original
-| OpenVINO GPU | Yes | No | Reduced CPU load, model takes longer to load
-| OpenVINO NCS2 / Myriad X | Yes | Yes | Reduced CPU load, model takes longer to load, requires NCS2 stick
+| Feature                | Original (Ubuntu 20.04, ROS2 Foxy) | RPi4 (Ubuntu 22.04, ROS2 Humble) | Notes                                      |
+|------------------------|-------------------------------------|-----------------------------------|--------------------------------------------|
+| TensorFlow Lite (CPU)  | Yes                                 | Yes                               | Default for RPi4                           |
+| OpenVINO (CPU)         | Yes                                 | No                                | Default for Original                       |
+| OpenVINO (GPU)         | Yes                                 | No                                | Reduces CPU load, but model takes longer to load |
+| OpenVINO (NCS2/Myriad X) | Yes                              | Yes                               | Reduces CPU load, requires NCS2 stick, model takes longer to load |
 
 The different modes have been tested for equivalency, and it is verified that they provide the same results (identical picture in -> identical action taken). Less than 1 per 1000 frames are differing, mainly due to the model not having a clear action, and several actions are having very similar probabilities.
 

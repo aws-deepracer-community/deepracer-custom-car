@@ -42,10 +42,13 @@ namespace PWM {
     };
 
 
-    ServoMgr::ServoMgr(rclcpp::Logger logger_)
+    ServoMgr::ServoMgr(rclcpp::Logger logger_, std::shared_ptr<rclcpp::Clock> clock,
+                       std::shared_ptr<rclcpp::Publisher<deepracer_interfaces_pkg::msg::LatencyMeasure, std::allocator<void>>> latencyPub)  
         : throttle_(std::make_unique<Servo>(0, logger_)),
           angle_(std::make_unique<Servo>(1, logger_)),
-	      logger_(logger_)
+	      logger_(logger_),
+          clock_(clock),
+          latencyPub_(latencyPub)
     {
         throttle_->setPeriod(SERVO_PERIOD);
         angle_->setPeriod(SERVO_PERIOD);
@@ -102,8 +105,24 @@ namespace PWM {
 
         setPWM(throttle_, servoMsg->throttle, motor);
         setPWM(angle_, servoMsg->angle, servo);
-        // Make sure that the pulse goes through a full period
-        std::this_thread::sleep_for(std::chrono::nanoseconds(SERVO_PERIOD));
+        auto now = clock_->now();
+        
+        // If there is a soruce_stamp and a subsccription count, publish the latency message
+        if (servoMsg->source_stamp.sec != 0 && latencyPub_->get_subscription_count() > 0) {
+            auto latency_msg = deepracer_interfaces_pkg::msg::LatencyMeasure();
+            latency_msg.send = servoMsg->source_stamp;
+            latency_msg.receive = now;
+            latencyPub_->publish(latency_msg);
+        } 
+
+        // Sleep until 20ms has elapsed since 'now'
+        const int TARGET_CYCLE_TIME_NS = 20'000'000; // 20 ms in nanoseconds
+        auto elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
+            (clock_->now() - now).to_chrono<std::chrono::nanoseconds>()).count();
+
+        if (elapsed_ns < TARGET_CYCLE_TIME_NS) {
+            std::this_thread::sleep_for(std::chrono::nanoseconds(TARGET_CYCLE_TIME_NS - elapsed_ns));
+        }
     }
 
     /// Subscriber for setting the raw pwm topic.

@@ -58,11 +58,12 @@ from deepracer_interfaces_pkg.srv import (ActiveStateSrv,
                                           NavThrottleSrv,
                                           GetCtrlModesSrv,
                                           OTGLinkStateSrv)
-from deepracer_interfaces_pkg.msg import (ServoCtrlMsg,
+from deepracer_interfaces_pkg.msg import (DeviceStatusMsg, 
+                                          ServoCtrlMsg,
                                           SoftwareUpdatePctMsg)
 from webserver_pkg.webserver import app
 from webserver_pkg.utility import DoubleBuffer
-from webserver_pkg.constants import (VEHICLE_STATE_SERVICE,
+from webserver_pkg.constants import (DEVICE_STATUS_TOPIC, VEHICLE_STATE_SERVICE,
                                      ENABLE_STATE_SERVICE,
                                      GET_CAR_CAL_SERVICE,
                                      SET_CAR_CAL_SERVICE,
@@ -314,6 +315,15 @@ class WebServerNode(Node):
         self.timer_count = 0
         self.timer = self.create_timer(5.0, self.timer_callback)
 
+        # Add this to the webserver_node initialization
+        self.device_status_subscription = self.create_subscription(
+            DeviceStatusMsg,
+            DEVICE_STATUS_TOPIC,
+            self.device_status_callback,
+            1  # QoS profile
+        )
+        self.latest_device_status = None
+
     def timer_callback(self):
         """Heartbeat function to keep the node alive.
         """
@@ -338,6 +348,14 @@ class WebServerNode(Node):
         """
         while not client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info(f"{client.srv_name} service not available, waiting again...")
+
+    def device_status_callback(self, msg):
+        """Callback for device status messages.
+        
+        Args:
+            msg (DeviceStatusMsg): The device status message
+        """
+        self.latest_device_status = msg
 
 
 def get_webserver_node():

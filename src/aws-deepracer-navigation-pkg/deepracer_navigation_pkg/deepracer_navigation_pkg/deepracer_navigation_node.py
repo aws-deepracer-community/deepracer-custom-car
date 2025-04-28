@@ -111,6 +111,8 @@ class DRNavigationNode(Node):
             servo (ServoCtrlMsg): Message to be published to the servo with all
                                   relevant servo data.
         """
+        # Add the source_stamp header
+        servo_msg.source_stamp = inference_msg.images[0].header.stamp
         # Negative value moves the car forward, positive values move the car backwards
         servo_msg.throttle = self.throttle_scale
         try:

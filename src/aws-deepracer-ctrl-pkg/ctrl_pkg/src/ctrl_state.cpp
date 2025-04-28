@@ -80,7 +80,6 @@ namespace SysCtrl {
         #else
         auto qos_default = ::rmw_qos_profile_default;
         #endif
-        auto servoMsgStrategy = std::make_shared<rclcpp::strategies::message_pool_memory_strategy::MessagePoolMemoryStrategy<deepracer_interfaces_pkg::msg::ServoCtrlMsg, 1>>();
         servoPub_ = ctrlNode->create_publisher<deepracer_interfaces_pkg::msg::ServoCtrlMsg>(SERVO_TOPIC, qos);
 
         servoSub_ = ctrlNode->create_subscription<deepracer_interfaces_pkg::msg::ServoCtrlMsg>(subName,
@@ -88,8 +87,8 @@ namespace SysCtrl {
                                                                                                std::bind(&AutoDriveCtrl::servoCB,
                                                                                                          this,
                                                                                                          std::placeholders::_1),
-                                                                                               rclcpp::SubscriptionOptions(),
-                                                                                               servoMsgStrategy);
+                                                                                               rclcpp::SubscriptionOptions()
+                                                                                               );
         
         servoGPIOClientCbGrp_ = ctrlNode->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
         servoGPIOClient_ = ctrlNode->create_client<deepracer_interfaces_pkg::srv::ServoGPIOSrv>(SERVO_GPIO_SRV,
@@ -133,6 +132,7 @@ namespace SysCtrl {
             return;
         }
         auto servoMsg = deepracer_interfaces_pkg::msg::ServoCtrlMsg();
+        servoMsg.source_stamp = msg->source_stamp;
         servoMsg.angle = msg->angle;
         servoMsg.throttle = msg->throttle;
         servoPub_->publish(servoMsg);  // Publish it along.
@@ -323,7 +323,6 @@ namespace SysCtrl {
         #else
         auto qos_default = ::rmw_qos_profile_default;
         #endif
-        auto servoMsgStrategy = std::make_shared<rclcpp::strategies::message_pool_memory_strategy::MessagePoolMemoryStrategy<deepracer_interfaces_pkg::msg::ServoCtrlMsg, 1>>();
         servoPub_ = ctrlNode->create_publisher<deepracer_interfaces_pkg::msg::ServoCtrlMsg>(SERVO_TOPIC, qos);
 
         servoSub_ = ctrlNode->create_subscription<deepracer_interfaces_pkg::msg::ServoCtrlMsg>(subName,
@@ -331,8 +330,8 @@ namespace SysCtrl {
                                                                                                std::bind(&ManualDriveCtrl::servoCB,
                                                                                                          this,
                                                                                                          std::placeholders::_1),
-                                                                                               rclcpp::SubscriptionOptions(),
-                                                                                               servoMsgStrategy);
+                                                                                               rclcpp::SubscriptionOptions()
+                                                                                               );
 
         servoGPIOClientCbGrp_ = ctrlNode->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
         servoGPIOClient_ = ctrlNode->create_client<deepracer_interfaces_pkg::srv::ServoGPIOSrv>(SERVO_GPIO_SRV,
@@ -429,7 +428,6 @@ namespace SysCtrl {
         #else
         auto qos_default = ::rmw_qos_profile_default;
         #endif
-        auto servoMsgStrategy = std::make_shared<rclcpp::strategies::message_pool_memory_strategy::MessagePoolMemoryStrategy<deepracer_interfaces_pkg::msg::ServoCtrlMsg, 1>>();
         calibrationPub_ = ctrlNode->create_publisher<deepracer_interfaces_pkg::msg::ServoCtrlMsg>(RAW_PWM_TOPIC, qos);
 
         servoSub_ = ctrlNode->create_subscription<deepracer_interfaces_pkg::msg::ServoCtrlMsg>(subName,
@@ -437,8 +435,8 @@ namespace SysCtrl {
                                                                                                std::bind(&CalibrationCtrl::servoCB,
                                                                                                          this,
                                                                                                          std::placeholders::_1),
-                                                                                               rclcpp::SubscriptionOptions(),
-                                                                                               servoMsgStrategy);
+                                                                                               rclcpp::SubscriptionOptions()
+                                                                                               );
 
         servoGPIOClientCbGrp_ = ctrlNode->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
         servoGPIOClient_ = ctrlNode->create_client<deepracer_interfaces_pkg::srv::ServoGPIOSrv>(SERVO_GPIO_SRV,

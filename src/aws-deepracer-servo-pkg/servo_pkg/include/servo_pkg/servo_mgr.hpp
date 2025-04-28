@@ -24,6 +24,7 @@
 #include "servo_pkg/utility.hpp"
 
 #include "deepracer_interfaces_pkg/msg/servo_ctrl_msg.hpp"
+#include "deepracer_interfaces_pkg/msg/latency_measure.hpp"
 #include "deepracer_interfaces_pkg/srv/get_calibration_srv.hpp"
 #include "deepracer_interfaces_pkg/srv/set_calibration_srv.hpp"
 #include "deepracer_interfaces_pkg/srv/servo_gpio_srv.hpp"
@@ -49,7 +50,8 @@ namespace PWM {
     class ServoMgr
         {
         public:
-            ServoMgr(rclcpp::Logger logger_);
+            ServoMgr(rclcpp::Logger logger_, std::shared_ptr<rclcpp::Clock> clock, 
+                     std::shared_ptr<rclcpp::Publisher<deepracer_interfaces_pkg::msg::LatencyMeasure, std::allocator<void>>> latencyPub);
             ~ServoMgr();
             void servoSubscriber(const deepracer_interfaces_pkg::msg::ServoCtrlMsg::SharedPtr servoMsg);
             void rawPWMSubscriber(const deepracer_interfaces_pkg::msg::ServoCtrlMsg::SharedPtr servoMsg);
@@ -96,6 +98,10 @@ namespace PWM {
             std::unordered_map<int, std::unordered_map<std::string, int>> calibrationMap_;
             /// ROS Logger object to log messages.
 	        rclcpp::Logger logger_;
+            /// ROS Clock object to get the current time.
+            std::shared_ptr<rclcpp::Clock> clock_;
+            /// ROS Publisher for latency measure
+            std::shared_ptr<rclcpp::Publisher<deepracer_interfaces_pkg::msg::LatencyMeasure, std::allocator<void>>> latencyPub_;
     };
 }
 #endif

@@ -5,6 +5,7 @@ ssid=
 wifiPass=
 all_disks=false
 ignore_lock=false
+custom_reset_url=
 
 uuid=$(uuidgen)
 
@@ -53,15 +54,16 @@ donwload_file()
 {
     url="$1"
     file_name=${url##*/}
-    dir_name="${file_name%.*}"
+    output_name="${2:-$file_name}"  # Use second parameter as output name if provided, otherwise use original filename
+    dir_name="${output_name%.*}"
     
-    log "Checking if ${file_name} has been downloaded ..."
-    if [ ! -f ${file_name} ]; then
-        log "  --> downloading ${file_name}"
-        wget -q -O ${file_name}.tmp ${url} 2>&1 | while read line ; do log "  --> $line" ; done  && mv ${file_name}{.tmp,} 2>&1 | while read line ; do log "  --> $line" ; done 
-        log exit code $? 
+    log "Checking if ${output_name} has been downloaded ..."
+    if [ ! -f ${output_name} ]; then
+        log "  --> downloading from ${url} to ${output_name}"
+        wget -q -O ${output_name} ${url} 2>&1 | while read line ; do log "  --> $line" ; done
+        log "exit code $?"
     else
-        log "  --> ${file_name} is already present"
+        log "  --> ${output_name} is already present"
     fi
 }
 
@@ -86,8 +88,13 @@ unzip_file()
 
 get_factory_reset()
 {
-    # Grab the zip -> $url_factory_reset
-    donwload_file $url_factory_reset
+    # Use custom URL if provided
+    local reset_url="${custom_reset_url:-$url_factory_reset}"
+    
+    log "Using factory reset URL: $reset_url"
+    
+    # Grab the zip -> $reset_url and save directly as factory_reset.zip
+    donwload_file $reset_url factory_reset.zip
     unzip_file factory_reset.zip
     
     log "Adjusting flash script ..."    
@@ -115,13 +122,14 @@ show_usage()
     log ""
     log "Usage: "
     log ""
-    log "  $0 (-d <disk id> | -a) [ -s <SSID> -w <WIFI_PASSWORD>] [-l]"
+    log "  $0 (-d <disk id> | -a) [ -s <SSID> -w <WIFI_PASSWORD>] [-l] [-r <RESET_URL>]"
     log ""
     log "  -d <disk id>       : selected usb device id on which the content will be created (required if -a is not used)"
     log "  -a                 : select all usb device id (required if -d is not used)"
     log "  -s <SSID>          : wifi ssid (optional, but requires -w when used)"
     log "  -w <WIFI_PASSWORD> : wifi password(optional, but requires -s when used)"
     log "  -l                 : ignore lock file (optional)"
+    log "  -r <RESET_URL>     : custom factory reset URL (optional)"
     log ""
 }
 show_disk()
@@ -297,8 +305,14 @@ process_all(){
         else
             arg_ignore_lock=""
         fi
+        
+        if [ -n "$custom_reset_url" ]; then
+            arg_reset_url="-r $custom_reset_url"
+        else
+            arg_reset_url=""
+        fi
 
-        $0 -d $result $arg_wifi $arg_ignore_lock &
+        $0 -d $result $arg_wifi $arg_ignore_lock $arg_reset_url &
         pids="$pids $!"
     done < <(lsblk -o name,tran | grep usb | cut -d' ' -f1 )
 
@@ -449,7 +463,7 @@ if [[ $OSTYPE == 'linux'* ]]; then
     if [  -n "$(uname -a | grep Ubuntu)" ]; then
         log "Detected Ubuntu system"
 
-        optstring=":d:s:w:al"
+        optstring=":d:s:w:r:al"
         while getopts $optstring arg; do
             case ${arg} in
                 a) all_disks=true;;
@@ -457,6 +471,7 @@ if [[ $OSTYPE == 'linux'* ]]; then
                 d) disk=${OPTARG};;
                 s) ssid=${OPTARG};;
                 w) wifiPass=${OPTARG};;
+                r) custom_reset_url=${OPTARG};;
                 ?) show_usage ;exit 1;
             esac
         done

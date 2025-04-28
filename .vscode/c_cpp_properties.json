@@ -3,7 +3,7 @@
         {
             "name": "Ubuntu 20.04",
             "includePath": [
-                "${workspaceFolder}/**",
+                "${workspaceFolder}/src/**",
                 "${workspaceFolder}/install/deepracer_interfaces_pkg/**",
                 "/opt/ros/${env:ROS_DISTRO}/include/**",
                 "/usr/include/opencv4/",
@@ -19,7 +19,7 @@
         {
             "name": "Ubuntu 22.04",
             "includePath": [
-                "${workspaceFolder}/**",
+                "${workspaceFolder}/src/**",
                 "${workspaceFolder}/install/deepracer_interfaces_pkg/**",
                 "/opt/ros/${env:ROS_DISTRO}/include/**",
                 "/usr/include/opencv4/",
@@ -35,7 +35,7 @@
         {
             "name": "Ubuntu 24.04",
             "includePath": [
-                "${workspaceFolder}/**",
+                "${workspaceFolder}/src/**",
                 "${workspaceFolder}/install/deepracer_interfaces_pkg/**",
                 "/opt/ros/${env:ROS_DISTRO}/include/**",
                 "/usr/include/opencv4/",

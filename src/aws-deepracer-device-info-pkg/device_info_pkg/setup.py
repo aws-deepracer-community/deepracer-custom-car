@@ -39,7 +39,8 @@ setup(
     tests_require=["pytest"],
     entry_points={
         "console_scripts": [
-            "device_info_node = device_info_pkg.device_info_node:main"
+            "device_info_node = device_info_pkg.device_info_node:main",
+            "device_status_node = device_info_pkg.device_status_node:main"
         ],
     },
 )

@@ -112,6 +112,12 @@ def launch_setup(context, *args, **kwargs):
         executable='device_info_node',
         name='device_info_node'
     )
+    device_status_node = Node(
+        package='device_info_pkg',
+        namespace='device_info_pkg',
+        executable='device_status_node',
+        name='device_status_node'
+    )
 
     battery_node_exec = 'battery_node'
     if str2bool(LaunchConfiguration('battery_dummy').perform(context)):
@@ -221,7 +227,7 @@ def launch_setup(context, *args, **kwargs):
                 'output_path': '/opt/aws/deepracer/logs',
                 'monitor_topic': '/deepracer_navigation_pkg/auto_drive',
                 'file_name_topic': '/inference_pkg/model_artifact',
-                'log_topics': ['/inference_pkg/rl_results']
+                'log_topics': ['/inference_pkg/rl_results', '/device_info_pkg/device_status', '/servo_pkg/latency']
         }]
     )
 
@@ -234,6 +240,7 @@ def launch_setup(context, *args, **kwargs):
     ld.append(network_monitor_node)
     ld.append(deepracer_systems_scripts_node)
     ld.append(device_info_node)
+    ld.append(device_status_node)
     ld.append(battery_node)
     ld.append(inference_node)
     ld.append(model_optimizer_node)
@@ -289,6 +296,6 @@ def generate_launch_description():
             DeclareLaunchArgument(
                 name="rplidar",
                 default_value="True",
-                description="Enable RPLIDAR node"),                
+                description="Enable RPLIDAR node"),
             OpaqueFunction(function=launch_setup)
         ])

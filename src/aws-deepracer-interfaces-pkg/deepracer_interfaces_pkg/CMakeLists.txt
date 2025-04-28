@@ -35,6 +35,7 @@ endif()
 
 set(msg_files
   "msg/CameraMsg.msg"
+  "msg/DeviceStatusMsg.msg"
   "msg/InferResults.msg"
   "msg/InferResultsArray.msg"
   "msg/EvoSensorMsg.msg"
@@ -42,6 +43,7 @@ set(msg_files
   "msg/NetworkConnectionStatus.msg"
   "msg/SoftwareUpdatePctMsg.msg"
   "msg/USBFileSystemNotificationMsg.msg"
+  "msg/LatencyMeasure.msg"
 )
 set(srv_files
   "srv/ActiveStateSrv.srv"
@@ -51,6 +53,7 @@ set(srv_files
   "srv/EnableStateSrv.srv"
   "srv/GetCalibrationSrv.srv"
   "srv/GetDeviceInfoSrv.srv"
+  "srv/GetDeviceStatusSrv.srv"
   "srv/GetLedCtrlSrv.srv"
   "srv/GetModelLoadingStatusSrv.srv"
   "srv/InferenceStateSrv.srv"
