@@ -12,6 +12,7 @@
 
   <depend>rclpy</depend>
   <depend>deepracer_interfaces_pkg</depend>
+  <depend>python3-psutil</depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>

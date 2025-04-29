@@ -1,4 +1,0 @@
-- git:
-    uri: https://github.com/christianrauch/camera_ros.git
-    local-name: camera_ros
-    version: main

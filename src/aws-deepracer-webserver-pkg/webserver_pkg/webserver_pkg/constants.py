@@ -69,6 +69,7 @@ SOFTWARE_UPDATE_PCT_TOPIC = f"{DEEPRACER_SYSTEMS_PKG_NS}/software_update_pct"
 # device_info_pkg
 DEVICE_INFO_PKG_NS = "/device_info_pkg"
 GET_DEVICE_INFO_SERVICE = f"{DEVICE_INFO_PKG_NS}/get_device_info"
+DEVICE_STATUS_TOPIC = f"{DEVICE_INFO_PKG_NS}/device_status"
 
 # i2c_pkg
 I2C_PKG_NS = "/i2c_pkg"

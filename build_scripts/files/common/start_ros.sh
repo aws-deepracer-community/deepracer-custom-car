@@ -31,6 +31,9 @@ MYRIAD=$(lsusb | grep "Intel Movidius MyriadX")
 if [ -n "${MYRIAD}" ]; then
     INFERENCE_ENGINE='inference_engine:=OV'
     INFERENCE_DEVICE='inference_device:=MYRIAD'
+elif [ "$(uname -m)" == "x86_64" ]; then
+    INFERENCE_ENGINE='inference_engine:=OV'
+    INFERENCE_DEVICE='inference_device:=CPU'
 else
     INFERENCE_ENGINE='inference_engine:=TFLITE'
 fi

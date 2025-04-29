@@ -27,6 +27,7 @@ from flask import jsonify
 from deepracer_interfaces_pkg.srv import (GetDeviceInfoSrv,
                                           BatteryLevelSrv,
                                           SensorStatusCheckSrv)
+from deepracer_interfaces_pkg.msg import DeviceStatusMsg
 from webserver_pkg import webserver_publisher_node
 from webserver_pkg.utility import call_service_sync
 
@@ -53,10 +54,20 @@ def get_device_info():
             data = {
                 "hardware_version": get_revision_info_res.hardware_version,
                 "software_version": get_revision_info_res.software_version,
+                "cpu_model": get_revision_info_res.cpu_model,
+                "os_version": get_revision_info_res.os_version,
+                "disk_amount": get_revision_info_res.disk_amount,
+                "ram_amount": get_revision_info_res.ram_amount,
+                "ros_distro": get_revision_info_res.ros_distro,
                 "success": True
             }
             webserver_node.get_logger().info(f"Hardware version: {data['hardware_version']}, "
-                                             f"Software version: {data['software_version']}")
+                                             f"Software version: {data['software_version']}, "
+                                             f"CPU model: {data['cpu_model']}, "
+                                             f"OS version: {data['os_version']}, "
+                                             f"Disk amount: {data['disk_amount']}, "
+                                             f"RAM amount: {data['ram_amount']}, "
+                                             f"ROS distro: {data['ros_distro']}")
         else:
             webserver_node.get_logger().error("Get device info service call failed")
             data = {
@@ -166,3 +177,59 @@ def get_supported_apis():
         "success": True,
         "apis_supported": get_registered_apis()
     })
+
+@DEVICE_INFO_API_BLUEPRINT.route("/api/get_device_status", methods=["GET"])
+def get_device_status():
+    """API to get the current system metrics including CPU load, temperature, memory usage, etc.
+    
+    This endpoint retrieves the latest metrics from the device_status_node via subscription
+    to the DeviceStatusMsg topic.
+    
+    Returns:
+        dict: JSON object containing device metrics and success status:
+              - cpu_percent: CPU utilization percentage
+              - cpu_temp: CPU temperature in Celsius
+              - cpu_freq: Current CPU frequency in MHz
+              - cpu_freq_max: Maximum CPU frequency in MHz
+              - memory_usage: Memory utilization percentage
+              - free_disk: Free disk space percentage
+              - latency_mean: Mean latency in millisecondsz
+              - latency_p95: 95th percentile latency in milliseconds
+              - fps_mean: Mean frames per second
+    """
+    webserver_node = webserver_publisher_node.get_webserver_node()
+    webserver_node.get_logger().debug("Getting device status metrics")
+    
+    try:
+        # Get the latest device status from the subscription data
+        latest_device_status: DeviceStatusMsg = webserver_node.latest_device_status
+        
+        if latest_device_status is not None:
+            data = {
+                "cpu_percent": latest_device_status.cpu_percent,
+                "cpu_temp": latest_device_status.cpu_temp,
+                "cpu_freq": latest_device_status.cpu_freq,
+                "cpu_freq_max": latest_device_status.cpu_freq_max,
+                "memory_usage": latest_device_status.memory_usage,
+                "free_disk": latest_device_status.free_disk,
+                "latency_mean": latest_device_status.latency_mean,
+                "latency_p95": latest_device_status.latency_p95,
+                "fps_mean": latest_device_status.fps_mean,
+                "success": True
+            }
+            webserver_node.get_logger().debug(
+                f"Device status metrics: CPU: {data['cpu_percent']:.1f}%, "
+                f"Temp: {data['cpu_temp']:.1f}°C, Mem: {data['memory_usage']:.1f}%, "
+                f"Disk: {data['free_disk']:.1f}% free"
+            )
+        else:
+            webserver_node.get_logger().error("No device status data available yet")
+            data = {
+                "reason": "No device status data available yet",
+                "success": False
+            }
+        return jsonify(data)
+        
+    except Exception as ex:
+        webserver_node.get_logger().error(f"Error retrieving device status: {ex}")
+        return jsonify(success=False, reason=f"Error retrieving device status: {str(ex)}")

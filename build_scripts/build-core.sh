@@ -44,10 +44,8 @@ cd src
 
 if [ "$CACHE" != "true" ]; then
 
-    rosdep update --rosdistro=$ROS_DISTRO -q
-
     # Remove previous builds (gives clean build)
-    rm -rf ../install ../build ../log
+    rm -rf ../install ../build ../log ../pkg-build/aws-deepracer-core
 
     cd external
 
@@ -66,23 +64,19 @@ if [ "$CACHE" != "true" ]; then
         rosws merge --merge-replace - <.rosinstall-foxy
     fi
 
-    if [ $ROS_DISTRO == "humble" ]; then
-        rosws merge --merge-replace - < .rosinstall-humble
-    fi
+    # if [ $ROS_DISTRO == "humble" ]; then
+    #    rosws merge --merge-replace - < .rosinstall-humble
+    # fi
 
     if [ $ROS_DISTRO == "jazzy" ]; then
         export PYTHONWARNINGS=ignore::DeprecationWarning
         vcs import --input .rosinstall .
-        vcs import --input .rosinstall-jazzy .
+        # vcs import --input .rosinstall-jazzy .
     else
         rosws update
     fi
     cd ..
     
-
-    # Resolve the dependencies
-    rosdep install -i --from-path . --ignore-src --rosdistro $ROS_DISTRO -y
-
     #
     # END - Pull request specific changes
     #
@@ -111,12 +105,16 @@ if [ "$CACHE" != "true" ]; then
 
 fi
 
+# Resolve the dependencies
+rosdep update --rosdistro=$ROS_DISTRO -q
+rosdep install -i --from-path . --ignore-src --rosdistro $ROS_DISTRO -y
+
 cd $DIR
- 
+
 # Build the core
 export PYTHONWARNINGS=ignore:::setuptools.command.install
 if [ "$ROS_DISTRO" == "humble" ] || [ "$ROS_DISTRO" == "jazzy" ]; then
-    colcon build --packages-up-to deepracer_launcher logging_pkg camera_ros
+    colcon build --packages-up-to deepracer_launcher logging_pkg
 else
     colcon build --packages-up-to deepracer_launcher rplidar_ros logging_pkg
 fi

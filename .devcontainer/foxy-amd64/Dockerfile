@@ -8,13 +8,16 @@ ARG USER_GID=$USER_UID
 
 RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
     libboost-all-dev \
+    python3-apt \
     python3-pip \
     python3-websocket \
     python3-colcon-common-extensions \
     python3-rosinstall \
     ros-foxy-cv-bridge \
-    ros-foxy-rqt-console \
-    ros-foxy-rqt-graph \
+    ros-foxy-compressed-image-transport \
+    ros-foxy-image-transport \
+    ros-foxy-test-msgs \
+    ros-foxy-pybind11-vendor \
     libjsoncpp-dev \
     v4l-utils \
     ffmpeg \

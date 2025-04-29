@@ -9,6 +9,7 @@ ARG USER_GID=$USER_UID
 RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
     libboost-all-dev \
     libpugixml-dev \
+    python3-apt \
     python3-pip \
     python3-websocket \
     python3-colcon-common-extensions \
@@ -18,8 +19,7 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
     python3-venv \
     ros-dev-tools \
     ros-jazzy-cv-bridge \
-    ros-jazzy-rqt-console \
-    ros-jazzy-rqt-graph \
+    ros-jazzy-camera-ros \
     ros-jazzy-image-transport \
     ros-jazzy-compressed-image-transport \
     ros-jazzy-pybind11-vendor \
