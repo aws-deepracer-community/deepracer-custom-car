@@ -25,7 +25,23 @@ GET_OTG_LINK_STATE_SERVICE_NAME = "get_otg_link_state"
 # OTG settings.
 
 ENABLE_OTG_PERIODIC_CHECK = True
-OTG_CHECK_PERIOD_IN_SECONDS = 2
+OTG_CHECK_PERIOD_IN_SECONDS = 5
 
-OTG_STATE_DIRECTORY = os.path.join(os.sep, "sys", "kernel", "debug", "dwc3.0.auto")
-OTG_LINK_STATE = "link_state"
+def get_otg_link_state_path():
+    """
+    Get the path to the OTG link state file.
+    """
+    if os.path.exists(os.path.join(os.sep, "sys", "kernel", "debug", "dwc3.0.auto", "link_state")):
+        OTG_STATE_FILE = os.path.join(os.sep, "sys", "kernel", "debug", "dwc3.0.auto", "link_state")
+        OTG_UP_STATE = "U0"
+        OTH_USB1 = True
+    elif os.path.exists(os.path.join(os.sep, "sys", "class", "net", "usb0", "operstate")):
+        OTG_STATE_FILE = os.path.join(os.sep, "sys", "class", "net", "usb0", "operstate")
+        OTG_UP_STATE = "up"
+        OTH_USB1 = False
+    else:
+        raise FileNotFoundError("OTG state file does not exist.")
+
+    return OTG_STATE_FILE, OTG_UP_STATE, OTH_USB1
+
+OTG_STATE_FILE, OTG_UP_STATE, OTH_USB1 = get_otg_link_state_path()

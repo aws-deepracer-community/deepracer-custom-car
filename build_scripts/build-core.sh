@@ -93,7 +93,6 @@ if [ "$CACHE" != "true" ]; then
 
         git apply $DIR/build_scripts/patches/aws-deepracer-i2c-pkg.rpi.patch
         git apply $DIR/build_scripts/patches/aws-deepracer-servo-pkg.rpi.patch
-        git apply $DIR/build_scripts/patches/aws-deepracer-systems-pkg.rpi.patch
         git apply $DIR/build_scripts/patches/aws-deepracer-status-led-pkg.rpi.patch
         git apply $DIR/build_scripts/patches/aws-deepracer-model-optimizer-pkg.rpi.patch
 
