@@ -33,7 +33,6 @@ The node defines:
                              specific parameters set.
 """
 
-from math import e
 import os
 import subprocess
 import shlex
@@ -349,7 +348,7 @@ class ModelOptimizerNode(Node):
             )
             converter.allow_custom_ops = True
 
-            if common_params[constants.ParamKeys.DATA_TYPE] == "FP16" or \
+            if (constants.ParamKeys.DATA_TYPE in common_params and common_params[constants.ParamKeys.DATA_TYPE] == "FP16") or \
                     "--compress_to_fp16" in common_params:
                 self.get_logger().info(f"Using float16 quantization.")
                 converter.optimizations = [tf.lite.Optimize.DEFAULT]
