@@ -11,7 +11,7 @@
                 "${workspaceFolder}/build/inference_pkg/_deps/tensorflow-lite-src/**",
                 "${workspaceFolder}/build/inference_pkg/flatbuffers/include/"
             ],
-            "defines": [],
+            "defines": ["HW_PLATFORM_DR"],
             "cStandard": "gnu17",
             "cppStandard": "gnu++17",
             "intelliSenseMode": "linux-gcc-x64"
@@ -27,7 +27,7 @@
                 "${workspaceFolder}/build/inference_pkg/_deps/tensorflow-lite-src/**",
                 "${workspaceFolder}/build/inference_pkg/flatbuffers/include/"
             ],
-            "defines": [],
+            "defines": ["HW_PLATFORM_RPI4"],
             "cStandard": "gnu17",
             "cppStandard": "gnu++17",
             "intelliSenseMode": "linux-gcc-x64"
@@ -43,7 +43,7 @@
                 "${workspaceFolder}/build/inference_pkg/_deps/tensorflow-lite-src/**",
                 "${workspaceFolder}/build/inference_pkg/flatbuffers/include/"
             ],
-            "defines": ["ROS_DISTRO_JAZZY"],
+            "defines": ["HW_PLATFORM_RPI5"],
             "cStandard": "gnu17",
             "cppStandard": "gnu++17",
             "intelliSenseMode": "linux-gcc-x64"

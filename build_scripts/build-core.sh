@@ -4,17 +4,33 @@ export DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/.. >/dev/null 2>&1 && pwd)"
 
 # Parse command line arguments
 CACHE="false"
-while getopts "c" opt; do
+export HW_PLATFORM="${HW_PLATFORM:-DR}"  # Default to DR if not set
+
+while getopts "cp:" opt; do
     case ${opt} in
     c)
         CACHE="true"
         ;;
+    p)
+        HW_PLATFORM="${OPTARG}"
+        ;;
     \?)
-        echo "Usage: cmd [-c]"
+        echo "Usage: cmd [-c] [-p platform]"
+        echo "  -c: Use cache"
+        echo "  -p: Hardware platform (DR, RPI4, RPI5)"
         exit 1
         ;;
     esac
 done
+
+# Validate HW_PLATFORM
+if [[ ! "$HW_PLATFORM" =~ ^(DR|RPI4|RPI5)$ ]]; then
+    echo "Invalid hardware platform: $HW_PLATFORM"
+    echo "Valid options: DR, RPI4, RPI5"
+    exit 1
+fi
+
+echo "Building for hardware platform: $HW_PLATFORM"
 
 # Detect ROS version
 if [ -f /opt/ros/foxy/setup.bash ]; then
@@ -81,25 +97,6 @@ if [ "$CACHE" != "true" ]; then
     # END - Pull request specific changes
     #
     #######
-
-    if [[ "$(dpkg --print-architecture)" == "arm64" ]]; then
-
-        echo "Applying patches for Raspberry Pi / arm64"
-
-        #######
-        #
-        # START - PI specific patches
-        #
-
-        git apply $DIR/build_scripts/patches/aws-deepracer-i2c-pkg.rpi.patch
-        git apply $DIR/build_scripts/patches/aws-deepracer-servo-pkg.rpi.patch
-        git apply $DIR/build_scripts/patches/aws-deepracer-status-led-pkg.rpi.patch
-
-        #
-        # END - Patches
-        #
-        #######
-    fi
 
 fi
 

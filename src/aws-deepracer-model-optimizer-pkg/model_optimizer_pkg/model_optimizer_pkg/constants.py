@@ -32,7 +32,7 @@ def get_mo_path_and_version():
     INTEL_PATH = os.environ.get("INTEL_CVSDK_DIR", "/opt/intel/openvino") + "/deployment_tools/model_optimizer"
     PYTHON_BIN = "python3"
 
-    if os.path.exists(os.join(INTEL_PATH, "mo_tf.py")):
+    if os.path.exists(os.path.join(INTEL_PATH, "mo_tf.py")):
         mo_cmd = PYTHON_BIN + " " + os.path.join(INTEL_PATH, "mo_tf.py")
         mo_version = 2021
     else:
