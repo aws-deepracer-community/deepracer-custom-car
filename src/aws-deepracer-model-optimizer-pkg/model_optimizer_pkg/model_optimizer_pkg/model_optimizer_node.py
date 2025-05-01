@@ -33,6 +33,7 @@ The node defines:
                              specific parameters set.
 """
 
+from math import e
 import os
 import subprocess
 import shlex
@@ -367,7 +368,8 @@ class ModelOptimizerNode(Node):
 
             return 0, output_file
 
-        except:  # noqa
+        except Exception as e:  # noqa
+            self.get_logger().error(f"Error while converting model to TFLite: {e}")
             # Return error code 1, which means that the model optimizer failed even after retries.
             return 1, ""
 
