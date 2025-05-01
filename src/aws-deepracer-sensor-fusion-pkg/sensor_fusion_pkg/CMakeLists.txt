@@ -13,6 +13,43 @@ endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
+  
+  # Enhanced optimizations for sensor fusion
+  add_compile_options(-O3)             # Maximum optimization
+  add_compile_options(-flto=auto)           # Link-time optimization
+  add_compile_options(-ffast-math)     # Faster math (important for sensor fusion)
+  
+  # Architecture-specific optimizations - detect at runtime
+  include(CheckCXXSourceRuns)
+  check_cxx_source_runs("
+  #include <stdio.h>
+  int main() {
+    #if defined(__x86_64__) || defined(_M_X64)
+      return 0;
+    #else
+      return 1;
+    #endif
+  }
+  " IS_X86_64)
+  
+  if(IS_X86_64)
+    add_compile_options(-march=goldmont -mtune=goldmont)
+  endif()
+  
+  check_cxx_source_runs("
+  #include <stdio.h>
+  int main() {
+    #if defined(__aarch64__)
+      return 0;
+    #else
+      return 1;
+    #endif
+  }
+  " IS_ARM64)
+  
+  if(IS_ARM64)
+    add_compile_options(-march=armv8-a -mtune=cortex-a72)
+  endif()
 endif()
 
 # find dependencies

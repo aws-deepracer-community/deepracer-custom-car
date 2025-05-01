@@ -23,9 +23,11 @@ if(OpenMP_CXX_FOUND)
   link_libraries(${OpenMP_CXX_LIBRARIES})
 endif()
 
-# Check for Intel architecture
+# Architecture detection and optimization setup
 include(CheckCXXSourceRuns)
 set(CMAKE_REQUIRED_FLAGS)
+
+# Check for Intel architecture
 check_cxx_source_runs("
 #include <stdio.h>
 int main() {
@@ -37,7 +39,7 @@ int main() {
 }
 " IS_INTEL_ARCHITECTURE)
 
-# Check for ARM architecture (Raspberry Pi)
+# Check for ARM architecture
 check_cxx_source_runs("
 #include <stdio.h>
 int main() {
@@ -49,73 +51,80 @@ int main() {
 }
 " IS_ARM_ARCHITECTURE)
 
+# Check for 64-bit ARM
+check_cxx_source_runs("
+#include <stdio.h>
+int main() {
+  #if defined(__aarch64__)
+    return 0;
+  #else
+    return 1;
+  #endif
+}
+" IS_ARM64)
+
+# Set up common optimization flags
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  # Warning suppressions
+  add_compile_options(
+    -Wno-deprecated-declarations 
+    -Wno-ignored-attributes 
+    -Wno-deprecated
+  )
+  
+  # Common optimizations for all architectures
+  add_compile_options(
+    -O3                   # Maximum optimization level
+    -flto=auto            # Link-time optimization
+    -ffast-math           # Faster floating-point math
+  )
+endif()
+
+# Architecture-specific optimizations
 if(IS_INTEL_ARCHITECTURE)
-  message(STATUS "Intel architecture detected, enabling optimizations")
-  # Enable Intel-specific optimizations for TensorFlow Lite
+  message(STATUS "Intel architecture detected, enabling Goldmont optimizations")
+  
+  # TensorFlow Lite optimization flags for Intel
   set(TFLITE_ENABLE_XNNPACK ON CACHE BOOL "Enable XNNPACK acceleration")
   set(TFLITE_ENABLE_RUY ON CACHE BOOL "Enable RUY matrix multiplication library")
   set(TFLITE_ENABLE_X86_OPTIMIZATIONS ON CACHE BOOL "Enable x86 optimizations")
-
-  # Add Intel-specific compiler flags
+  
   if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    add_compile_options(-Wno-deprecated-declarations -Wno-ignored-attributes -Wno-deprecated)
-    add_compile_options(-msse4.2 -maes -mssse3 -mpclmul -mpopcnt -march=goldmont)
+    add_compile_options(
+      -march=goldmont     # Base architecture
+      -mtune=goldmont     # Microarchitecture optimizations
+      -funroll-loops      # Loop unrolling optimization
+    )
   endif()
+  
 elseif(IS_ARM_ARCHITECTURE)
-  message(STATUS "ARM architecture detected, optimizing for 64-bit Compute Module 4")
-  
-  # Check if 64-bit ARM
-  check_cxx_source_runs("
-  #include <stdio.h>
-  int main() {
-    #if defined(__aarch64__)
-      return 0;
-    #else
-      return 1;
-    #endif
-  }
-  " IS_ARM64)
-  
   if(IS_ARM64)
-    message(STATUS "64-bit ARM architecture confirmed, applying CM4-specific optimizations")
+    message(STATUS "64-bit ARM architecture detected, optimizing for Compute Module 4")
     
-    # Enable ARM-specific optimizations for TensorFlow Lite
+    # TensorFlow Lite optimization flags for ARM64
     set(TFLITE_ENABLE_XNNPACK ON CACHE BOOL "Enable XNNPACK acceleration")
     set(TFLITE_ENABLE_RUY ON CACHE BOOL "Enable RUY matrix multiplication library")
     set(TFLITE_ENABLE_NEON ON CACHE BOOL "Enable NEON optimizations for ARM")
     set(TFLITE_ENABLE_MMAP ON CACHE BOOL "Enable mmap for faster file access")
-    
-    # Disable features not needed on RPi CM4
     set(TFLITE_ENABLE_GPU OFF CACHE BOOL "Disable GPU")
     set(TFLITE_ENABLE_NNAPI OFF CACHE BOOL "Disable Android NNAPI")
     
-    # CM4 64-bit specific compiler flags
     if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-      add_compile_options(-Wno-deprecated-declarations -Wno-ignored-attributes -Wno-deprecated)
       add_compile_options(
-        -march=armv8-a            # ARMv8 architecture (required for 64-bit)
-        -mtune=cortex-a72         # Optimize for CM4's Cortex-A72 CPU
-        -O3                       # Maximum optimization level
-        -ftree-vectorize          # Enable auto-vectorization
-        -ffast-math               # Faster floating-point math (may affect precision)
+        -march=armv8-a      # ARMv8 architecture (required for 64-bit)
+        -mtune=cortex-a72   # Optimize for CM4's Cortex-A72 CPU
+        -ftree-vectorize    # Enable auto-vectorization
       )
-      
     endif()
-  else()
+    
+  else() # 32-bit ARM
     message(WARNING "32-bit ARM detected. For best CM4 performance, use 64-bit OS/toolchain")
-    # Add basic ARM optimizations even for 32-bit mode
     set(TFLITE_ENABLE_XNNPACK ON CACHE BOOL "Enable XNNPACK acceleration")
     set(TFLITE_ENABLE_NEON ON CACHE BOOL "Enable NEON optimizations for ARM")
-    
-    if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-      add_compile_options(-Wno-deprecated-declarations -Wno-ignored-attributes -Wno-deprecated)
-    endif()
   endif()
+  
 else()
-  message(STATUS "Non-Intel/ARM architecture detected")
-  if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    add_compile_options(-Wno-deprecated-declarations -Wno-ignored-attributes -Wno-deprecated)
-  endif()
+  message(STATUS "Non-Intel/ARM architecture detected, using generic optimizations")
 endif()
 
 FetchContent_Declare(tensorflow-lite
