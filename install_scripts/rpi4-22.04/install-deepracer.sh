@@ -77,7 +77,7 @@ pip3 install -U pyudev \
     networkx \
     unidecode \
     pyserial \
-    "tensorflow" \
+    "tensorflow==2.17.1" \
     "numpy>=1.16.6,<=1.23.4" \
     "protobuf" \
     "tensorboard" \

@@ -63,7 +63,7 @@ pip3 install -U --break-system-packages \
     flask_cors \
     flask_wtf \
     pyserial \
-    "tensorflow" \
+    "tensorflow==2.17.1" \
     "tensorboard" \
     pyclean \
     pam \
