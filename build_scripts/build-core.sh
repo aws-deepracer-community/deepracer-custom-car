@@ -82,9 +82,9 @@ if [ "$CACHE" != "true" ]; then
     #
     #######
 
-    if [ "$ROS_DISTRO" == "humble" ] || [ "$ROS_DISTRO" == "jazzy" ]; then
+    if [[ "$(dpkg --print-architecture)" == "arm64" ]]; then
 
-        echo "Applying patches for Raspberry Pi with ROS 2 Humble & Jazzy"
+        echo "Applying patches for Raspberry Pi / arm64"
 
         #######
         #
