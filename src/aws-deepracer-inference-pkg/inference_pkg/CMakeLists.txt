@@ -111,8 +111,8 @@ elseif(IS_ARM_ARCHITECTURE)
     
     if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
       add_compile_options(
-        -march=armv8-a      # ARMv8 architecture (required for 64-bit)
-        -mtune=cortex-a72   # Optimize for CM4's Cortex-A72 CPU
+        -march=armv8.2-a      # ARMv8 architecture (required for 64-bit)
+        -mtune=cortex-a76   # Optimize for CM4's Cortex-A72 CPU
         -ftree-vectorize    # Enable auto-vectorization
       )
     endif()
