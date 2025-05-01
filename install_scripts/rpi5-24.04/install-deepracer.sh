@@ -44,7 +44,6 @@ apt -y update && apt install -y --no-install-recommends \
     libuvc0 \
     python3-argcomplete \
     python3-opencv \
-    python3-pam \
     python3-pip \
     python3-protobuf \
     python3-pyudev \
@@ -66,7 +65,9 @@ pip3 install -U --break-system-packages \
     pyserial \
     "tensorflow" \
     "tensorboard" \
-    pyclean
+    pyclean \
+    pam \
+    gpiod
 
 # Install packages
 cp $DIR/install_scripts/rpi5-24.04/aws_deepracer-community.list /etc/apt/sources.list.d/aws_deepracer.list

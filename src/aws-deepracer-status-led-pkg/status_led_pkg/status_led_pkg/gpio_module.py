@@ -60,12 +60,14 @@ class GPIO:
             # Get the default GPIO chip (typically gpiochip0 on RPi)
             self.chip = gpiod.Chip(self.chip_base_path)
             
-            # Request the GPIO line
-            self.line = self.chip.request_line(
-                self.gpio,
-                consumer="deepracer-custom-car",
-                direction=self.direction
-            )
+            # For gpiod 2.3.0, the proper API is:
+            self.line = self.chip.request_lines({
+                self.gpio: gpiod.LineSettings(
+                    direction=self.direction,
+                    output_value=Value.INACTIVE  # Start with low output
+                )
+            }, consumer="deepracer-custom-car")
+            
             return True
         except Exception as ex:
             self.logger.error(f"Error enabling GPIO port {self.gpio}: {ex}")
@@ -99,7 +101,7 @@ class GPIO:
         try:
             if self.line:
                 gpio_value = Value.ACTIVE if value else Value.INACTIVE
-                self.line.set_value(gpio_value)
+                self.line.set_value(self.gpio, gpio_value)
         except Exception as ex:
             self.logger.error(f"Error setting the value for GPIO port {self.gpio}: {ex}")
 
@@ -111,7 +113,7 @@ class GPIO:
         """
         try:
             if self.line:
-                value = self.line.get_value()
+                value = self.line.get_value(self.gpio)
                 return "1" if value == Value.ACTIVE else "0"
             return None
         except Exception as ex:
