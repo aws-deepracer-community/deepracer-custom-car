@@ -39,7 +39,7 @@ fi
 
 if [ -f /sys/firmware/devicetree/base/model ] && grep -q "Raspberry Pi" /sys/firmware/devicetree/base/model; then
     BATTERY_DUMMY='battery_dummy:=True'
-    CAMERA_MODE='camera_mode:=modern'
+    CAMERA_MODE=''
 else
     BATTERY_DUMMY=''
     CAMERA_MODE=''
