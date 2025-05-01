@@ -178,7 +178,7 @@ def get_software_update_status():
 
     def events():
         webserver_node.get_logger().info("Running software update event source")
-        for i, c in enumerate(itertools.cycle("\|/-")):
+        for i, c in enumerate(itertools.cycle(r"\|/-")):
             try:
                 pct_dict = webserver_node.pct_dict_db.get_nowait()
                 percentage_completion = pct_dict["update_pct"]
