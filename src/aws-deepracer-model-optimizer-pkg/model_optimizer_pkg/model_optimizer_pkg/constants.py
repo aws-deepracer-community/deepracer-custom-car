@@ -22,11 +22,26 @@ from enum import Enum
 
 MODEL_OPTIMIZER_SERVER_SERVICE_NAME = "model_optimizer_server"
 
-# Static variables
-# Path where the Intel OpenVino is installed.
-INTEL_PATH = os.environ["INTEL_CVSDK_DIR"] + "/deployment_tools/model_optimizer/"
+def get_mo_path_and_version():
+    """Get the model optimizer path and version.
 
-PYTHON_BIN = "python3"
+    Returns:
+        tuple: Tuple containing the model optimizer path and version.
+    """
+
+    INTEL_PATH = os.environ.get("INTEL_CVSDK_DIR", "/opt/intel/openvino") + "/deployment_tools/model_optimizer"
+    PYTHON_BIN = "python3"
+
+    if os.path.exists(os.join(INTEL_PATH, "mo_tf.py")):
+        mo_cmd = PYTHON_BIN + " " + os.path.join(INTEL_PATH, "mo_tf.py")
+        mo_version = 2021
+    else:
+        mo_cmd = "mo"
+        mo_version = 2022
+
+    return mo_cmd, mo_version
+
+MODEL_OPTIMIZER_COMMAND, MODEL_OPTIMIZER_VERSION = get_mo_path_and_version()
 
 # Max retry count
 MAX_OPTIMIZER_RETRY_COUNT = 1

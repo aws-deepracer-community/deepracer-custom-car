@@ -179,11 +179,16 @@ class ModelOptimizerNode(Node):
                                                                           input_width,
                                                                           value))
             elif flag is constants.APIFlags.PRECISION:
-                common_params[constants.ParamKeys.DATA_TYPE] = value
+                if constants.MODEL_OPTIMIZER_VERSION == 2021:
+                    common_params[constants.ParamKeys.DATA_TYPE] = value
+                else:
+                    if value is constants.APIDefaults.PRECISION:
+                        common_params["--compress_to_fp16"] = ""
             elif flag is constants.APIFlags.FUSE:
                 if value is not constants.APIDefaults.FUSE:
-                    common_params[constants.ParamKeys.DISABLE_FUSE] = ""
-                    common_params[constants.ParamKeys.DISABLE_GFUSE] = ""
+                    if constants.MODEL_OPTIMIZER_VERSION == 2021:
+                        common_params[constants.ParamKeys.DISABLE_FUSE] = ""
+                        common_params[constants.ParamKeys.DISABLE_GFUSE] = ""
             elif flag is constants.APIFlags.IMG_FORMAT:
                 if value is constants.APIDefaults.IMG_FORMAT:
                     common_params[constants.ParamKeys.REV_CHANNELS] = ""
@@ -259,7 +264,7 @@ class ModelOptimizerNode(Node):
             return 0, os.path.join(common_params[constants.ParamKeys.OUT_DIR],
                                    f"{common_params[constants.ParamKeys.MODEL_NAME]}.xml")
 
-        cmd = f"{constants.PYTHON_BIN} {constants.INTEL_PATH}{mo_path}"
+        cmd = f"{mo_path}"
         # Construct the cli command
         for flag, value in dict(common_params, **platform_parms).items():
             cmd += f" {flag} {value}"
@@ -343,7 +348,8 @@ class ModelOptimizerNode(Node):
             )
             converter.allow_custom_ops = True
 
-            if common_params[constants.ParamKeys.DATA_TYPE] == "FP16":
+            if common_params[constants.ParamKeys.DATA_TYPE] == "FP16" or \
+                    "--compress_to_fp16" in common_params:
                 self.get_logger().info(f"Using float16 quantization.")
                 converter.optimizations = [tf.lite.Optimize.DEFAULT]
                 converter.target_spec.supported_types = [tf.float16]
@@ -436,7 +442,7 @@ class ModelOptimizerNode(Node):
         if self._inference_engine == "TFLITE":
             return self.run_optimizer_tflite(common_params, training_algorithm)
         else:
-            return self.run_optimizer_mo("mo_tf.py", common_params,
+            return self.run_optimizer_mo(constants.MODEL_OPTIMIZER_COMMAND, common_params,
                                          self.set_platform_param(tf_params, aux_inputs))
 
 
@@ -458,6 +464,7 @@ def main(args=None):
     finally:
         if rclpy.ok():
             rclpy.shutdown()
+
 
 if __name__ == "__main__":
     main()
