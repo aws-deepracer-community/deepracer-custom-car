@@ -307,7 +307,7 @@ class ModelOptimizerNode(Node):
 
         # Import Tensorflow if optimizing for TFLITE
         os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-        import tensorflow.compat.v1 as tf
+        import tensorflow.compat.v1 as tf # type: ignore
 
         if not os.path.isfile(common_params[constants.ParamKeys.MODEL_PATH]):
             raise Exception(
