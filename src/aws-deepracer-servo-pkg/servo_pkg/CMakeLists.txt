@@ -16,6 +16,25 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wno-deprecated-declarations)
 endif()
 
+# In each C++ package that needs HW_PLATFORM
+if(DEFINED ENV{HW_PLATFORM})
+  set(HW_PLATFORM $ENV{HW_PLATFORM})
+  message(STATUS "Using hardware platform from environment: ${HW_PLATFORM}")
+  add_definitions(-DHW_PLATFORM_${HW_PLATFORM})
+endif()
+
+# Process HW_PLATFORM variable
+if(DEFINED HW_PLATFORM)
+  message(STATUS "Building servo package for hardware platform: ${HW_PLATFORM}")
+  if(HW_PLATFORM STREQUAL "RPI4")
+    add_definitions(-DHW_PLATFORM_RPI4)
+  elseif(HW_PLATFORM STREQUAL "RPI5")
+    add_definitions(-DHW_PLATFORM_RPI5)
+  elseif(HW_PLATFORM STREQUAL "DR")
+    add_definitions(-DHW_PLATFORM_DR)
+  endif()
+endif()
+
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
