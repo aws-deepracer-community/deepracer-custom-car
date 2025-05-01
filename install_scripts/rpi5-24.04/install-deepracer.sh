@@ -43,35 +43,30 @@ apt -y update && apt install -y --no-install-recommends \
     libpugixml1v5 \
     libuvc0 \
     python3-argcomplete \
-    python3-colcon-common-extensions \
     python3-opencv \
+    python3-pam \
     python3-pip \
-    python3-rosinstall \
+    python3-protobuf \
+    python3-pyudev \
     python3-venv \
+    python3-testresources \
     python3-websocket \
+    python3-networkx \
+    python3-unidecode \
     ros-dev-tools \
     ros-jazzy-ros-core
 
 rosdep init && rosdep update --rosdistro=jazzy -q
 
-# Update build tools and utilities for Python
-sudo pip3 install -U "setuptools==58.2.0" pip "Cython==0.29.28" testresources
-
 # Tensorflow and dependencies
-pip3 install -U pyudev \
+pip3 install -U --break-system-packages \
     "flask<3" \
     flask_cors \
     flask_wtf \
-    pam \
-    networkx \
-    unidecode \
     pyserial \
     "tensorflow" \
-    "numpy>=1.16.6,<=1.23.4" \
-    "protobuf" \
     "tensorboard" \
-    "blinker==1.4" \
-    pyclean \
+    pyclean
 
 # Install packages
 cp $DIR/install_scripts/rpi5-24.04/aws_deepracer-community.list /etc/apt/sources.list.d/aws_deepracer.list

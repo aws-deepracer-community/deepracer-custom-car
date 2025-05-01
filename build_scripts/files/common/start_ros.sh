@@ -24,7 +24,6 @@ elif [ -f /opt/intel/openvino_2021/bin/setupvars.sh ]; then
     source /opt/intel/openvino_2021/bin/setupvars.sh
 else
     echo "No OpenVINO found!"
-    exit 1
 fi
 
 MYRIAD=$(lsusb | grep "Intel Movidius MyriadX")

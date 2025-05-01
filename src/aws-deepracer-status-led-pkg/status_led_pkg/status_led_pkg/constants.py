@@ -39,11 +39,16 @@ def get_led_ports():
             (446, 445, 443),
             (450, 457, 458)
         )
-    else:
+    elif os.path.exists("/proc/device-tree/model") and "Raspberry Pi 4" in open("/proc/device-tree/model").read():
         return (
             (488+7, 488+8, 488+9),
             (488+10, 488+11, 488+12),
             (488+13, 488+14, 488+15))
+    elif os.path.exists("/proc/device-tree/model") and "Raspberry Pi 5" in open("/proc/device-tree/model").read():
+        return (
+            (578+0, 578+1, 578+2),
+            (578+3, 578+4, 578+5),
+            (578+6, 578+7, 578+8))
 
 
 LED_PORTS = get_led_ports()
