@@ -9,6 +9,10 @@ endif()
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
   add_compile_options(-Wno-deprecated-declarations)
+  # Enhanced optimizations 
+  add_compile_options(-O3)             # Maximum optimization
+  add_compile_options(-flto=auto)      # Link-time optimization
+  add_compile_options(-ffast-math)     # Faster math
 endif()
 
 # Find dependencies
@@ -54,6 +58,13 @@ install(DIRECTORY include/
 
 # Install Python modules
 ament_python_install_package(${PROJECT_NAME})
+
+# Install Python scripts/executables
+install(PROGRAMS
+  ${PROJECT_NAME}/deepracer_navigation_node.py
+  DESTINATION lib/${PROJECT_NAME}
+  RENAME deepracer_navigation_node
+)
 
 # Install launch files
 install(DIRECTORY launch/
