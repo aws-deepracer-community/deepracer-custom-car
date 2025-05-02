@@ -11,7 +11,9 @@
                 "${workspaceFolder}/build/inference_pkg/_deps/tensorflow-lite-src/**",
                 "${workspaceFolder}/build/inference_pkg/flatbuffers/include/"
             ],
-            "defines": ["HW_PLATFORM_DR"],
+            "defines": [
+                "HW_PLATFORM_DR"
+            ],
             "cStandard": "gnu17",
             "cppStandard": "gnu++17",
             "intelliSenseMode": "linux-gcc-x64"
@@ -27,7 +29,9 @@
                 "${workspaceFolder}/build/inference_pkg/_deps/tensorflow-lite-src/**",
                 "${workspaceFolder}/build/inference_pkg/flatbuffers/include/"
             ],
-            "defines": ["HW_PLATFORM_RPI4"],
+            "defines": [
+                "HW_PLATFORM_RPI4"
+            ],
             "cStandard": "gnu17",
             "cppStandard": "gnu++17",
             "intelliSenseMode": "linux-gcc-x64"
@@ -39,11 +43,12 @@
                 "${workspaceFolder}/install/deepracer_interfaces_pkg/**",
                 "/opt/ros/${env:ROS_DISTRO}/include/**",
                 "/usr/include/opencv4/",
-                "/opt/intel/openvino_2022/runtime/include/**",
                 "${workspaceFolder}/build/inference_pkg/_deps/tensorflow-lite-src/**",
                 "${workspaceFolder}/build/inference_pkg/flatbuffers/include/"
             ],
-            "defines": ["HW_PLATFORM_RPI5"],
+            "defines": [
+                "HW_PLATFORM_RPI5"
+            ],
             "cStandard": "gnu17",
             "cppStandard": "gnu++17",
             "intelliSenseMode": "linux-gcc-x64"

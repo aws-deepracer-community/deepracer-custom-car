@@ -12,4 +12,7 @@
         "**/build",
         "**/pkg-build"
     ],
+    "files.associations": {
+        "memory": "cpp"
+    },
 }

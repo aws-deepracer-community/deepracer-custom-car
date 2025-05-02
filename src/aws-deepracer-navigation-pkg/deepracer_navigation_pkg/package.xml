@@ -2,21 +2,26 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>deepracer_navigation_pkg</name>
-  <version>0.0.1</version>
-  <description>This package contains logic for transforming inference results 
-               to action values for autnomous driving.
-  </description>
+  <version>0.1.0</version>
+  <description>The AWS DeepRacer Navigation Package with both Python and C++ implementations.</description>
   <maintainer email="aws-deepracer@amazon.com">AWS DeepRacer</maintainer>
-  <license>Apache 2.0</license>
-
+  <license>Apache-2.0</license>
+  
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake_python</buildtool_depend>
+  
+  <depend>rclcpp</depend>
   <depend>rclpy</depend>
   <depend>deepracer_interfaces_pkg</depend>
-
+  <depend>libjsoncpp-dev</depend>
+  
+  <test_depend>ament_cmake_gtest</test_depend>
+  <test_depend>ament_cmake_pytest</test_depend>
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
   <test_depend>ament_pep257</test_depend>
-  <test_depend>python3-pytest</test_depend>
+  <test_depend>python3-pytest</test_depend> 
   <export>
-    <build_type>ament_python</build_type>
+    <build_type>ament_cmake</build_type>
   </export>
 </package>
