@@ -67,7 +67,17 @@ cp $DIR/build_scripts/files/pi/10-manage-wifi.conf /etc/NetworkManager/conf.d/
 systemctl disable systemd-networkd-wait-online
 
 sed -i 's/wifi.powersave = 3/wifi.powersave = 2/' /etc/NetworkManager/conf.d/default-wifi-powersave-on.conf
-sed -i 's/renderer: networkd/renderer: NetworkManager/' /etc/netplan/50-cloud-init.yaml
+# Replace the existing sed line with this more robust approach
+if grep -q "wlan0:" /etc/netplan/50-cloud-init.yaml; then
+  # Check if renderer already exists under wlan0
+  if ! grep -A5 "wlan0:" /etc/netplan/50-cloud-init.yaml | grep -q "renderer:"; then
+    # Add renderer under wlan0 using awk
+    awk '/wlan0:/{print; print "      renderer: NetworkManager"; next}1' /etc/netplan/50-cloud-init.yaml > /tmp/netplan.yaml && mv /tmp/netplan.yaml /etc/netplan/50-cloud-init.yaml
+  fi
+else
+  # If wlan0 section doesn't exist, fall back to replacing top-level renderer
+  sed -i 's/renderer: networkd/renderer: NetworkManager/' /etc/netplan/50-cloud-init.yaml
+fi
 echo -e "\nRestarting the network stack. This might require reconnection. Pi might receive a new IP address."
 echo -e "After script has finished, reboot.\n"
 systemctl restart NetworkManager
