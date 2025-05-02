@@ -42,7 +42,7 @@ namespace constants {
     };
 
     // Default speed scales
-    const std::vector<double> DEFAULT_SPEED_SCALES = {0.8, 0.5};
+    const std::vector<double> DEFAULT_SPEED_SCALES = {1.0, 0.8};
 }
 
 class DRNavigationNode : public rclcpp::Node {
