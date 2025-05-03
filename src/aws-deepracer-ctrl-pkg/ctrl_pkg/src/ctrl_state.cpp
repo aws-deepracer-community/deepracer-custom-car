@@ -75,11 +75,7 @@ namespace SysCtrl {
         // Subscribe to the appropriate servo topic.
         auto qos = rclcpp::QoS(rclcpp::KeepLast(1));
         qos.best_effort();
-        #ifdef ROS_DISTRO_JAZZY
-        auto qos_default = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
-        #else
-        auto qos_default = ::rmw_qos_profile_default;
-        #endif
+        auto qos_default = rclcpp::QoS(rclcpp::SystemDefaultsQoS()).get_rmw_qos_profile();
         servoPub_ = ctrlNode->create_publisher<deepracer_interfaces_pkg::msg::ServoCtrlMsg>(SERVO_TOPIC, qos);
 
         servoSub_ = ctrlNode->create_subscription<deepracer_interfaces_pkg::msg::ServoCtrlMsg>(subName,
@@ -318,11 +314,7 @@ namespace SysCtrl {
         // Subscribe to the appropriate servo topic.
         auto qos = rclcpp::QoS(rclcpp::KeepLast(1));
         qos.best_effort();
-        #ifdef ROS_DISTRO_JAZZY
-        auto qos_default = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
-        #else
-        auto qos_default = ::rmw_qos_profile_default;
-        #endif
+        auto qos_default = rclcpp::QoS(rclcpp::SystemDefaultsQoS()).get_rmw_qos_profile();
         servoPub_ = ctrlNode->create_publisher<deepracer_interfaces_pkg::msg::ServoCtrlMsg>(SERVO_TOPIC, qos);
 
         servoSub_ = ctrlNode->create_subscription<deepracer_interfaces_pkg::msg::ServoCtrlMsg>(subName,
@@ -423,11 +415,7 @@ namespace SysCtrl {
         // Subscribe to the appropriate servo topic.
         auto qos = rclcpp::QoS(rclcpp::KeepLast(1));
         qos.best_effort();
-        #ifdef ROS_DISTRO_JAZZY
-        auto qos_default = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
-        #else
-        auto qos_default = ::rmw_qos_profile_default;
-        #endif
+        auto qos_default = rclcpp::QoS(rclcpp::SystemDefaultsQoS()).get_rmw_qos_profile();
         calibrationPub_ = ctrlNode->create_publisher<deepracer_interfaces_pkg::msg::ServoCtrlMsg>(RAW_PWM_TOPIC, qos);
 
         servoSub_ = ctrlNode->create_subscription<deepracer_interfaces_pkg::msg::ServoCtrlMsg>(subName,

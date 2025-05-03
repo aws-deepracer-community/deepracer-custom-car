@@ -14,6 +14,9 @@
 #   limitations under the License.                                              #
 #################################################################################
 
+import os
+
+from requests import get
 
 LED_SOLID_SERVICE_NAME = "led_solid"
 LED_BLINK_SERVICE_NAME = "led_blink"
@@ -24,13 +27,26 @@ GPIO_ROOT_PATH = "/sys/class/gpio"
 # Default LED index.
 DEFAULT_LED_INDEX = 0
 
-# Status light LED GPIO port matrix.
-# Cols: led indices; rows: r, g, b channel ports.
-LED_PORTS = (
-    (448, 447, 437),
-    (446, 445, 443),
-    (450, 457, 458)
-)
+
+def get_led_ports():
+    """Status light LED GPIO port matrix.
+       Cols: led indices; rows: r, g, b channel ports.
+    """
+
+    if os.path.exists("/sys/class/dmi/id/chassis_serial"):
+        return (
+            (448, 447, 437),
+            (446, 445, 443),
+            (450, 457, 458)
+        )
+    else:
+        return (
+            (488+7, 488+8, 488+9),
+            (488+10, 488+11, 488+12),
+            (488+13, 488+14, 488+15))
+
+
+LED_PORTS = get_led_ports()
 
 
 class SupportedLEDEffects():
