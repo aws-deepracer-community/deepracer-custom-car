@@ -43,28 +43,9 @@ namespace PWM {
     /// @returns Syspath pointing to the pwmchip directory.
     const std::string getSysPath(){
         // Set default to pwmchip0 from previous release
-        auto syspath = std::string(BASE_SYS_PATH) + std::string("pwmchip0");
+        auto syspath = std::string(BASE_SYS_PATH) + std::string("pwmchip1");
         // ls -al /sys/class/pwm/
-        for (const auto & entry : std::filesystem::directory_iterator(BASE_SYS_PATH)){
-            auto filepath = entry.path();
-            if(std::filesystem::exists(filepath) && std::filesystem::is_symlink(filepath)){
-                std::string symlinkTarget = std::filesystem::read_symlink(filepath).c_str();
-                // grep "0000:00:17.0"
-                if (symlinkTarget.find(PWMDEV) != std::string::npos) {
-                    auto tmp = symlinkTarget;
-                    std::string delimiter = "/";
-                    size_t pos = 0;
-                    std::string token;
-                    size_t tokenCount = 0;
-                    // awk '{ print $9}'
-                    while ((pos = tmp.find(delimiter)) != std::string::npos && tokenCount < 9) {
-                        tmp.erase(0, pos + delimiter.length());
-                        tokenCount++;
-                    }
-                    syspath = std::string(BASE_SYS_PATH) + std::string(tmp);
-                }
-            }
-        }
+
         return syspath;
     }
 

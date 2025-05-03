@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# filepath: /home/ludvigse/deepracer-custom-car/scripts/setup_pwm1.sh
+
+# Define the PWM period
+PERIOD=20000000
+
+# Work only with pwmchip1
+chip=1
+
+# Cycle through all PWM channels 0-3 on pwmchip1
+for pwm in {0..4}; do
+    echo "Setting up PWM${chip} channel ${pwm}"
+    
+    # Try to export the PWM (might fail if already exported)
+    if [ -d "/sys/class/pwm/pwmchip${chip}/pwm${pwm}" ]; then
+        echo "  PWM already exported"
+    else
+        echo "  Exporting PWM"
+        echo ${pwm} > /sys/class/pwm/pwmchip${chip}/export || echo "  Failed to export (may already be in use)"
+    fi
+    
+    # Configure the PWM
+    echo "  Setting period to ${PERIOD}"
+    echo ${PERIOD} > /sys/class/pwm/pwmchip${chip}/pwm${pwm}/period || echo "  Failed to set period"
+    
+    current_duty_cycle=$(cat /sys/class/pwm/pwmchip${chip}/pwm${pwm}/duty_cycle 2>/dev/null || echo "error")
+    if [ "$current_duty_cycle" = "0" ]; then
+        echo "  Duty_cycle is already 0"
+    else
+        echo "  Setting duty_cycle to 0"
+        echo 0 > /sys/class/pwm/pwmchip${chip}/pwm${pwm}/duty_cycle || echo "  Failed to set duty_cycle"
+    fi
+    
+    echo "  Enabling PWM"
+    echo 1 > /sys/class/pwm/pwmchip${chip}/pwm${pwm}/enable || echo "  Failed to enable"
+    
+    echo ""
+done
+
+echo "All PWM channels on pwmchip1 have been configured"

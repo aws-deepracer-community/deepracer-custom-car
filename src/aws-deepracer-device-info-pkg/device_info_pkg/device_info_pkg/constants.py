@@ -28,7 +28,7 @@ SERVO_LATENCY_TOPIC_NAME = "/servo_pkg/latency"
 AWS_DEEPRACER_CORE_PKG = "aws-deepracer-core"
 
 # Base path of the GPIO ports.
-GPIO_BASE_PATH = "/sys/class/gpio"
+GPIO_BASE_PATH = "/dev/gpiochip4"
 
 SECURE_BOOT_CMD = "od -An -t u2 /sys/firmware/efi/efivars/SecureBoot-8be4df61-93ca-11d2-aa0d-00e098032b8c"
 

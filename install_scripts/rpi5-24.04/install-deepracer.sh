@@ -43,51 +43,34 @@ apt -y update && apt install -y --no-install-recommends \
     libpugixml1v5 \
     libuvc0 \
     python3-argcomplete \
-    python3-colcon-common-extensions \
     python3-opencv \
     python3-pip \
-    python3-rosinstall \
+    python3-protobuf \
+    python3-pyudev \
     python3-venv \
+    python3-testresources \
     python3-websocket \
+    python3-networkx \
+    python3-unidecode \
     ros-dev-tools \
-    ros-humble-ros-core
+    ros-jazzy-ros-core
 
-rosdep init && rosdep update --rosdistro=humble -q
-
-# Update build tools and utilities for Python
-sudo pip3 install -U "setuptools==58.2.0" pip "Cython==0.29.28" testresources
-
-# Get OpenVINO
-mkdir -p $DIR/dist/
-cd $DIR/dist/
-[ ! -f "$DIR/dist/openvino_2022.3.1_arm64.tgz" ] && curl -O https://aws-deepracer-community-sw.s3.eu-west-1.amazonaws.com/openvino/openvino_2022.3.1_arm64.tgz
-cd /
-tar xvzf $DIR/dist/openvino_2022.3.1_arm64.tgz
-ln -sf /opt/intel/openvino_2022.3.1 /opt/intel/openvino_2022
-ln -sf /opt/intel/openvino_2022.3.1 /opt/intel/openvino
-/opt/intel/openvino_2022.3.1/install_dependencies/install_NCS_udev_rules.sh
-systemctl restart systemd-resolved
+rosdep init && rosdep update --rosdistro=jazzy -q
 
 # Tensorflow and dependencies
-pip3 install -U pyudev \
+pip3 install -U --break-system-packages \
     "flask<3" \
     flask_cors \
     flask_wtf \
-    pam \
-    networkx \
-    unidecode \
     pyserial \
     "tensorflow==2.17.1" \
-    "numpy>=1.16.6,<=1.23.4" \
-    "protobuf" \
     "tensorboard" \
-    "blinker==1.4" \
     pyclean \
-    /opt/intel/openvino_2022.3.1/tools/openvino_dev-2022.3.1-1-py3-none-any.whl \
-    /opt/intel/openvino_2022.3.1/tools/openvino-2022.3.1-1-cp310-cp310-manylinux_2_35_aarch64.whl
+    pam \
+    gpiod
 
 # Install packages
-cp $DIR/install_scripts/rpi4-22.04/aws_deepracer-community.list /etc/apt/sources.list.d/aws_deepracer.list
+cp $DIR/install_scripts/rpi5-24.04/aws_deepracer-community.list /etc/apt/sources.list.d/aws_deepracer.list
 cp $DIR/install_scripts/common/deepracer-community.asc /etc/apt/trusted.gpg.d/
 apt update -y && apt install -y aws-deepracer-core aws-deepracer-device-console aws-deepracer-util aws-deepracer-sample-models
 

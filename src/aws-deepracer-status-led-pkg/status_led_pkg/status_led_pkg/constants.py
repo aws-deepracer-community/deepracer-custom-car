@@ -22,7 +22,7 @@ LED_SOLID_SERVICE_NAME = "led_solid"
 LED_BLINK_SERVICE_NAME = "led_blink"
 
 # Base path of the GPIO ports.
-GPIO_ROOT_PATH = "/sys/class/gpio"
+GPIO_ROOT_PATH = "/dev/gpiochip4"
 
 # Default LED index.
 DEFAULT_LED_INDEX = 0
@@ -39,11 +39,16 @@ def get_led_ports():
             (446, 445, 443),
             (450, 457, 458)
         )
-    else:
+    elif os.path.exists("/proc/device-tree/model") and "Raspberry Pi 4" in open("/proc/device-tree/model").read():
         return (
             (488+7, 488+8, 488+9),
             (488+10, 488+11, 488+12),
             (488+13, 488+14, 488+15))
+    elif os.path.exists("/proc/device-tree/model") and "Raspberry Pi 5" in open("/proc/device-tree/model").read():
+        return (
+            (9+0, 9+1, 9+2),
+            (9+3, 9+4, 9+5),
+            (9+6, 9+7, 9+8))
 
 
 LED_PORTS = get_led_ports()

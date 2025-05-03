@@ -23,107 +23,109 @@ This module creates the GPIO class which is responsible to provide enable/disabl
 and on/off functionality for required GPIO ports.
 """
 
-import os
+import gpiod
+from gpiod.line import Direction, Value
 
 #########################################################################################
-# GPIO access class.
-# Add error handling on the client side
+# GPIO access class using the modern gpiod interface for Raspberry Pi 5
 
 
 class GPIO:
-    """Class responsible to read and write to a GPIO port.
+    """Class responsible to read and write to a GPIO port using the gpiod library.
     """
     def __init__(self, gpio_base_path, gpio, logger, direction="out"):
         """Create a GPIO object.
 
         Args:
-            gpio_base_path (str): Base path to the GPIO port.
-            gpio (int): GPIO port number.
+            gpio_base_path (str): Deprecated, kept for API compatibility.
+            gpio (int): GPIO pin number.
             logger (rclpy.rclpy.impl.rcutils_logger.RcutilsLogger):
                 Logger object of the device_info_node.
             direction (str, optional): GPIO input/output direction. Defaults to "out".
         """
-        self.base_path = gpio_base_path
         self.gpio = gpio
-        self.direction = direction
+        self.direction = Direction.OUTPUT if direction == "out" else Direction.INPUT
         self.logger = logger
-        self.root_path = f"{gpio_base_path}/gpio{gpio}"
-        self.value_path = f"{self.root_path}/value"
-
+        self.chip = None
+        self.line = None
+        self.chip_base_path = gpio_base_path
+        
     def enable(self):
-        """Enable the GPIO port by exporting the control of a GPIO to userspace and
-           set the direction attribute.
+        """Enable the GPIO port by requesting a line from the GPIO chip.
 
         Returns:
             bool: True if successful else False.
         """
         try:
-            if(not os.path.isdir(self.root_path)):
-                with open(f"{self.base_path}/export", "w") as export:
-                    export.write(str(self.gpio))
+            # Get the default GPIO chip (typically gpiochip0 on RPi)
+            self.chip = gpiod.Chip(self.chip_base_path)
+            
+            # For gpiod 2.3.0, the proper API is:
+            self.line = self.chip.request_lines({
+                self.gpio: gpiod.LineSettings(
+                    direction=self.direction,
+                    output_value=Value.INACTIVE  # Start with low output
+                )
+            }, consumer="deepracer-custom-car")
+            
+            return True
         except Exception as ex:
-            self.logger.error(f"Error while writing to export for the GPIO port {self.gpio}: {ex}")
+            self.logger.error(f"Error enabling GPIO port {self.gpio}: {ex}")
             return False
-
-        try:
-            with open(f"{self.root_path}/direction", "w") as direction:
-                direction.write(self.direction)
-        except Exception as ex:
-            self.logger.error(f"Error while writing direction for the GPIO port {self.gpio}: {ex}")
-            return False
-
-        try:
-            os.chmod(self.value_path, 766)
-        except Exception as ex:
-            self.logger.error("Error while changing access permissions of value file for the GPIO port"
-                              f"{self.gpio}: {ex}")
-            return False
-
-        return True
 
     def disable(self):
-        """Disable the GPIO port by unexporting the control of a GPIO to userspace.
+        """Disable the GPIO port by releasing the line.
 
         Returns:
             bool: True if successful else False.
         """
         try:
-            with open(f"{self.base_path}/unexport", "w") as unexport:
-                unexport.write(str(self.gpio))
+            if self.line:
+                # Release automatically happens when line is deleted
+                self.line = None
+            
+            if self.chip:
+                self.chip.close()
+                self.chip = None
+            return True
         except Exception as ex:
-            self.logger.error("Error while writing to unexport for the GPIO port "
-                              f"{self.gpio}: {ex}")
+            self.logger.error(f"Error disabling GPIO port {self.gpio}: {ex}")
             return False
 
-        return True
-
-    def set(self, Value):
-        """Helper method to write the value attribute of the GPIO port.
+    def set(self, value):
+        """Helper method to write the value to the GPIO port.
+        
+        Args:
+            value (int): 0 for low, 1 for high
         """
         try:
-            with open(self.value_path, "w") as value:
-                value.write(str(Value))
+            if self.line:
+                gpio_value = Value.ACTIVE if value else Value.INACTIVE
+                self.line.set_value(self.gpio, gpio_value)
         except Exception as ex:
-            self.logger.error("Error while setting the value for the GPIO port "
-                              f"{self.gpio}: {ex}")
+            self.logger.error(f"Error setting the value for GPIO port {self.gpio}: {ex}")
 
     def get(self):
-        """Helper method to read the value attribute of the GPIO port.
+        """Helper method to read the value from the GPIO port.
+        
+        Returns:
+            str: "0" or "1" depending on the GPIO state
         """
         try:
-            with open(self.value_path, "r") as value:
-                result = value.read()
-                return str(result.strip())
+            if self.line:
+                value = self.line.get_value(self.gpio)
+                return "1" if value == Value.ACTIVE else "0"
+            return None
         except Exception as ex:
-            self.logger.error("Error while getting the value for the GPIO port "
-                              f"{self.gpio}: {ex}")
+            self.logger.error(f"Error getting the value for GPIO port {self.gpio}: {ex}")
+            return None
 
     def on(self):
-        """Wrapper function to write the value 1 to value attribute of GPIO port.
+        """Wrapper function to set the GPIO port to high.
         """
         self.set(1)
 
     def off(self):
-        """Wrapper function to write the value 0 to value attribute of GPIO port.
+        """Wrapper function to set the GPIO port to low.
         """
         self.set(0)
