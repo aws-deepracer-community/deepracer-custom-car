@@ -50,6 +50,7 @@ update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
 export LANG=en_US.UTF-8
 
 # Enable PWM / PCA9685 on I2C 0x40
+echo "dtparam=i2c1_baudrate=400000" | tee -a /boot/firmware/config.txt
 echo "dtoverlay=i2c-pwm-pca9685a,addr=0x40" | tee -a /boot/firmware/config.txt
 
 # Switch nameserver

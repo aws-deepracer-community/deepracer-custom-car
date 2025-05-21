@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# filepath: /home/ludvigse/deepracer-custom-car/scripts/setup_pwm1.sh
 
 # Define the PWM period
 PERIOD=20000000
