@@ -15,6 +15,25 @@ if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 17)
 endif()
 
+# In each C++ package that needs HW_PLATFORM
+if(DEFINED ENV{HW_PLATFORM})
+  set(HW_PLATFORM $ENV{HW_PLATFORM})
+  message(STATUS "Using hardware platform from environment: ${HW_PLATFORM}")
+else()
+  message(STATUS "No hardware platform specified. Defaulting to DR.")
+  set(HW_PLATFORM "DR")
+endif()
+
+# Process HW_PLATFORM variable
+message(STATUS "Building inference package for hardware platform: ${HW_PLATFORM}")
+if(HW_PLATFORM STREQUAL "RPI4")
+  add_definitions(-DHW_PLATFORM_RPI4)
+elseif(HW_PLATFORM STREQUAL "RPI5")
+  add_definitions(-DHW_PLATFORM_RPI5)
+elseif(HW_PLATFORM STREQUAL "DR")
+  add_definitions(-DHW_PLATFORM_DR)
+endif()
+
 # Find and use OpenMP for multi-core optimization
 find_package(OpenMP)
 if(OpenMP_CXX_FOUND)
@@ -26,42 +45,6 @@ endif()
 # Architecture detection and optimization setup
 include(CheckCXXSourceRuns)
 set(CMAKE_REQUIRED_FLAGS)
-
-# Check for Intel architecture
-check_cxx_source_runs("
-#include <stdio.h>
-int main() {
-  #if defined(__x86_64__) || defined(_M_X64) || defined(i386) || defined(_M_IX86)
-    return 0;
-  #else
-    return 1;
-  #endif
-}
-" IS_INTEL_ARCHITECTURE)
-
-# Check for ARM architecture
-check_cxx_source_runs("
-#include <stdio.h>
-int main() {
-  #if defined(__arm__) || defined(__aarch64__)
-    return 0;
-  #else
-    return 1;
-  #endif
-}
-" IS_ARM_ARCHITECTURE)
-
-# Check for 64-bit ARM
-check_cxx_source_runs("
-#include <stdio.h>
-int main() {
-  #if defined(__aarch64__)
-    return 0;
-  #else
-    return 1;
-  #endif
-}
-" IS_ARM64)
 
 # Set up common optimization flags
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -81,7 +64,7 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 # Architecture-specific optimizations
-if(IS_INTEL_ARCHITECTURE)
+if(HW_PLATFORM STREQUAL "DR")
   message(STATUS "Intel architecture detected, enabling Goldmont optimizations")
   
   # TensorFlow Lite optimization flags for Intel
@@ -97,18 +80,18 @@ if(IS_INTEL_ARCHITECTURE)
     )
   endif()
   
-elseif(IS_ARM_ARCHITECTURE)
-  if(IS_ARM64)
-    message(STATUS "64-bit ARM architecture detected, optimizing for Compute Module 4")
-    
-    # TensorFlow Lite optimization flags for ARM64
-    set(TFLITE_ENABLE_XNNPACK ON CACHE BOOL "Enable XNNPACK acceleration")
-    set(TFLITE_ENABLE_RUY ON CACHE BOOL "Enable RUY matrix multiplication library")
-    set(TFLITE_ENABLE_NEON ON CACHE BOOL "Enable NEON optimizations for ARM")
-    set(TFLITE_ENABLE_MMAP ON CACHE BOOL "Enable mmap for faster file access")
-    set(TFLITE_ENABLE_GPU OFF CACHE BOOL "Disable GPU")
-    set(TFLITE_ENABLE_NNAPI OFF CACHE BOOL "Disable Android NNAPI")
-    
+elseif(HW_PLATFORM STREQUAL "RPI4" OR HW_PLATFORM STREQUAL "RPI5")
+ 
+  # TensorFlow Lite optimization flags for ARM64
+  set(TFLITE_ENABLE_XNNPACK ON CACHE BOOL "Enable XNNPACK acceleration")
+  set(TFLITE_ENABLE_RUY ON CACHE BOOL "Enable RUY matrix multiplication library")
+  set(TFLITE_ENABLE_NEON ON CACHE BOOL "Enable NEON optimizations for ARM")
+  set(TFLITE_ENABLE_MMAP ON CACHE BOOL "Enable mmap for faster file access")
+  set(TFLITE_ENABLE_GPU OFF CACHE BOOL "Disable GPU")
+  set(TFLITE_ENABLE_NNAPI OFF CACHE BOOL "Disable Android NNAPI")
+
+  if(HW_PLATFORM STREQUAL "RPI5")
+    message(STATUS "RPI5 architecture detected, enabling Cortex-A76 optimizations")
     if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
       add_compile_options(
         -march=armv8.2-a      # ARMv8 architecture (required for 64-bit)
@@ -116,15 +99,16 @@ elseif(IS_ARM_ARCHITECTURE)
         -ftree-vectorize    # Enable auto-vectorization
       )
     endif()
-    
-  else() # 32-bit ARM
-    message(WARNING "32-bit ARM detected. For best CM4 performance, use 64-bit OS/toolchain")
-    set(TFLITE_ENABLE_XNNPACK ON CACHE BOOL "Enable XNNPACK acceleration")
-    set(TFLITE_ENABLE_NEON ON CACHE BOOL "Enable NEON optimizations for ARM")
+  elseif(HW_PLATFORM STREQUAL "RPI4")
+    message(STATUS "RPI4 architecture detected, enabling Cortex-A72 optimizations")
+    if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+      add_compile_options(
+        -march=armv8-a       # ARMv8 architecture (required for 64-bit)
+        -mtune=cortex-a72   # Optimize for CM4's Cortex-A72 CPU
+        -ftree-vectorize     # Enable auto-vectorization
+      )
+    endif()  
   endif()
-  
-else()
-  message(STATUS "Non-Intel/ARM architecture detected, using generic optimizations")
 endif()
 
 FetchContent_Declare(tensorflow-lite

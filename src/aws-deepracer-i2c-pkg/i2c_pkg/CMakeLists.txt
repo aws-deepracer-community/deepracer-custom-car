@@ -19,7 +19,6 @@ endif()
 if(DEFINED ENV{HW_PLATFORM})
   set(HW_PLATFORM $ENV{HW_PLATFORM})
   message(STATUS "Using hardware platform from environment: ${HW_PLATFORM}")
-  add_definitions(-DHW_PLATFORM_${HW_PLATFORM})
 endif()
 
 # Process HW_PLATFORM variable 
