@@ -15,83 +15,136 @@
 ///////////////////////////////////////////////////////////////////////////////////
 
 #include "servo_pkg/pwm.hpp"
+#include <filesystem>
+#include <fstream>
+#include <array>
+#include <memory>
+#include <cstdio>
 
-namespace PWM {
+namespace PWM
+{
     /// Max size of the character buffer used to concat the file paths.
-    #define MAX_BUF 64
-    // The following pwm dev id and base path were given by pegatron.
-    #define PWMDEV "0000:00:17.0"
-    #define BASE_SYS_PATH "/sys/class/pwm/"
+    constexpr char BASE_SYS_PATH[] = "/sys/class/pwm/";
 
     /// Helper method that writes the given value into a specified path.
     /// @param path Path to the file where the value is to be written.
     /// @param value Value to write in the file given by path.
-  	void writePWM(const char *path, int value, rclcpp::Logger logger_) {
-        int fd, len;
-        fd = open(path, O_WRONLY);
-        if (fd < 0) {
-            RCLCPP_ERROR(logger_, "Failed to open: %s", path);
-            return;
+    /// @param logger ROS logger to report errors
+    /// @return true if successful, false otherwise
+    bool writePWM(const std::string &path, int value, const rclcpp::Logger &logger)
+    {
+        std::ofstream file(path);
+        if (!file)
+        {
+            RCLCPP_ERROR(logger, "Failed to open: %s", path.c_str());
+            return false;
         }
-        char buf[MAX_BUF];
-        len = snprintf(buf, sizeof(buf), "%d", value);
-        write(fd, buf, len);
-        close(fd);
+        file << value;
+        return file.good();
     }
-    /// Rewriting the command to dynamically find the pwmchip%d directory and return the syspath
-    /// `ls -al /sys/class/pwm/ | grep "0000:00:17.0" | awk '{ print $9}'`
+
+    /// Simplified function to find the pwmchip directory
+    /// @param logger ROS logger to report errors
     /// @returns Syspath pointing to the pwmchip directory.
-    const std::string getSysPath(){
-        // Set default to pwmchip0 from previous release
-        auto syspath = std::string(BASE_SYS_PATH) + std::string("pwmchip1");
-        // ls -al /sys/class/pwm/
+    std::string getSysPath(const rclcpp::Logger &logger = rclcpp::get_logger("pwm"))
+    {
+        namespace fs = std::filesystem;
 
-        return syspath;
+        // Direct path to default PWM chip
+        std::string chipPath = std::string(BASE_SYS_PATH) + "pwmchip1";
+
+        try
+        {
+            // Check if the path exists
+            if (fs::exists(chipPath))
+            {
+                RCLCPP_INFO(logger, "Using PWM chip: pwmchip1");
+                return chipPath;
+            }
+
+            // If pwmchip1 doesn't exist, log a warning
+            RCLCPP_WARN(logger, "PWM chip path %s does not exist", chipPath.c_str());
+            return chipPath; // Return anyway as a fallback
+        }
+        catch (const std::exception &e)
+        {
+            RCLCPP_ERROR(logger, "Exception while checking PWM path: %s", e.what());
+            return chipPath;
+        }
     }
 
-    Servo::Servo(int channel, rclcpp::Logger logger_)
-      : channel_(channel),
-        period_(0),
-        duty_(0),
-        syspath_(getSysPath()),
-	    logger_(logger_)
-
+    Servo::Servo(int channel, rclcpp::Logger logger)
+        : channel_(channel),
+          period_(0),
+          duty_(0),
+          logger_(logger),
+          syspath_(getSysPath(logger_))
     {
         RCLCPP_INFO(logger_, "Servo syspath: %s", syspath_.c_str());
-        // Export the PWM if it is not already exported.
-        char exportPath[MAX_BUF];
-        snprintf(exportPath, sizeof(exportPath), (syspath_ + std::string("/pwm%d")).c_str(), channel_);
-        struct stat st;
-        if (stat(exportPath, &st) == 0) {
+
+        // Export the PWM if it is not already exported
+        std::string exportPath = syspath_ + "/pwm" + std::to_string(channel_);
+
+        if (std::filesystem::exists(exportPath))
+        {
             RCLCPP_INFO(logger_, "Servo channel %d has already been exported", channel_);
             return;
         }
-        writePWM((syspath_ + std::string("/export")).c_str(), channel_, logger_);
+
+        writePWM(syspath_ + "/export", channel_, logger_);
     }
 
     /// Setter for the PWM period.
     /// @param period Desired period in ms.
-    void Servo::setPeriod(int period) {
-        char periodPath[MAX_BUF];
-        snprintf(periodPath, sizeof(periodPath), (syspath_ + std::string("/pwm%d/period")).c_str(), channel_);
-        writePWM(periodPath, period, logger_);
+    void Servo::setPeriod(int period)
+    {
+        std::string periodPath = syspath_ + "/pwm" + std::to_string(channel_) + "/period";
+        // Read current value
+        int currentPeriod = -1;
+        std::ifstream file(periodPath);
+        if (file)
+        {
+            file >> currentPeriod;
+        }
+        // Only write if different
+        if (currentPeriod != period)
+        {
+            if (writePWM(periodPath, period, logger_))
+            {
+                period_ = period;
+            }
+            // Wait for one period to ensure the value is written
+            if (period > 0)
+            {
+                std::this_thread::sleep_for(std::chrono::nanoseconds(period));
+            }
+        }
+        else
+        {
+            RCLCPP_INFO(logger_, "Period is already set to %d", period);
+        }
     }
 
     /// Setter for the duty cycle, this is what determines how much the servo actuates.
-    /// @param Desired duty cycle.
-    void Servo::setDuty(int duty) {
-        char dutyPath[MAX_BUF];
-        snprintf(dutyPath, sizeof(dutyPath), (syspath_ + std::string("/pwm%d/duty_cycle")).c_str(), channel_);
-        writePWM(dutyPath, duty, logger_);
+    /// @param duty Desired duty cycle.
+    void Servo::setDuty(int duty)
+    {
+        std::string dutyPath = syspath_ + "/pwm" + std::to_string(channel_) + "/duty_cycle";
+        if (writePWM(dutyPath, duty, logger_))
+        {
+            duty_ = duty;
+        }
     }
 
     /// @returns Current value of the period.
-    int Servo::getPeriod() const {
+    int Servo::getPeriod() const
+    {
         return period_;
     }
 
     /// @returns Current value of the duty cycle.
-    int Servo::getDuty() const {
+    int Servo::getDuty() const
+    {
         return duty_;
     }
 }
