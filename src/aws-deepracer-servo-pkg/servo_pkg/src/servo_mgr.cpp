@@ -176,8 +176,13 @@ namespace PWM {
                               std::shared_ptr<deepracer_interfaces_pkg::srv::ServoGPIOSrv::Response> res) {
 
         (void)request_header;
+        #ifdef HW_PLATFORM_DR
         bool ret = calibrateServo(GPIO_CHANNEL, req->enable);
         res->error = ret ? 0 : 1;
+        #else
+        res->error = 0;
+        #endif
+
     }
     /// Handler for get calibration request
     void ServoMgr::getCalHdl(const std::shared_ptr<rmw_request_id_t> request_header,

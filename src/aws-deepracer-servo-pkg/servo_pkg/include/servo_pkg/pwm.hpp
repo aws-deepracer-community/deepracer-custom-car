@@ -50,10 +50,10 @@ namespace PWM {
         int period_;
         /// Current value of the duty cycle.
         int duty_;
-        /// Dynamically assigned syspath
-        std::string syspath_;
         /// ROS Logger object to log messages.
     	rclcpp::Logger logger_;
+        /// Dynamically assigned syspath
+        std::string syspath_;
     };
 }
 #endif
