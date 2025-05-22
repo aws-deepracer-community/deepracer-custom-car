@@ -43,7 +43,7 @@ RUN wget -O /etc/apt/trusted.gpg.d/deb-s3-archive-keyring.gpg https://raw.github
     echo "deb http://deb-s3-repo.s3.us-east-2.amazonaws.com/$(lsb_release -is | tr A-Z a-z)/ $(lsb_release -cs) main" | sudo tee -a /etc/apt/sources.list > /dev/null && \
     apt-get update && apt-get install -y deb-s3
 
-RUN pip3 install -U awscli smbus2 pillow transforms3d autopep8 opencv-python pyserial gpiod "setuptools==58.2.0" "Cython<3" $(find /opt/intel/openvino_2022.3.1/tools/ -name *.whl)
+RUN pip3 install -U awscli smbus2 pillow transforms3d autopep8 opencv-python pyserial "setuptools==58.2.0" "Cython<3" $(find /opt/intel/openvino_2022.3.1/tools/ -name *.whl)
 
 # Create the user
 RUN groupadd --gid $USER_GID $USERNAME \
