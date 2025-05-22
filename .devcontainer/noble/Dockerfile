@@ -9,6 +9,7 @@ ARG USER_GID=$USER_UID
 RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
     libboost-all-dev \
     libpugixml-dev \
+    gpiod \
     python3-apt \
     python3-pip \
     python3-websocket \
@@ -17,6 +18,8 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
     python3-opencv \
     python3-autopep8 \
     python3-venv \
+    python3-libgpiod \
+    libgpiod-dev \
     ros-dev-tools \
     ros-jazzy-cv-bridge \
     ros-jazzy-camera-ros \

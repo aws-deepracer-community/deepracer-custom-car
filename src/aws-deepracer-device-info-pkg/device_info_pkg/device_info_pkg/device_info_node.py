@@ -156,31 +156,32 @@ class DeviceInfoNode(Node):
         board_id0 = None
         board_id1 = None
         try:
-            board1 = gpio_module.GPIO(base_path, 383, self.get_logger(), direction="in")
-            if board1.enable():
-                board_id1 = board1.get()
-                self.get_logger().info(f"board_id1: {board_id1}")
+            if constants.SYSTEM_TYPE == constants.SystemType.DR:
+                board1 = gpio_module.GPIO(base_path, 383, self.get_logger(), direction="in")
+                if board1.enable():
+                    board_id1 = board1.get()
+                    self.get_logger().info(f"board_id1: {board_id1}")
 
-            board0 = gpio_module.GPIO(base_path, 387, self.get_logger(), direction="in")
-            if (board_id1 is not None) and board0.enable():
-                board_id0 = board0.get()
-                self.get_logger().info(f"board_id0: {board_id0}")
+                board0 = gpio_module.GPIO(base_path, 387, self.get_logger(), direction="in")
+                if (board_id1 is not None) and board0.enable():
+                    board_id0 = board0.get()
+                    self.get_logger().info(f"board_id0: {board_id0}")
 
-            if (board_id1 is not None) and (board_id0 is not None):
-                hardware_version = ""
-                if board_id1 == "0":
-                    if board_id0 == "0":
-                        hardware_version = "DeepRacer R1.0"
+                if (board_id1 is not None) and (board_id0 is not None):
+                    hardware_version = ""
+                    if board_id1 == "0":
+                        if board_id0 == "0":
+                            hardware_version = "DeepRacer R1.0"
+                        else:
+                            hardware_version = "DeepRacer R1.1"
                     else:
-                        hardware_version = "DeepRacer R1.1"
-                else:
-                    if board_id0 == "0":
-                        hardware_version = "DeepRacer R2.0"
-                    else:
-                        hardware_version = "DeepRacer R2.1"
+                        if board_id0 == "0":
+                            hardware_version = "DeepRacer R2.0"
+                        else:
+                            hardware_version = "DeepRacer R2.1"
 
-                self.hardware_version = hardware_version
-                self.get_logger().info(f"Loading Hardware version: {self.hardware_version}")
+                    self.hardware_version = hardware_version
+                    self.get_logger().info(f"Loading Hardware version: {self.hardware_version}")
             else:
                 # Check if a device tree is available (Raspberry Pi)
                 model_path = "/sys/firmware/devicetree/base/model"

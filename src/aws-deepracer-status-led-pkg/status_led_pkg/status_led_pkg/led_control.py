@@ -24,7 +24,7 @@ for specific LED and provides a combined functionality to access their GPIO port
 """
 
 from status_led_pkg import (constants,
-                            gpio_module)
+                            gpio_module, gpiod_module)
 
 #########################################################################################
 # LED control class.
@@ -42,16 +42,26 @@ class LEDControl:
             logger (rclpy.rclpy.impl.rcutils_logger.RcutilsLogger):
                 Logger object of the status_led_node.
         """
-        # Create the specific GPIO objects for r, g, b channels.
-        self.r = gpio_module.GPIO(constants.GPIO_ROOT_PATH,
-                                  constants.LED_PORTS[index][0],
-                                  logger)
-        self.g = gpio_module.GPIO(constants.GPIO_ROOT_PATH,
-                                  constants.LED_PORTS[index][1],
-                                  logger)
-        self.b = gpio_module.GPIO(constants.GPIO_ROOT_PATH,
-                                  constants.LED_PORTS[index][2],
-                                  logger)
+
+        if constants.SYSTEM_TYPE == constants.SystemType.DR:
+            # Create the specific GPIO objects for r, g, b channels.
+            self.r = gpio_module.GPIO(constants.GPIO_ROOT_PATH,
+                                    constants.LED_PORTS[index][0],
+                                    logger)
+            self.g = gpio_module.GPIO(constants.GPIO_ROOT_PATH,
+                                    constants.LED_PORTS[index][1],
+                                    logger)
+            self.b = gpio_module.GPIO(constants.GPIO_ROOT_PATH,
+                                    constants.LED_PORTS[index][2],
+                                    logger)
+        else:
+            # Create the specific GPIO objects for r, g, b channels.
+            self.r = gpiod_module.GPIOD(constants.LED_PORTS[index][0],
+                                        logger)
+            self.g = gpiod_module.GPIOD(constants.LED_PORTS[index][1],
+                                        logger)
+            self.b = gpiod_module.GPIOD(constants.LED_PORTS[index][2],
+                                        logger)
 
     def __enter__(self):
         """Called when the LEDControl object is created using the 'with' statement.

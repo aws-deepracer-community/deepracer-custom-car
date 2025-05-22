@@ -66,9 +66,7 @@ pip3 install -U --break-system-packages \
     "tensorflow==2.17.1" \
     "tensorboard" \
     pyclean \
-    pam \
-    gpiod
-
+    pam
 # Install packages
 cp $DIR/install_scripts/rpi5-24.04/aws_deepracer-community.list /etc/apt/sources.list.d/aws_deepracer.list
 cp $DIR/install_scripts/common/deepracer-community.asc /etc/apt/trusted.gpg.d/
