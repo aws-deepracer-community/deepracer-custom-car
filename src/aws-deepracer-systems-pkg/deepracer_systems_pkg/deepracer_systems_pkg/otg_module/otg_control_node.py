@@ -136,9 +136,7 @@ class OTGControlNode(Node):
            there is a chagne in the host connecton status.
         """
         with utility.AutoLock(self.otg_guard):
-            host_connected = "U0" in file_system_utils.read_line(
-                                                    os.path.join(otg_config.OTG_STATE_DIRECTORY,
-                                                                 otg_config.OTG_LINK_STATE))
+            host_connected = otg_config.OTG_UP_STATE in file_system_utils.read_line(otg_config.OTG_STATE_FILE)
             if host_connected != self.otg_connected:
                 self.otg_connected = host_connected
                 self.scheduler.schedule_action(self.otg_connection_change, connected=host_connected)
@@ -192,16 +190,17 @@ class OTGControlNode(Node):
                     usb0 = True
                     self.get_logger().info("Ethernet Over OTG enabled for Windows!")
         if not usb0:
-                self.get_logger().error("Ethernet Over OTG enable failed for Windows.")
+            self.get_logger().error("Ethernet Over OTG enable failed for Windows.")
 
         # Setup connectivity from Mac
-        if self.execute("ip link set usb1 up"):
-            if self.execute("ip addr add 10.0.1.1/30 dev usb1"):
-                if self.execute("systemctl restart dnsmasq") and \
-                   self.execute("systemctl restart isc-dhcp-server"):
-                    usb1 = True
-                    self.get_logger().info("Ethernet Over OTG enabled for MAC!")
-        if not usb1:
+        if otg_config.OTH_USB1:
+            if self.execute("ip link set usb1 up"):
+                if self.execute("ip addr add 10.0.1.1/30 dev usb1"):
+                    if self.execute("systemctl restart dnsmasq") and \
+                            self.execute("systemctl restart isc-dhcp-server"):
+                        usb1 = True
+                        self.get_logger().info("Ethernet Over OTG enabled for MAC!")
+            if not usb1:
                 self.get_logger().error("Ethernet Over OTG enable failed for MAC.")
 
         return True
@@ -211,8 +210,9 @@ class OTGControlNode(Node):
         """
         if not self.execute("ip link set usb0 down"):
             self.get_logger().error("Ethernet Over OTG disable failed for Windows!")
-        if not self.execute("ip link set usb1 down"):
-            self.get_logger().error("Ethernet Over OTG disable failed for MAC!")
+        if otg_config.OTH_USB1:
+            if not self.execute("ip link set usb1 down"):
+                self.get_logger().error("Ethernet Over OTG disable failed for MAC!")
         self.get_logger().info("Ethernet Over OTG disabled!!!")
 
     def execute(self, cmd):
