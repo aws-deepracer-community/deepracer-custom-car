@@ -56,12 +56,7 @@ def get_led_ports():
             (446, 445, 443),
             (450, 457, 458)
         )
-    elif SYSTEM_TYPE == SystemType.RPI4:
-        return (
-            (488+7, 488+8, 488+9),
-            (488+10, 488+11, 488+12),
-            (488+13, 488+14, 488+15))
-    elif SYSTEM_TYPE == SystemType.RPI4:
+    elif SYSTEM_TYPE == SystemType.RPI4 or SYSTEM_TYPE == SystemType.RPI5:
         return (
             (9+0, 9+1, 9+2),
             (9+3, 9+4, 9+5),
