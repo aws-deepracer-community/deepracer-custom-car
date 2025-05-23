@@ -21,6 +21,12 @@
 #include <memory>
 #include <cstdio>
 
+#if defined(HW_PLATFORM_RPI5)
+#define PWMCHIP "pwmchip1"
+#else
+#define PWMCHIP "pwmchip0"
+#endif
+
 namespace PWM
 {
     /// Max size of the character buffer used to concat the file paths.
@@ -51,18 +57,18 @@ namespace PWM
         namespace fs = std::filesystem;
 
         // Direct path to default PWM chip
-        std::string chipPath = std::string(BASE_SYS_PATH) + "pwmchip1";
+        std::string chipPath = std::string(BASE_SYS_PATH) + PWMCHIP;
 
         try
         {
             // Check if the path exists
             if (fs::exists(chipPath))
             {
-                RCLCPP_INFO(logger, "Using PWM chip: pwmchip1");
+                RCLCPP_INFO(logger, "Using PWM chip: %s", PWMCHIP);
                 return chipPath;
             }
 
-            // If pwmchip1 doesn't exist, log a warning
+            // If PWMCHIP doesn't exist, log a warning
             RCLCPP_WARN(logger, "PWM chip path %s does not exist", chipPath.c_str());
             return chipPath; // Return anyway as a fallback
         }
