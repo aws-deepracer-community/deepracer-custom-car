@@ -34,6 +34,7 @@ class LEDControl:
     """LED control class responsible for managing the R,G,B channels of the status led light
        for the specific index.
     """
+
     def __init__(self, index, logger):
         """Create the LEDControl object.
 
@@ -46,21 +47,24 @@ class LEDControl:
         if constants.SYSTEM_TYPE == constants.SystemType.DR:
             # Create the specific GPIO objects for r, g, b channels.
             self.r = gpio_module.GPIO(constants.GPIO_ROOT_PATH,
-                                    constants.LED_PORTS[index][0],
-                                    logger)
+                                      constants.LED_PORTS[index][0],
+                                      logger)
             self.g = gpio_module.GPIO(constants.GPIO_ROOT_PATH,
-                                    constants.LED_PORTS[index][1],
-                                    logger)
+                                      constants.LED_PORTS[index][1],
+                                      logger)
             self.b = gpio_module.GPIO(constants.GPIO_ROOT_PATH,
-                                    constants.LED_PORTS[index][2],
-                                    logger)
+                                      constants.LED_PORTS[index][2],
+                                      logger)
         else:
             # Create the specific GPIO objects for r, g, b channels.
-            self.r = gpiod_module.GPIOD(constants.LED_PORTS[index][0],
+            self.r = gpiod_module.GPIOD(constants.GPIO_ROOT_PATH, 
+                                        constants.LED_PORTS[index][0],
                                         logger)
-            self.g = gpiod_module.GPIOD(constants.LED_PORTS[index][1],
+            self.g = gpiod_module.GPIOD(constants.GPIO_ROOT_PATH, 
+                                        constants.LED_PORTS[index][1],
                                         logger)
-            self.b = gpiod_module.GPIOD(constants.LED_PORTS[index][2],
+            self.b = gpiod_module.GPIOD(constants.GPIO_ROOT_PATH, 
+                                        constants.LED_PORTS[index][2],
                                         logger)
 
     def __enter__(self):

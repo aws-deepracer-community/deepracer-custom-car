@@ -22,9 +22,6 @@ from enum import Enum, auto
 LED_SOLID_SERVICE_NAME = "led_solid"
 LED_BLINK_SERVICE_NAME = "led_blink"
 
-# Base path of the GPIO ports.
-GPIO_ROOT_PATH = "/sys/class/gpio"
-
 # Default LED index.
 DEFAULT_LED_INDEX = 0
 
@@ -44,6 +41,20 @@ def get_system_type():
         return SystemType.RPI5
 
 SYSTEM_TYPE = get_system_type()
+
+def get_gpio_root_path():
+    """Get the GPIO root path based on the system type.
+    """
+    if SYSTEM_TYPE == SystemType.DR:
+        return "/sys/class/gpio"
+    elif SYSTEM_TYPE == SystemType.RPI4:
+        return "/dev/gpiochip0"
+    elif SYSTEM_TYPE == SystemType.RPI5:
+        return "/dev/gpiochip4"
+
+# Base path of the GPIO ports.
+GPIO_ROOT_PATH = get_gpio_root_path()
+
 
 def get_led_ports():
     """Status light LED GPIO port matrix.
