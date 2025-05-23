@@ -43,7 +43,7 @@ In the `utils/` folder there are utilities to create a USB flash stick for the o
 
 ### Installation scripts
 
-There are separate installation scripts for the original DeepRacer on Ubuntu 20.04/ROS2 Foxy, and the Raspberry Pi4 based car on Ubuntu 22.04/ROS2 Humble. Basic installation depends on pre-packages apt/deb packages, and does not require any packages to be compiled on the car itself.
+There are separate installation scripts for the original DeepRacer on Ubuntu 20.04/ROS2 Foxy, the Raspberry Pi4 based car on Ubuntu 22.04/ROS2 Humble and the Raspberry Pi5 based car on Ubuntu 24.04/ROS2 Humble. Basic installation depends on pre-packages apt/deb packages, and does not require any packages to be compiled on the car itself.
 
 For the original DeepRacer run:
 
@@ -54,6 +54,11 @@ For the Raspberry Pi4:
 
         sudo install_scripts/rpi4-22.04/install-prerequisites.sh
         sudo install_scripts/rpi4-22.04/install-deepracer.sh
+
+For the Raspberry Pi5:
+
+        sudo install_scripts/rpi5-24.04/install-prerequisites.sh
+        sudo install_scripts/rpi5-24.04/install-deepracer.sh
 
 See also [building instructions](docs/raspberry_pi.md) for the Raspberry Pi4.
 
@@ -78,28 +83,25 @@ The custom stack exposes the following arguments which can be changed through ch
 | -------- | ------- | ----------- |
 | `camera_fps` | `30` | Number of camera frames per second, directly impacting how frequently the car takes new actions. |
 | `camera_resize` | `True` | Does the camera resize from 640x480 to 160x120 at source. | 
-| `inference_engine` | `TFLITE` | Inference engine to use (TFLITE or OV). |
-| `inference_device` | `CPU` | Inference device to use, applicable to OV only (CPU, GPU or MYRIAD). |
+| `camera_mode` | `legacy` | Camera integration method (`legacy` or `modern`). |
+| `inference_engine` | `TFLITE` | Inference engine to use (`TFLITE` or `OV`). |
+| `inference_device` | `CPU` | Inference device to use, applicable to OV only (`CPU`, `GPU` or `MYRIAD`). |
 | `logging_mode` | `usbonly` | Enable the logging of results to ROS Bag on USB stick. |
+| `logging_provider` | `sqlite3` | Database provider to use for logging. |
 | `battery_dummy` | `False` | Use static dummy for battery measurements. |
+| `rplidar` | `True` | Enable RPLIDAR node for LiDAR sensor integration. |
 
-Example custom `/opt/aws/deepracer/start_ros.sh`:
-    
-    source /opt/ros/foxy/setup.bash
-    source /opt/aws/deepracer/lib.custom/setup.bash
-    source /opt/intel/openvino_2021/bin/setupvars.sh
-    ros2 launch deepracer_launcher deepracer_launcher.py camera_resize:=False camera_fps:=15 logging_mode:=Always
 
 ### Inference engine 
 
-The different combinations of `inference_engine` and `inference_device` is not all compatible with the RPi4, and each option comes with pros and cons. The original car software only supports OpenVINO CPU.
+The different combinations of `inference_engine` and `inference_device` are not all compatible with the RPi4, and each option comes with pros and cons. The original car software only supports OpenVINO CPU.
 
-| Feature                | Original (Ubuntu 20.04, ROS2 Foxy) | RPi4 (Ubuntu 22.04, ROS2 Humble) | Notes                                      |
-|------------------------|-------------------------------------|-----------------------------------|--------------------------------------------|
-| TensorFlow Lite (CPU)  | Yes                                 | Yes                               | Default for RPi4                           |
-| OpenVINO (CPU)         | Yes                                 | No                                | Default for Original                       |
-| OpenVINO (GPU)         | Yes                                 | No                                | Reduces CPU load, but model takes longer to load |
-| OpenVINO (NCS2/Myriad X) | Yes                              | Yes                               | Reduces CPU load, requires NCS2 stick, model takes longer to load |
+| Feature                   | Original (Ubuntu 20.04, ROS2 Foxy)  | RPi4 (Ubuntu 22.04, ROS2 Humble)  | RPi5 (Ubuntu 24.04, ROS2 Jazzy)  | Notes                                                                 |
+|---------------------------|-------------------------------------|-----------------------------------|----------------------------------|-----------------------------------------------------------------------|
+| TensorFlow Lite (CPU)     | Yes                                 | Yes                               | Yes                              | Default for RPi                                                       |
+| OpenVINO (CPU)            | Yes                                 | No                                | No                               | Default for Original                                                  |
+| OpenVINO (GPU)            | Yes                                 | No                                | No                               | Reduces CPU load, but model takes longer to load                      |
+| OpenVINO (NCS2/Myriad X)  | Yes                                 | Yes                               | No                               | Reduces CPU load, requires NCS2 stick, model takes longer to load     |
 
 The different modes have been tested for equivalency, and it is verified that they provide the same results (identical picture in -> identical action taken). Less than 1 per 1000 frames are differing, mainly due to the model not having a clear action, and several actions are having very similar probabilities.
 
