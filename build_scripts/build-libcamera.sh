@@ -20,7 +20,7 @@ set -e
 export DEBIAN_FRONTEND=noninteractive
 export DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/.. >/dev/null 2>&1 && pwd)"
 
-sudo apt install -y libglib2.0-dev python3-yaml python3-ply meson ninja-build cmake pkg-config libyaml-dev libgnutls28-dev openssl libtiff-dev libboost-dev
+sudo apt update && sudo apt install -y libglib2.0-dev python3-yaml python3-ply python3-jinja2 meson ninja-build cmake pkg-config libyaml-dev libgnutls28-dev openssl libtiff-dev libboost-dev
 
 # Detect ROS version
 if [ -f /opt/ros/foxy/setup.bash ]; then
@@ -38,10 +38,9 @@ source /opt/ros/$ROS_DISTRO/setup.bash
 
 VERSION_BASE=$(jq -r ".[\"ros-$ROS_DISTRO-libcamera\"]" $DIR/build_scripts/versions.json)
 VERSION=1:${VERSION_BASE}-$(lsb_release -cs)
-# Creates: 1:0.5.0+drpi-noble
 
 cd $DIR/deps/
-git clone --depth 1 --branch 0.5.0+rpt20250429 https://github.com/raspberrypi/libcamera.git
+git clone --depth 1 --branch v0.5.0+rpt20250429 https://github.com/raspberrypi/libcamera.git
 cd $DIR/deps/libcamera
 
 meson setup build --wipe --buildtype=release -Dpipelines=rpi/pisp -Dipas=rpi/pisp -Dv4l2=enabled -Dgstreamer=disabled -Dtest=false -Dlc-compliance=disabled -Dcam=enabled -Dqcam=disabled -Ddocumentation=disabled -Dpycamera=disabled --prefix=${DIR}/deps/libcamera-build/opt/ros/$ROS_DISTRO
@@ -53,4 +52,6 @@ dpkg-deb --root-owner-group --build ${DIR}/deps/libcamera-build ${DIR}/deps/ros-
 dpkg-name -o ${DIR}/deps/ros-$ROS_DISTRO-libcamera.deb
 
 FILE=$(compgen -G ${DIR}/deps/ros-$ROS_DISTRO-libcamera_*.deb)
-mv $FILE $(echo $DIR/dist/$FILE | sed -e 's/\+/\-/')
+NEW_FILENAME=$(basename $FILE | sed -e 's/\+/\-/')
+mv $FILE ${DIR}/dist/${NEW_FILENAME}
+echo "libcamera package built and renamed to ${NEW_FILENAME} in ${DIR}/dist/"
