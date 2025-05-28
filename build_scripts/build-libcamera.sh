@@ -40,11 +40,18 @@ VERSION_BASE=$(jq -r ".[\"ros-$ROS_DISTRO-libcamera\"]" $DIR/build_scripts/versi
 VERSION=1:${VERSION_BASE}-$(lsb_release -cs)
 
 cd $DIR/deps/
-git clone --depth 1 --branch v0.5.0+rpt20250429 https://github.com/raspberrypi/libcamera.git
+if [ ! -d "$DIR/deps/libcamera" ]; then
+    git clone --branch v0.5.0+rpt20250429 https://github.com/raspberrypi/libcamera.git
+else
+    cd $DIR/deps/libcamera
+    git fetch origin
+    git checkout v0.5.0+rpt20250429
+fi
 cd $DIR/deps/libcamera
 
-meson setup build --wipe --buildtype=release -Dpipelines=rpi/pisp -Dipas=rpi/pisp -Dv4l2=enabled -Dgstreamer=disabled -Dtest=false -Dlc-compliance=disabled -Dcam=enabled -Dqcam=disabled -Ddocumentation=disabled -Dpycamera=disabled --prefix=${DIR}/deps/libcamera-build/opt/ros/$ROS_DISTRO
-ninja -C build install
+meson setup build --wipe --buildtype=release -Dpipelines=rpi/pisp -Dipas=rpi/pisp -Dv4l2=enabled -Dgstreamer=disabled -Dtest=false -Dlc-compliance=disabled -Dcam=enabled -Dqcam=disabled -Ddocumentation=disabled -Dpycamera=disabled --prefix=/opt/ros/$ROS_DISTRO
+DESTDIR=${DIR}/deps/libcamera-build ninja -C build install
+
 mkdir -p ${DIR}/deps/libcamera-build/DEBIAN
 cp ${DIR}/build_scripts/files/common/ros-$ROS_DISTRO-libcamera-control ${DIR}/deps/libcamera-build/DEBIAN/control
 sed -i "s/Version: .*/Version: $VERSION/" ${DIR}/deps/libcamera-build/DEBIAN/control
