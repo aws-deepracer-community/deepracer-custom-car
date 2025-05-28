@@ -20,6 +20,8 @@ set -e
 export DEBIAN_FRONTEND=noninteractive
 export DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/.. >/dev/null 2>&1 && pwd)"
 
+sudo apt install -y libglib2.0-dev python3-yaml python3-ply meson ninja-build cmake pkg-config libyaml-dev libgnutls28-dev openssl libtiff-dev libboost-dev
+
 # Detect ROS version
 if [ -f /opt/ros/foxy/setup.bash ]; then
     ROS_DISTRO="foxy"
