@@ -173,12 +173,15 @@ for pkg in $PACKAGES; do
             PACKAGE_DEPS="$PACKAGE_DEPS, \
                             gpiod, python3-libgpiod, libgpiod-dev, \
                             ros-$ROS_DISTRO-rplidar-ros, \
-                            ros-$ROS_DISTRO-libcamera, \
                             ros-$ROS_DISTRO-camera-ros, \
                             ros-$ROS_DISTRO-web-video-server, \
                             ros-$ROS_DISTRO-rosbag2, \
                             ros-$ROS_DISTRO-rosbag2-py, \
                             ros-$ROS_DISTRO-rosbag2-storage-mcap"
+        fi
+        if [ "$ROS_DISTRO" == "jazzy" ]; then
+            PACKAGE_DEPS="$PACKAGE_DEPS, \
+                            ros-$ROS_DISTRO-libcamera (>= 1:0.5.0+drpi), \
         fi
         echo -e "\n### Building aws-deepracer-core $VERSION ###\n"
         dpkg-deb -R src/aws-deepracer-core_*amd64.deb aws-deepracer-core

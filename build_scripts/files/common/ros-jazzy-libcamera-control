@@ -1,0 +1,9 @@
+Package: ros-jazzy-libcamera
+Version: 0.0.0
+Section: misc
+Priority: optional
+Architecture: arm64
+Maintainer: AWS DeepRacer Community
+Homepage: https://libcamera.org
+Depends: libc6 (>= 2.38), libgcc-s1 (>= 4.2), libssl3t64 (>= 3.0.0), libstdc++6 (>= 13.1), libudev1 (>= 183), libyaml-0-2, libatomic1, libssl-dev, libudev-dev, libyaml-dev, python3-dev, ros-jazzy-ros-workspace
+Description: An open source camera stack and framework for Linux, Android, and ChromeOS

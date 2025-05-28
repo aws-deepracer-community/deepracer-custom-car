@@ -11,6 +11,7 @@ PREFIX="deepracer-custom-car/"
 REGION="eu-west-1"
 PROFILE="default"
 DIST=$(lsb_release -cs)
+SUITE="deepracer-community"
 
 while getopts "p:c:m:a:r:d:" opt; do
     case $opt in
@@ -73,6 +74,6 @@ for PKG in $PACKAGES; do
     fi
 
     echo Uploading $FILE_NAME to $CODENAME/$COMPONENT
-    deb-s3 upload dist/$FILE_NAME -c $CODENAME -v public -p -b $BUCKET --prefix $PREFIX -m $COMPONENT --s3-region=$REGION --sign=$KEY
+    deb-s3 upload dist/$FILE_NAME -c $CODENAME -v public -p -b $BUCKET --prefix $PREFIX -m $COMPONENT --suite $SUITE --s3-region=$REGION --sign=$KEY
 
 done
