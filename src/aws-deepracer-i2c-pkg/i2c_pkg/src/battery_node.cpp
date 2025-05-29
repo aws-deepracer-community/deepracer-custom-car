@@ -58,8 +58,15 @@ namespace BoardChips {
         /// Rewriting the command to dynamically find the bus channel number
         // "ls -al /sys/class/i2c-dev/ | grep "0000:00:17.3" | awk '{ print $9}' | awk -F "-" '{ print $2}'"
         uint8_t getBusChannel(){
-            uint8_t busChannel = 7; // Default from previous release
-            // ls -al /sys/class/i2c-dev/ 
+            #if defined(HW_PLATFORM_RPI4) || defined(HW_PLATFORM_RPI5)
+                uint8_t busChannel = 1; // For Raspberry Pi 4/5
+            #elif defined(HW_PLATFORM_DR)
+                uint8_t busChannel = 7; // Default for DeepRacer (DR)
+            #else
+                uint8_t busChannel = 0; // Default for other platforms
+            #endif
+
+            // Try to dynamically discover bus channel if available
             for (const auto & entry : std::filesystem::directory_iterator(SYSPATH)){
                 auto filepath = entry.path();
                 // grep "0000:00:17.3" 

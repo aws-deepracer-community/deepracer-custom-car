@@ -9,12 +9,15 @@ ARG USER_GID=$USER_UID
 RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
     libboost-all-dev \
     libpugixml-dev \
+    gpiod \
     python3-apt \
     python3-pip \
     python3-websocket \
     python3-colcon-common-extensions \
     python3-rosinstall \
     python3-venv \
+    python3-libgpiod \
+    libgpiod-dev \
     ros-humble-cv-bridge \
     ros-humble-camera-ros \
     ros-humble-image-transport \
