@@ -24,6 +24,9 @@ chmod +x /mnt/DEEPRACER/root/adjust_image.sh
 
 # Clean up
 rm /mnt/DEEPRACER/root/.bash_history
+rm /mnt/DEEPRACER/root/*
+rm /mnt/DEEPRACER/tmp/.*
+rm /mnt/DEEPRACER/tmp/*
 rm /mnt/DEEPRACER/opt/aws/deepracer/password.txt
 
 # Unmount the filesystems, close the encrypted partition, and create the image
@@ -43,5 +46,5 @@ umount /mnt/DEEPRACER
 cryptsetup luksClose encrypt_blk
 
 # Create the image file
-dcfldd if=/dev/sdc of=dlrc_image_20250409.1_tpm.img bs=4M count=$((8249212927/4194304+1)) conv=notrunc statusinterval=1000
+dcfldd if=/dev/sdc of=dlrc_image_20250529.1_tpm.img bs=4M count=$((8249212927/4194304+1)) conv=notrunc statusinterval=1000
 

@@ -19,8 +19,8 @@
 * Delete the `dlrc_image_21WW09.5_tpm.img` and `dlrc_image_21WW09.5_tpm.md5` files.
 * Download `https://larsll-build-artifact-share.s3.eu-north-1.amazonaws.com/car-image/custom_factory_reset.zip` and unzip it.
 * Copy the 4 files onto the FLASH partition from the unzip location:
-    * `dlrc_image_20250409.1_tpm.img`
-    * `dlrc_image_20250409.1_tpm.md5`
+    * `dlrc_image_20250529.1_tpm.img`
+    * `dlrc_image_20250529.1_tpm.md5`
     * `usb_flash.sh`
     * `usb_flash_dlrc.sh`
 * Unmount the drive.
