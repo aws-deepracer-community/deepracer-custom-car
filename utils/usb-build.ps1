@@ -7,7 +7,8 @@ Param (
     [string]$IgnoreFactoryReset = $False,
     [string]$IgnoreBootDrive = $False,
     [string]$SkipDownload = $False,
-	[string]$CurrentDirectory  
+    [string]$CustomResetUrl,
+    [string]$CurrentDirectory  
 )
 $scriptName = Split-Path -leaf $PSCommandpath
 if ( $CurrentDirectory -eq "" ) {
@@ -25,7 +26,13 @@ $TimerStartTime = $(get-date)
 $ISOFileUrl = 'https://s3.amazonaws.com/deepracer-public/factory-restore/Ubuntu20.04/BIOS-0.0.8/ubuntu-20.04.1-20.11.13_V1-desktop-amd64.iso'
 $ISOFileName = $ISOFileUrl.ToString().Substring($ISOFileUrl.ToString().LastIndexOf("/") + 1)
 
-$FactoryResetUrl = 'https://s3.amazonaws.com/deepracer-public/factory-restore/Ubuntu20.04/BIOS-0.0.8/factory_reset.zip'
+# Use custom reset URL if provided, otherwise use default
+if ($CustomResetUrl) {
+    $FactoryResetUrl = $CustomResetUrl
+    Write-Host "Using custom factory reset URL: $CustomResetUrl"
+} else {
+    $FactoryResetUrl = 'https://s3.amazonaws.com/deepracer-public/factory-restore/Ubuntu20.04/BIOS-0.0.8/factory_reset.zip'
+}
 $FactoryResetUrlFileName = $FactoryResetUrl.ToString().Substring($FactoryResetUrl.ToString().LastIndexOf("/") + 1)
 
 $FactoryResetUSBFlashScriptPath = 'usb_flash.sh'
@@ -35,11 +42,22 @@ function Show-Usage {
     Write-Host ""
     Write-Host "Usage: "
     Write-Host ""
-    Write-Host "    .\$($scriptName) -DiskId <disk number> [ -SSID <WIFI_SSID> -SSIDPassword <WIFI_PASSWORD>]"
+    Write-Host "    .\$($scriptName) -DiskId <disk number> [ -SSID <WIFI_SSID> -SSIDPassword <WIFI_PASSWORD>] [-CustomResetUrl <URL>]"
     Write-Host ""
     Write-Host " or if you want to start it in a separate window:"
     Write-Host ""
-    Write-Host "    start powershell {.\$($scriptName) -DiskId <disk number> [ -SSID <WIFI_SSID> -SSIDPassword <WIFI_PASSWORD>]}"
+    Write-Host "    start powershell {.\$($scriptName) -DiskId <disk number> [ -SSID <WIFI_SSID> -SSIDPassword <WIFI_PASSWORD>] [-CustomResetUrl <URL>]}"
+    Write-Host ""
+    Write-Host "Parameters:"
+    Write-Host "    -DiskId <number>           : USB disk number (required)"
+    Write-Host "    -SSID <name>              : WiFi network name (optional)"
+    Write-Host "    -SSIDPassword <password>  : WiFi password (optional, requires -SSID)"
+    Write-Host "    -CustomResetUrl <url>     : Custom factory reset URL (optional)"
+    Write-Host "    -CreatePartition <bool>   : Create new partitions (default: True)"
+    Write-Host "    -IgnoreLock <bool>        : Ignore lock file (default: False)"
+    Write-Host "    -IgnoreFactoryReset <bool>: Skip factory reset setup (default: False)"
+    Write-Host "    -IgnoreBootDrive <bool>   : Skip boot drive creation (default: False)"
+    Write-Host "    -SkipDownload <bool>      : Skip file downloads (default: False)"
 }
 function Show-Disk {
     Write-Host ""
