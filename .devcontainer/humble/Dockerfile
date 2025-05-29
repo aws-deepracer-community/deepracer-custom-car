@@ -1,6 +1,6 @@
 # Copyright (C) 2019-2022 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
-FROM --platform=${TARGETPLATFORM} ros:humble-ros-base
+FROM ros:humble-ros-base
 
 ARG USERNAME=user-name-goes-here
 ARG USER_UID=1000
@@ -27,7 +27,10 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
     curl \
     wget \
     jq \
-    cython3
+    cython3 \
+    ruby \
+    unzip \
+    nano
 
 RUN cd / && curl -O https://aws-deepracer-community-sw.s3.eu-west-1.amazonaws.com/openvino/openvino_2022.3.1_$(dpkg --print-architecture).tgz && \
     tar -xvzf openvino_2022.3.1_$(dpkg --print-architecture).tgz && \
@@ -36,9 +39,7 @@ RUN cd / && curl -O https://aws-deepracer-community-sw.s3.eu-west-1.amazonaws.co
     rm /openvino_2022.3.1_$(dpkg --print-architecture).tgz
 
 # Add deb-s3
-RUN wget -O /etc/apt/trusted.gpg.d/deb-s3-archive-keyring.gpg https://raw.githubusercontent.com/deb-s3/deb-s3/master/deb-s3-archive-keyring.gpg && \
-    echo "deb http://deb-s3-repo.s3.us-east-2.amazonaws.com/$(lsb_release -is | tr A-Z a-z)/ $(lsb_release -cs) main" | sudo tee -a /etc/apt/sources.list > /dev/null && \
-    apt-get update && apt-get install -y deb-s3
+RUN gem install deb-s3
 
 RUN pip3 install -U awscli smbus2 pillow transforms3d autopep8 opencv-python pyserial "setuptools==58.2.0" "Cython<3" $(find /opt/intel/openvino_2022.3.1/tools/ -name *.whl)
 
