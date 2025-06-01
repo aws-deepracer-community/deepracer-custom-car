@@ -185,9 +185,8 @@ for pkg in $PACKAGES; do
         cp $DIR/build_scripts/files/common/aws-deepracer-core-prerm DEBIAN/prerm
         cp $DIR/build_scripts/files/common/aws-deepracer-core-conffiles DEBIAN/conffiles
         cp -r $DIR/install/* opt/aws/deepracer/lib/
-        if [ "$ROS_DISTRO" == "humble" ]; then
-            cp -r $DIR/build_scripts/files/pi/aws-deepracer-core-postinst DEBIAN/postinst
-        fi
+        cp $DIR/build_scripts/files/common/aws-deepracer-core-postinst DEBIAN/postinst
+
         rm etc/systemd/system/deepracer-utility.service
         rm DEBIAN/preinst
         cd ..
