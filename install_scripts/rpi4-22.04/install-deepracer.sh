@@ -27,8 +27,9 @@ export DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/../.. >/dev/null 2>&1 && pwd)"
 
 # Now add the ROS 2 GPG key with apt.
 # Then add the repository to your sources list.
-curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key | gpg --no-default-keyring --keyring /usr/share/keyrings/ros-archive-keyring.gpg --import 
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | tee /etc/apt/sources.list.d/ros2.list >/dev/null
+export ROS_APT_SOURCE_VERSION=$(curl -s https://api.github.com/repos/ros-infrastructure/ros-apt-source/releases/latest | grep -F "tag_name" | awk -F\" '{print $4}')
+curl -L -o /tmp/ros2-apt-source.deb "https://github.com/ros-infrastructure/ros-apt-source/releases/download/${ROS_APT_SOURCE_VERSION}/ros2-apt-source_${ROS_APT_SOURCE_VERSION}.$(. /etc/os-release && echo $UBUNTU_CODENAME)_all.deb"
+apt install /tmp/ros2-apt-source.deb
 
 # Install ROS Core and Development Tools
 apt -y update && apt install -y --no-install-recommends \
@@ -89,7 +90,7 @@ pip3 install -U pyudev \
 # Install packages
 cp $DIR/install_scripts/rpi4-22.04/aws_deepracer-community.list /etc/apt/sources.list.d/aws_deepracer.list
 cp $DIR/install_scripts/common/deepracer-community.asc /etc/apt/trusted.gpg.d/
-apt update -y && apt install -y aws-deepracer-core aws-deepracer-device-console aws-deepracer-util aws-deepracer-sample-models
+apt update -y && apt install -y aws-deepracer-core aws-deepracer-community-device-console aws-deepracer-util aws-deepracer-sample-models
 
 # Uncomment the below to disable deepracer-core automatic start
 # systemctl disable deepracer-core

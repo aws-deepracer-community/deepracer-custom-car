@@ -23,7 +23,7 @@ apt upgrade -y
 /opt/intel/openvino_2021/install_dependencies/install_NEO_OCL_driver.sh -y
 
 # Update DR
-apt -y install aws-deepracer-core aws-deepracer-device-console
+apt -y install aws-deepracer-core aws-deepracer-community-device-console
 
 # Restart deepracer
 systemctl start deepracer-core

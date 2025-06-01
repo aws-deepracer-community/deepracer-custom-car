@@ -64,9 +64,17 @@ echo -e -n "\nUpdating car...\n"
 curl -o GPG-PUB-KEY-INTEL-SW-PRODUCTS https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB
 apt-key add GPG-PUB-KEY-INTEL-SW-PRODUCTS
 
-# Get latest key from ROS
-curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | tee /etc/apt/sources.list.d/ros2-latest.list >/dev/null
+# Remove old ROS keys and config
+echo -e -n "\n- Remove old ROS keys and config"
+apt-key del "F42E D6FB AB17 C654"
+rm -f /usr/share/keyrings/ros-archive-keyring.gpg
+rm -f /etc/apt/sources.list.d/ros2-latest.list
+
+# Add new ROS repository package
+echo -e -n "\n- Add new ROS repository package"
+export ROS_APT_SOURCE_VERSION=$(curl -s https://api.github.com/repos/ros-infrastructure/ros-apt-source/releases/latest | grep -F "tag_name" | awk -F\" '{print $4}')
+curl -L -o /tmp/ros2-apt-source.deb "https://github.com/ros-infrastructure/ros-apt-source/releases/download/${ROS_APT_SOURCE_VERSION}/ros2-apt-source_${ROS_APT_SOURCE_VERSION}.$(. /etc/os-release && echo $UBUNTU_CODENAME)_all.deb"
+apt install /tmp/ros2-apt-source.deb
 
 # Update package lists
 echo -e -n "\nUpdating Ubuntu packages\n"
