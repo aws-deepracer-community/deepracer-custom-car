@@ -14,23 +14,67 @@
 #   limitations under the License.                                              #
 #################################################################################
 
+import os
+
+from requests import get
+from enum import Enum, auto
 
 LED_SOLID_SERVICE_NAME = "led_solid"
 LED_BLINK_SERVICE_NAME = "led_blink"
 
-# Base path of the GPIO ports.
-GPIO_ROOT_PATH = "/sys/class/gpio"
-
 # Default LED index.
 DEFAULT_LED_INDEX = 0
 
-# Status light LED GPIO port matrix.
-# Cols: led indices; rows: r, g, b channel ports.
-LED_PORTS = (
-    (448, 447, 437),
-    (446, 445, 443),
-    (450, 457, 458)
-)
+class SystemType(Enum):
+    DR = auto()
+    RPI4 = auto()
+    RPI5 = auto()
+
+def get_system_type():
+    """Get if the system is a Raspberry Pi or not.
+    """
+    if os.path.exists("/sys/class/dmi/id/chassis_serial"):
+        return SystemType.DR
+    elif os.path.exists("/proc/device-tree/model") and "Raspberry Pi 4" in open("/proc/device-tree/model").read():
+        return SystemType.RPI4
+    elif os.path.exists("/proc/device-tree/model") and "Raspberry Pi 5" in open("/proc/device-tree/model").read():
+        return SystemType.RPI5
+
+SYSTEM_TYPE = get_system_type()
+
+def get_gpio_root_path():
+    """Get the GPIO root path based on the system type.
+    """
+    if SYSTEM_TYPE == SystemType.DR:
+        return "/sys/class/gpio"
+    elif SYSTEM_TYPE == SystemType.RPI4:
+        return "/dev/gpiochip0"
+    elif SYSTEM_TYPE == SystemType.RPI5:
+        return "/dev/gpiochip4"
+
+# Base path of the GPIO ports.
+GPIO_ROOT_PATH = get_gpio_root_path()
+
+
+def get_led_ports():
+    """Status light LED GPIO port matrix.
+       Cols: led indices; rows: r, g, b channel ports.
+    """
+
+    if SYSTEM_TYPE == SystemType.DR:
+        return (
+            (448, 447, 437),
+            (446, 445, 443),
+            (450, 457, 458)
+        )
+    elif SYSTEM_TYPE == SystemType.RPI4 or SYSTEM_TYPE == SystemType.RPI5:
+        return (
+            (9+0, 9+1, 9+2),
+            (9+3, 9+4, 9+5),
+            (9+6, 9+7, 9+8))
+
+
+LED_PORTS = get_led_ports()
 
 
 class SupportedLEDEffects():

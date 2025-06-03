@@ -82,7 +82,7 @@ def launch_setup(context, *args, **kwargs):
     deepracer_navigation_node = Node(
         package='deepracer_navigation_pkg',
         namespace='deepracer_navigation_pkg',
-        executable='deepracer_navigation_node',
+        executable='deepracer_navigation_node_cpp',
         name='deepracer_navigation_node'
     )
     software_update_node = Node(

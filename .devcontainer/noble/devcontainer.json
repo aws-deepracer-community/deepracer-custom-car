@@ -32,7 +32,21 @@
                         ]
                     }
                 },
-                "terminal.integrated.defaultProfile.linux": "bash (ROS)"
+                "terminal.integrated.defaultProfile.linux": "bash (ROS)",
+                "cmake.configureOnOpen": false,               
+                "python.autoComplete.extraPaths": [
+                    "/opt/ros/jazzy/lib/python3.12/site-packages",
+                    "/opt/ros/jazzy/local/lib/python3.12/dist-packages",
+                    "/workspaces/deepracer-custom-car/install/deepracer_interfaces_pkg/lib/python3.12/site-packages"
+                ],
+                "python.analysis.extraPaths": [
+                    "/opt/ros/jazzy/lib/python3.12/site-packages",
+                    "/opt/ros/jazzy/local/lib/python3.12/dist-packages",
+                    "/workspaces/deepracer-custom-car/install/deepracer_interfaces_pkg/lib/python3.12/site-packages"
+                ],
+                "autopep8.args": [
+                    "--max-line-length=120"
+                ]
             },
             "extensions": [
                 "ms-python.python",
