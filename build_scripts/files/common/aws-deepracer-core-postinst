@@ -1,17 +1,47 @@
 #!/bin/bash
-# Only proceed if ros2-apt-source package is not installed
-if ! dpkg -s ros2-apt-source >/dev/null 2>&1; then
-    # Remove old ROS keys and config
-    echo -e -n "\n- Remove old ROS keys and config"
-    apt-key del "F42E D6FB AB17 C654"
-    rm -f /usr/share/keyrings/ros-archive-keyring.gpg
-    rm -f /etc/apt/sources.list.d/ros2-latest.list
+# This script is run after the installation of the aws-deepracer-core package.
+# It ensures that the ROS key is added to the keyring if it is not already present.
 
-    # Add new ROS repository package
-    echo -e -n "\n- Add new ROS repository package"
-    export ROS_APT_SOURCE_VERSION=$(curl -s https://api.github.com/repos/ros-infrastructure/ros-apt-source/releases/latest | grep -F "tag_name" | awk -F\" '{print $4}')
-    curl -L -o /tmp/ros2-apt-source.deb "https://github.com/ros-infrastructure/ros-apt-source/releases/download/${ROS_APT_SOURCE_VERSION}/ros2-apt-source_${ROS_APT_SOURCE_VERSION}.$(. /etc/os-release && echo $UBUNTU_CODENAME)_all.deb"
-    apt install /tmp/ros2-apt-source.deb
+if ! dpkg -s ros2-apt-source >/dev/null 2>&1; then
+    # Download the key directly
+    KEY_URL='https://raw.githubusercontent.com/ros/rosdistro/master/ros.key'
+    KEYRING_PATH='/usr/share/keyrings/ros-archive-keyring.gpg'
+
+    # Create keyring directory if it doesn't exist
+    mkdir -p "$(dirname "$KEYRING_PATH")"
+
+    # Download key and get key ID
+    TEMP_KEY_FILE=$(mktemp)
+    curl -sSL "$KEY_URL" -o "$TEMP_KEY_FILE"
+    if [ ! -s "$TEMP_KEY_FILE" ]; then
+        echo "Failed to download ROS key"
+        rm -f "$TEMP_KEY_FILE"
+        exit 1
+    fi
+
+    # Extract key ID using a more reliable method
+    KEY_ID=$(gpg --with-colons --import-options show-only --import "$TEMP_KEY_FILE" 2>/dev/null | awk -F: '/^pub:/ {print $5}' | head -n1)
+
+    if [ -z "$KEY_ID" ]; then
+        echo "Failed to extract key ID from downloaded key"
+        rm -f "$TEMP_KEY_FILE"
+        exit 1
+    fi
+
+    echo "ROS key ID: $KEY_ID"
+
+    # Import the key
+    gpg --no-default-keyring --keyring "$KEYRING_PATH" --import "$TEMP_KEY_FILE"
+    if [ $? -eq 0 ]; then
+        echo "ROS key $KEY_ID has been added to the keyring."
+    else
+        echo "Failed to import ROS key"
+        rm -f "$TEMP_KEY_FILE"
+        exit 1
+    fi
+
+    # Clean up temporary file
+    rm -f "$TEMP_KEY_FILE"
 fi
 
 systemctl enable deepracer-core.service
