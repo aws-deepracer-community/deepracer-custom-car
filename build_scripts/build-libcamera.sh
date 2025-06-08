@@ -20,8 +20,6 @@ set -e
 export DEBIAN_FRONTEND=noninteractive
 export DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/.. >/dev/null 2>&1 && pwd)"
 
-sudo apt update && sudo apt install -y libglib2.0-dev python3-yaml python3-ply python3-jinja2 meson ninja-build cmake pkg-config libyaml-dev libgnutls28-dev openssl libtiff-dev libboost-dev
-
 # Detect ROS version
 if [ -f /opt/ros/foxy/setup.bash ]; then
     ROS_DISTRO="foxy"
@@ -50,7 +48,8 @@ fi
 cd $DIR/deps/libcamera
 
 meson setup build --wipe --buildtype=release -Dpipelines=uvcvideo,rpi/pisp -Dipas=rpi/pisp -Dv4l2=enabled -Dgstreamer=disabled -Dtest=false -Dlc-compliance=disabled -Dcam=enabled -Dqcam=disabled -Ddocumentation=disabled -Dpycamera=enabled --prefix=/opt/ros/$ROS_DISTRO
-DESTDIR=${DIR}/deps/libcamera-build ninja -C build install
+export DESTDIR=${DIR}/deps/libcamera-build
+ninja -C build install
 mkdir -p ${DESTDIR}/opt/ros/$ROS_DISTRO/lib/python3.12/site-packages
 mv ${DESTDIR}/opt/ros/$ROS_DISTRO/lib/aarch64-linux-gnu/python3.12/site-packages/libcamera ${DESTDIR}/opt/ros/$ROS_DISTRO/lib/python3.12/site-packages/libcamera
 
