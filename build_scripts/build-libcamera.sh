@@ -47,6 +47,7 @@ else
 fi
 cd $DIR/deps/libcamera
 
+rm -rf ${DESTDIR}
 meson setup build --wipe --buildtype=release -Dpipelines=uvcvideo,rpi/pisp -Dipas=rpi/pisp -Dv4l2=enabled -Dgstreamer=disabled -Dtest=false -Dlc-compliance=disabled -Dcam=enabled -Dqcam=disabled -Ddocumentation=disabled -Dpycamera=enabled --prefix=/opt/ros/$ROS_DISTRO
 export DESTDIR=${DIR}/deps/libcamera-build
 ninja -C build install
