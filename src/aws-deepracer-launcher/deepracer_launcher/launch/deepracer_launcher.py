@@ -72,9 +72,9 @@ def launch_setup(context, *args, **kwargs):
         # RPi Cameras need specific sensor modes to avoid cropping
         match camera_name:
             case 'imx708':
-                camera_params.append({'sensor_mode': '2304:1296'})
+                camera_params['sensor_mode'] = '2304:1296'
             case 'imx219':
-                camera_params.append({'sensor_mode': '1640:1232'})
+                camera_params['sensor_mode'] = '1640:1232'
 
         camera_node = Node(
             package='camera_ros',
