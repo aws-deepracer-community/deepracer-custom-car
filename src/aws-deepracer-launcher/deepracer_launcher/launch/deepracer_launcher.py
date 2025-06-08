@@ -30,6 +30,7 @@ def launch_setup(context, *args, **kwargs):
     ld = []
 
     camera_mode = LaunchConfiguration('camera_mode').perform(context)
+    camera_index = int(LaunchConfiguration('camera_index').perform(context))
     fps = int(LaunchConfiguration('camera_fps').perform(context))
     resize_images = str2bool(LaunchConfiguration('camera_resize').perform(context))
     resolution = resize_images and [160, 120] or [640, 480]
@@ -57,21 +58,24 @@ def launch_setup(context, *args, **kwargs):
         camera_manager = CameraManager.singleton()
 
         camera_name = None
-        for i, camera in enumerate(camera_manager.cameras):
-            # Parse properties for better readability
+        
+        # If camera_index is specified, use it to select the camera
+        if camera_index >= 0 and camera_index < len(camera_manager.cameras):
+            camera = camera_manager.cameras[camera_index]
             for prop_id, value in camera.properties.items():
                 if 'Model' in str(prop_id):
                     camera_name = value
 
-            print(f"Camera {i}: {camera_name} - {camera.id}")
+            camera_params['camera'] = camera_index
+            print(f"Camera {camera_index}: {camera_name} - {camera.id}")
 
-        # Select the sensor mode based on the camera model
-        # RPi Cameras need specific sensor modes to avoid cropping
-        match camera_name:
-            case 'imx708':
-                camera_params['sensor_mode'] = '2304:1296'
-            case 'imx219':
-                camera_params['sensor_mode'] = '1640:1232'
+            # Select the sensor mode based on the camera model
+            # RPi Cameras need specific sensor modes to avoid cropping
+            match camera_name:
+                case 'imx708':
+                    camera_params['sensor_mode'] = '2304:1296'
+                case 'imx219':
+                    camera_params['sensor_mode'] = '1640:1232'
 
         camera_node = Node(
             package='camera_ros',
@@ -323,6 +327,10 @@ def generate_launch_description():
                 name="camera_mode",
                 default_value="legacy",
                 description="Legacy or modern camera integration"),
+            DeclareLaunchArgument(
+                name="camera_index",
+                default_value="0",
+                description="Index of the camera to use, applicable to modern camera_mode only"),                
             DeclareLaunchArgument(
                 name="rplidar",
                 default_value="True",
