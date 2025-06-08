@@ -48,8 +48,7 @@ def launch_setup(context, *args, **kwargs):
         )
     else:
         # Camera configuration
-        camera_params = {'format': 'BGR888',
-                         'width': resolution[0],
+        camera_params = {'width': resolution[0],
                          'height': resolution[1],
                          'FrameDurationLimits': [math.floor(1e6 / fps), math.ceil(1e6 / fps)]}
 
@@ -74,8 +73,10 @@ def launch_setup(context, *args, **kwargs):
             match camera_name:
                 case 'imx708':
                     camera_params['sensor_mode'] = '2304:1296'
+                    camera_params['format'] = 'BGR888'
                 case 'imx219':
                     camera_params['sensor_mode'] = '1640:1232'
+                    camera_params['format'] = 'BGR888'
 
         camera_node = Node(
             package='camera_ros',
