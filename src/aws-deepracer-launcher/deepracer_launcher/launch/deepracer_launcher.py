@@ -48,12 +48,10 @@ def launch_setup(context, *args, **kwargs):
     else:
 
         # Camera configuration
-        camera_params = [
-            {'format': 'BGR888',
-             'width': resolution[0],
-             'height': resolution[1],
-             'FrameDurationLimits': [math.floor(1e6 / fps), math.ceil(1e6 / fps)]}
-        ],
+        camera_params = {'format': 'BGR888',
+                         'width': resolution[0],
+                         'height': resolution[1],
+                         'FrameDurationLimits': [math.floor(1e6 / fps), math.ceil(1e6 / fps)]}
 
         # Camera detection
         from libcamera import CameraManager
@@ -62,7 +60,7 @@ def launch_setup(context, *args, **kwargs):
         camera_name = None
         for i, camera in enumerate(camera_manager.cameras):
             # Parse properties for better readability
-            for prop_id, value in camera.properties.items():              
+            for prop_id, value in camera.properties.items():
                 if 'Model' in str(prop_id):
                     camera_name = value
 
@@ -80,7 +78,7 @@ def launch_setup(context, *args, **kwargs):
             package='camera_ros',
             namespace='camera_pkg',
             executable='camera_node',
-            parameters=camera_params,
+            parameters=[camera_params],
             remappings=[
                 # Topic remappings
                 ('/camera_pkg/camera/camera_info', '/camera_pkg/camera_info'),
