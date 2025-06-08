@@ -49,7 +49,7 @@ else
 fi
 cd $DIR/deps/libcamera
 
-meson setup build --wipe --buildtype=release -Dpipelines=rpi/pisp -Dipas=rpi/pisp -Dv4l2=enabled -Dgstreamer=disabled -Dtest=false -Dlc-compliance=disabled -Dcam=enabled -Dqcam=disabled -Ddocumentation=disabled -Dpycamera=disabled --prefix=/opt/ros/$ROS_DISTRO
+meson setup build --wipe --buildtype=release -Dpipelines=rpi/pisp -Dipas=rpi/pisp -Dv4l2=enabled -Dgstreamer=disabled -Dtest=false -Dlc-compliance=disabled -Dcam=enabled -Dqcam=disabled -Ddocumentation=disabled -Dpycamera=enabled --prefix=/opt/ros/$ROS_DISTRO
 DESTDIR=${DIR}/deps/libcamera-build ninja -C build install
 
 mkdir -p ${DIR}/deps/libcamera-build/DEBIAN
