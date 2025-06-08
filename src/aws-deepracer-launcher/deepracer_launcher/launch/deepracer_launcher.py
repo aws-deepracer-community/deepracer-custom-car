@@ -46,17 +46,41 @@ def launch_setup(context, *args, **kwargs):
             ]
         )
     else:
+
+        # Camera configuration
+        camera_params = [
+            {'format': 'BGR888',
+             'width': resolution[0],
+             'height': resolution[1],
+             'FrameDurationLimits': [math.floor(1e6 / fps), math.ceil(1e6 / fps)]}
+        ],
+
+        # Camera detection
+        from libcamera import CameraManager
+        camera_manager = CameraManager.singleton()
+
+        camera_name = None
+        for i, camera in enumerate(camera_manager.cameras):
+            # Parse properties for better readability
+            for prop_id, value in camera.properties.items():              
+                if 'Model' in str(prop_id):
+                    camera_name = value
+
+            print(f"Camera {i}: {camera_name} - {camera.id}")
+
+        # Select the sensor mode based on the camera model
+        # RPi Cameras need specific sensor modes to avoid cropping
+        match camera_name:
+            case 'imx708':
+                camera_params.append({'sensor_mode': '2304:1296'})
+            case 'imx219':
+                camera_params.append({'sensor_mode': '1640:1232'})
+
         camera_node = Node(
             package='camera_ros',
             namespace='camera_pkg',
             executable='camera_node',
-            parameters=[
-                {'format': 'BGR888',
-                 'width': resolution[0],
-                 'height': resolution[1],
-                 'sensor_mode': '1640:1232',
-                 'FrameDurationLimits': [math.floor(1e6 / fps), math.ceil(1e6 / fps)]}
-            ],
+            parameters=camera_params,
             remappings=[
                 # Topic remappings
                 ('/camera_pkg/camera/camera_info', '/camera_pkg/camera_info'),
