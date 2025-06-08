@@ -46,7 +46,6 @@ def launch_setup(context, *args, **kwargs):
             ]
         )
     else:
-
         # Camera configuration
         camera_params = {'format': 'BGR888',
                          'width': resolution[0],
