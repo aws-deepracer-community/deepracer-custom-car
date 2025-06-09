@@ -3,10 +3,25 @@
 # Define the PWM period
 PERIOD=20000000
 
-# Work only with pwmchip1
-chip=1
+# Detect the PWM chip that is a symlink to something containing i2c-1
+chip=""
+for pwmchip_path in /sys/class/pwm/pwmchip*; do
+    if [ -L "$pwmchip_path" ]; then
+        target=$(readlink "$pwmchip_path")
+        if [[ "$target" == *"i2c-1"* ]]; then
+            chip=$(basename "$pwmchip_path" | sed 's/pwmchip//')
+            echo "Detected PWM chip: pwmchip${chip} (linked to ${target})"
+            break
+        fi
+    fi
+done
 
-# Cycle through all PWM channels 0-3 on pwmchip1
+if [ -z "$chip" ]; then
+    echo "Error: Could not find PWM chip linked to i2c-1"
+    exit 1
+fi
+
+# Cycle through all PWM channels 0-4 on detected pwmchip
 for pwm in {0..4}; do
     echo "Setting up PWM${chip} channel ${pwm}"
     
@@ -36,4 +51,4 @@ for pwm in {0..4}; do
     echo ""
 done
 
-echo "All PWM channels on pwmchip1 have been configured"
+echo "All PWM channels on pwmchip${chip} have been configured"
