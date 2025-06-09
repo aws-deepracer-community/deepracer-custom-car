@@ -30,7 +30,7 @@
                 "${workspaceFolder}/build/inference_pkg/flatbuffers/include/"
             ],
             "defines": [
-                "HW_PLATFORM_RPI4"
+                "HW_PLATFORM_RPI"
             ],
             "cStandard": "gnu17",
             "cppStandard": "gnu++17",
@@ -47,7 +47,7 @@
                 "${workspaceFolder}/build/inference_pkg/flatbuffers/include/"
             ],
             "defines": [
-                "HW_PLATFORM_RPI5"
+                "HW_PLATFORM_RPI"
             ],
             "cStandard": "gnu17",
             "cppStandard": "gnu++17",

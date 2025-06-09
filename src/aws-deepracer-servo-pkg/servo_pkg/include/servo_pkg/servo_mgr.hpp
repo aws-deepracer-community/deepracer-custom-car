@@ -45,7 +45,7 @@ namespace PWM {
     #define POLARITY_MOTOR_VAL -1
     #define SERVO_PERIOD 20000000
     /// Servo GPIO channel based on hardware platform
-    #if defined(HW_PLATFORM_RPI4) || defined(HW_PLATFORM_RPI5)
+    #if defined(HW_PLATFORM_RPI)
         #define GPIO_CHANNEL -1
     #else
         // Default for DeepRacer (DR)

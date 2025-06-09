@@ -26,10 +26,8 @@ endif()
 
 # Process HW_PLATFORM variable
 message(STATUS "Building inference package for hardware platform: ${HW_PLATFORM}")
-if(HW_PLATFORM STREQUAL "RPI4")
-  add_definitions(-DHW_PLATFORM_RPI4)
-elseif(HW_PLATFORM STREQUAL "RPI5")
-  add_definitions(-DHW_PLATFORM_RPI5)
+if(HW_PLATFORM STREQUAL "RPI")
+  add_definitions(-DHW_PLATFORM_RPI)
 elseif(HW_PLATFORM STREQUAL "DR")
   add_definitions(-DHW_PLATFORM_DR)
 endif()
@@ -80,7 +78,7 @@ if(HW_PLATFORM STREQUAL "DR")
     )
   endif()
   
-elseif(HW_PLATFORM STREQUAL "RPI4" OR HW_PLATFORM STREQUAL "RPI5")
+elseif(HW_PLATFORM STREQUAL "RPI")
  
   # TensorFlow Lite optimization flags for ARM64
   set(TFLITE_ENABLE_XNNPACK ON CACHE BOOL "Enable XNNPACK acceleration")
@@ -90,17 +88,17 @@ elseif(HW_PLATFORM STREQUAL "RPI4" OR HW_PLATFORM STREQUAL "RPI5")
   set(TFLITE_ENABLE_GPU OFF CACHE BOOL "Disable GPU")
   set(TFLITE_ENABLE_NNAPI OFF CACHE BOOL "Disable Android NNAPI")
 
-  if(HW_PLATFORM STREQUAL "RPI5")
-    message(STATUS "RPI5 architecture detected, enabling Cortex-A76 optimizations")
-    if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-      add_compile_options(
-        -march=armv8.2-a      # ARMv8 architecture (required for 64-bit)
-        -mtune=cortex-a76   # Optimize for CM4's Cortex-A72 CPU
-        -ftree-vectorize    # Enable auto-vectorization
-      )
-    endif()
-  elseif(HW_PLATFORM STREQUAL "RPI4")
-    message(STATUS "RPI4 architecture detected, enabling Cortex-A72 optimizations")
+  # if(HW_PLATFORM STREQUAL "RPI5")
+  #  message(STATUS "RPI5 architecture detected, enabling Cortex-A76 optimizations")
+  #  if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  #    add_compile_options(
+  #      -march=armv8.2-a      # ARMv8 architecture (required for 64-bit)
+  #      -mtune=cortex-a76   # Optimize for CM4's Cortex-A72 CPU
+  #      -ftree-vectorize    # Enable auto-vectorization
+  #    )
+  #  endif()
+  if(HW_PLATFORM STREQUAL "RPI")
+    message(STATUS "RPI architecture detected, enabling Cortex-A72 optimizations")
     if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
       add_compile_options(
         -march=armv8-a       # ARMv8 architecture (required for 64-bit)
