@@ -20,8 +20,6 @@ set -e
 export DEBIAN_FRONTEND=noninteractive
 export DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/.. >/dev/null 2>&1 && pwd)"
 
-sudo apt update && sudo apt install -y libglib2.0-dev python3-yaml python3-ply python3-jinja2 meson ninja-build cmake pkg-config libyaml-dev libgnutls28-dev openssl libtiff-dev libboost-dev
-
 # Detect ROS version
 if [ -f /opt/ros/foxy/setup.bash ]; then
     ROS_DISTRO="foxy"
@@ -49,8 +47,13 @@ else
 fi
 cd $DIR/deps/libcamera
 
-meson setup build --wipe --buildtype=release -Dpipelines=rpi/pisp -Dipas=rpi/pisp -Dv4l2=enabled -Dgstreamer=disabled -Dtest=false -Dlc-compliance=disabled -Dcam=enabled -Dqcam=disabled -Ddocumentation=disabled -Dpycamera=disabled --prefix=/opt/ros/$ROS_DISTRO
-DESTDIR=${DIR}/deps/libcamera-build ninja -C build install
+meson setup build --buildtype=release -Dpipelines=uvcvideo,rpi/pisp -Dipas=rpi/pisp -Dv4l2=enabled -Dgstreamer=disabled -Dtest=false -Dlc-compliance=disabled -Dcam=enabled -Dqcam=disabled -Ddocumentation=disabled -Dpycamera=enabled --prefix=/opt/ros/$ROS_DISTRO
+export DESTDIR=${DIR}/deps/libcamera-build
+rm -rf ${DESTDIR}
+ninja -C build install
+PYTHON_VERSION=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+mkdir -p ${DESTDIR}/opt/ros/$ROS_DISTRO/lib/python${PYTHON_VERSION}/site-packages
+mv ${DESTDIR}/opt/ros/$ROS_DISTRO/lib/aarch64-linux-gnu/python${PYTHON_VERSION}/site-packages/libcamera ${DESTDIR}/opt/ros/$ROS_DISTRO/lib/python${PYTHON_VERSION}/site-packages/libcamera
 
 mkdir -p ${DIR}/deps/libcamera-build/DEBIAN
 cp ${DIR}/build_scripts/files/common/ros-$ROS_DISTRO-libcamera-control ${DIR}/deps/libcamera-build/DEBIAN/control
