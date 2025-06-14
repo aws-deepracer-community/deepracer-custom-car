@@ -120,7 +120,11 @@ for pkg in $PACKAGES; do
                 opt/aws/deepracer/camera/installed/bin/querydump \
                 opt/aws/deepracer/camera/installed/lib
             cp $DIR/deps/geocam-bin-armhf/files/usr/bin/mxcam opt/aws/deepracer/camera/installed/bin
-            cp $DIR/install_scripts/rpi4-22.04/aws_deepracer-community.list etc/apt/sources.list.d/aws_deepracer-community.list
+            if [ $ROS_DISTRO == "humble" ]; then
+                cp $DIR/install_scripts/rpi4-22.04/aws_deepracer-community.list etc/apt/sources.list.d/aws_deepracer-community.list
+            else
+                cp $DIR/install_scripts/rpi-24.04/aws_deepracer-community.list etc/apt/sources.list.d/aws_deepracer-community.list
+            fi
             rm etc/apt/sources.list.d/aws_deepracer.list
             cp $DIR/build_scripts/files/pi/otg_eth.sh opt/aws/deepracer/util/otg_eth.sh
             cp $DIR/build_scripts/files/pi/isc-dhcp-server opt/aws/deepracer/util/isc-dhcp-server

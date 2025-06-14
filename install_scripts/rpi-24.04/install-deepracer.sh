@@ -67,8 +67,9 @@ pip3 install -U --break-system-packages \
     "tensorboard" \
     pyclean \
     pam
+
 # Install packages
-cp $DIR/install_scripts/rpi-24.04/aws_deepracer-community.list /etc/apt/sources.list.d/aws_deepracer.list
+cp $DIR/install_scripts/rpi-24.04/aws_deepracer-community.list /etc/apt/sources.list.d/aws_deepracer-community.list
 cp $DIR/install_scripts/common/deepracer-community.asc /etc/apt/trusted.gpg.d/
 apt update -y && apt install -y aws-deepracer-core aws-deepracer-community-device-console aws-deepracer-util aws-deepracer-sample-models
 
