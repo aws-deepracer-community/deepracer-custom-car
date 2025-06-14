@@ -58,7 +58,7 @@ namespace BoardChips {
         /// Rewriting the command to dynamically find the bus channel number
         // "ls -al /sys/class/i2c-dev/ | grep "0000:00:17.3" | awk '{ print $9}' | awk -F "-" '{ print $2}'"
         uint8_t getBusChannel(){
-            #if defined(HW_PLATFORM_RPI4) || defined(HW_PLATFORM_RPI5)
+            #if defined(HW_PLATFORM_RPI)
                 uint8_t busChannel = 1; // For Raspberry Pi 4/5
             #elif defined(HW_PLATFORM_DR)
                 uint8_t busChannel = 7; // Default for DeepRacer (DR)

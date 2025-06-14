@@ -7,33 +7,43 @@ ARG USER_UID=1000
 ARG USER_GID=$USER_UID
 
 RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
-    libboost-all-dev \
-    libpugixml-dev \
+    curl \
+    cython3 \
+    ffmpeg \
     gpiod \
+    jq \
+    libboost-all-dev \
+    libgpiod-dev \
+    libglib2.0-dev \
+    libjsoncpp-dev \
+    libpugixml-dev \
+    libtiff-dev \
+    libyaml-dev \
+    meson \
+    nano \
+    ninja-build \
+    openssl \
+    pkg-config \
     python3-apt \
-    python3-pip \
-    python3-websocket \
     python3-colcon-common-extensions \
+    python3-jinja2 \
+    python3-libgpiod \
+    python3-pip \
+    python3-ply \
     python3-rosinstall \
     python3-venv \
-    python3-libgpiod \
-    libgpiod-dev \
-    ros-humble-cv-bridge \
+    python3-websocket \
+    python3-yaml \
     ros-humble-camera-ros \
-    ros-humble-image-transport \
     ros-humble-compressed-image-transport \
+    ros-humble-cv-bridge \
+    ros-humble-image-transport \
     ros-humble-pybind11-vendor \
-    libjsoncpp-dev \
-    v4l-utils \
-    ffmpeg \
-    sudo \
-    curl \
-    wget \
-    jq \
-    cython3 \
     ruby \
+    sudo \
     unzip \
-    nano
+    v4l-utils \
+    wget
 
 RUN cd / && curl -O https://aws-deepracer-community-sw.s3.eu-west-1.amazonaws.com/openvino/openvino_2022.3.1_$(dpkg --print-architecture).tgz && \
     tar -xvzf openvino_2022.3.1_$(dpkg --print-architecture).tgz && \

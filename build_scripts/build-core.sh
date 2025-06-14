@@ -17,16 +17,16 @@ while getopts "cp:" opt; do
     \?)
         echo "Usage: cmd [-c] [-p platform]"
         echo "  -c: Use cache"
-        echo "  -p: Hardware platform (DR, RPI4, RPI5)"
+        echo "  -p: Hardware platform (DR, RPI)"
         exit 1
         ;;
     esac
 done
 
 # Validate HW_PLATFORM
-if [[ ! "$HW_PLATFORM" =~ ^(DR|RPI4|RPI5)$ ]]; then
+if [[ ! "$HW_PLATFORM" =~ ^(DR|RPI)$ ]]; then
     echo "Invalid hardware platform: $HW_PLATFORM"
-    echo "Valid options: DR, RPI4, RPI5"
+    echo "Valid options: DR, RPI"
     exit 1
 fi
 

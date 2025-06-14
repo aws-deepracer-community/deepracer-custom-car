@@ -21,10 +21,10 @@
 #include <memory>
 #include <cstdio>
 
-#if defined(HW_PLATFORM_RPI5)
-#define PWMCHIP "pwmchip1"
+#if defined(HW_PLATFORM_RPI)
+#define PWMDEVICE "i2c-1"
 #else
-#define PWMCHIP "pwmchip0"
+#define PWMDEVICE "i2c-0"
 #endif
 
 namespace PWM
@@ -49,33 +49,45 @@ namespace PWM
         return file.good();
     }
 
-    /// Simplified function to find the pwmchip directory
+    /// Function to find the pwmchip directory associated with i2c-0/i2c-1
     /// @param logger ROS logger to report errors
     /// @returns Syspath pointing to the pwmchip directory.
     std::string getSysPath(const rclcpp::Logger &logger = rclcpp::get_logger("pwm"))
     {
         namespace fs = std::filesystem;
 
-        // Direct path to default PWM chip
-        std::string chipPath = std::string(BASE_SYS_PATH) + PWMCHIP;
-
         try
         {
-            // Check if the path exists
-            if (fs::exists(chipPath))
+            // Scan all PWM chips to find the one associated with i2c-1
+            for (const auto &entry : fs::directory_iterator(BASE_SYS_PATH))
             {
-                RCLCPP_INFO(logger, "Using PWM chip: %s", PWMCHIP);
-                return chipPath;
+                if (entry.is_directory())
+                {
+                    std::string chipName = entry.path().filename().string();
+                    if (chipName.find("pwmchip") == 0)
+                    {
+                        // Read the symlink to check if it contains i2c-0/i2c-1
+                        std::string symlinkPath = entry.path().string();
+                        if (fs::is_symlink(symlinkPath))
+                        {
+                            std::string target = fs::read_symlink(symlinkPath);
+                            if (target.find(PWMDEVICE) != std::string::npos)
+                            {
+                                RCLCPP_INFO(logger, "Found PWM chip: %s", chipName.c_str());
+                                return symlinkPath;
+                            }
+                        }
+                    }
+                }
             }
 
-            // If PWMCHIP doesn't exist, log a warning
-            RCLCPP_WARN(logger, "PWM chip path %s does not exist", chipPath.c_str());
-            return chipPath; // Return anyway as a fallback
+            // If we reach here, no PWM chip was found
+            throw std::runtime_error("No PWM chip associated with " + std::string(PWMDEVICE) + " found in " + std::string(BASE_SYS_PATH));
         }
         catch (const std::exception &e)
         {
-            RCLCPP_ERROR(logger, "Exception while checking PWM path: %s", e.what());
-            return chipPath;
+            RCLCPP_ERROR(logger, "Failed to find PWM chip: %s", e.what());
+            throw;
         }
     }
 
