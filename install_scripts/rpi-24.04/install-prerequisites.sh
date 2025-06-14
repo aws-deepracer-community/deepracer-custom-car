@@ -44,7 +44,7 @@ apt update -y && apt remove -y --autoremove unattended-upgrades needrestart
 add-apt-repository -y universe
 apt update -y && apt upgrade -y
 
-# From https://medium.com/@nullbyte.in/raspberry-pi-4-ubuntu-20-04-lts-ros2-a-step-by-step-guide-to-installing-the-perfect-setup-57c523f9d790
+# Ensure we have UTF-8
 locale-gen en_US en_US.UTF-8
 update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
 export LANG=en_US.UTF-8
@@ -79,6 +79,10 @@ else
   # If wlan0 section doesn't exist, fall back to replacing top-level renderer
   sed -i 's/renderer: networkd/renderer: NetworkManager/' /etc/netplan/50-cloud-init.yaml
 fi
+
+# Set proper permissions for netplan configuration file (secure from others)
+chmod 600 /etc/netplan/50-cloud-init.yaml
+
 echo -e "\nRestarting the network stack. This might require reconnection. Pi might receive a new IP address."
 echo -e "After script has finished, reboot.\n"
 systemctl restart NetworkManager
