@@ -47,7 +47,12 @@ else
 fi
 cd $DIR/deps/libcamera
 
-meson setup build --buildtype=release -Dpipelines=uvcvideo,rpi/vc4,rpi/pisp -Dipas=rpi/vc4,rpi/pisp -Dv4l2=enabled -Dgstreamer=disabled -Dtest=false -Dlc-compliance=disabled -Dcam=enabled -Dqcam=disabled -Ddocumentation=disabled -Dpycamera=enabled --prefix=/opt/ros/$ROS_DISTRO
+# Set ARM64-optimized compiler flags
+export CFLAGS="-O3 -march=armv8-a -mtune=cortex-a72 -flto"
+export CXXFLAGS="-O3 -march=armv8-a -mtune=cortex-a72 -flto"
+export LDFLAGS="-flto"
+
+meson setup build --wipe --buildtype=release -Dpipelines=uvcvideo,rpi/vc4,rpi/pisp -Dipas=rpi/vc4,rpi/pisp -Dv4l2=enabled -Dgstreamer=disabled -Dtest=false -Dlc-compliance=disabled -Dcam=enabled -Dqcam=disabled -Ddocumentation=disabled -Dpycamera=enabled --prefix=/opt/ros/$ROS_DISTRO
 export DESTDIR=${DIR}/deps/libcamera-build
 rm -rf ${DESTDIR}
 ninja -C build install
