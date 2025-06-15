@@ -185,7 +185,7 @@ for pkg in $PACKAGES; do
                             ros-$ROS_DISTRO-rosbag2-storage-mcap"
         fi
         if [ "$ROS_DISTRO" == "jazzy" ]; then
-            PACKAGE_DEPS="$PACKAGE_DEPS, ros-$ROS_DISTRO-libcamera (>= 1:0.5.0+drpi)"
+            PACKAGE_DEPS="$PACKAGE_DEPS, ros-$ROS_DISTRO-image-view, ros-$ROS_DISTRO-libcamera (>= 1:0.5.0+drpi)"
         fi
         # Clean PACKAGE_DEPS variable for additional white space
         PACKAGE_DEPS=$(echo "$PACKAGE_DEPS" | tr -s ' ' | sed 's/^ *//;s/ *$//')
