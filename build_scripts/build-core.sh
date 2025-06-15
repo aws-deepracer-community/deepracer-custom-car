@@ -4,17 +4,33 @@ export DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/.. >/dev/null 2>&1 && pwd)"
 
 # Parse command line arguments
 CACHE="false"
-while getopts "c" opt; do
+export HW_PLATFORM="${HW_PLATFORM:-DR}"  # Default to DR if not set
+
+while getopts "cp:" opt; do
     case ${opt} in
     c)
         CACHE="true"
         ;;
+    p)
+        HW_PLATFORM="${OPTARG}"
+        ;;
     \?)
-        echo "Usage: cmd [-c]"
+        echo "Usage: cmd [-c] [-p platform]"
+        echo "  -c: Use cache"
+        echo "  -p: Hardware platform (DR, RPI)"
         exit 1
         ;;
     esac
 done
+
+# Validate HW_PLATFORM
+if [[ ! "$HW_PLATFORM" =~ ^(DR|RPI)$ ]]; then
+    echo "Invalid hardware platform: $HW_PLATFORM"
+    echo "Valid options: DR, RPI"
+    exit 1
+fi
+
+echo "Building for hardware platform: $HW_PLATFORM"
 
 # Detect ROS version
 if [ -f /opt/ros/foxy/setup.bash ]; then
@@ -64,14 +80,14 @@ if [ "$CACHE" != "true" ]; then
         rosws merge --merge-replace - <.rosinstall-foxy
     fi
 
-    # if [ $ROS_DISTRO == "humble" ]; then
-    #    rosws merge --merge-replace - < .rosinstall-humble
-    # fi
+    if [ $ROS_DISTRO == "humble" ]; then
+        rosws merge --merge-replace - < .rosinstall-humble
+    fi
 
     if [ $ROS_DISTRO == "jazzy" ]; then
         export PYTHONWARNINGS=ignore::DeprecationWarning
         vcs import --input .rosinstall .
-        # vcs import --input .rosinstall-jazzy .
+        vcs import --input .rosinstall-jazzy .
     else
         rosws update
     fi
@@ -81,27 +97,6 @@ if [ "$CACHE" != "true" ]; then
     # END - Pull request specific changes
     #
     #######
-
-    if [ "$ROS_DISTRO" == "humble" ] || [ "$ROS_DISTRO" == "jazzy" ]; then
-
-        echo "Applying patches for Raspberry Pi / ROS 2 Humble & Jazzy"
-
-        #######
-        #
-        # START - PI specific patches
-        #
-
-        git apply $DIR/build_scripts/patches/aws-deepracer-i2c-pkg.rpi.patch
-        git apply $DIR/build_scripts/patches/aws-deepracer-servo-pkg.rpi.patch
-        git apply $DIR/build_scripts/patches/aws-deepracer-systems-pkg.rpi.patch
-        git apply $DIR/build_scripts/patches/aws-deepracer-status-led-pkg.rpi.patch
-        git apply $DIR/build_scripts/patches/aws-deepracer-model-optimizer-pkg.rpi.patch
-
-        #
-        # END - Patches
-        #
-        #######
-    fi
 
 fi
 
@@ -114,7 +109,7 @@ cd $DIR
 # Build the core
 export PYTHONWARNINGS=ignore:::setuptools.command.install
 if [ "$ROS_DISTRO" == "humble" ] || [ "$ROS_DISTRO" == "jazzy" ]; then
-    colcon build --packages-up-to deepracer_launcher logging_pkg
+    colcon build --packages-up-to deepracer_launcher logging_pkg camera_ros
 else
     colcon build --packages-up-to deepracer_launcher rplidar_ros logging_pkg
 fi

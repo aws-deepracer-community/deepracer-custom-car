@@ -14,6 +14,26 @@ endif()
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
   add_compile_options(-Wno-deprecated-declarations)
+  # Enhanced optimizations for sensor fusion
+  add_compile_options(-O3)             # Maximum optimization
+  add_compile_options(-flto=auto)           # Link-time optimization
+  add_compile_options(-ffast-math)     # Faster math (important for sensor fusion)
+endif()
+
+# In each C++ package that needs HW_PLATFORM
+if(DEFINED ENV{HW_PLATFORM})
+  set(HW_PLATFORM $ENV{HW_PLATFORM})
+  message(STATUS "Using hardware platform from environment: ${HW_PLATFORM}")
+endif()
+
+# Process HW_PLATFORM variable
+if(DEFINED HW_PLATFORM)
+  message(STATUS "Building servo package for hardware platform: ${HW_PLATFORM}")
+  if(HW_PLATFORM STREQUAL "RPI")
+    add_definitions(-DHW_PLATFORM_RPI)
+  elseif(HW_PLATFORM STREQUAL "DR")
+    add_definitions(-DHW_PLATFORM_DR)
+  endif()
 endif()
 
 # find dependencies

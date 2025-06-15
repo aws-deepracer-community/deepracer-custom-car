@@ -38,27 +38,47 @@ sudo apt install /tmp/ros2-apt-source.deb
 # Install ROS Core and Development Tools
 sudo apt -y update && sudo apt install -y \
     cython3 \
+    cmake \
+    defusedxml \
     ffmpeg \
+    flask_cors \
+    flask_wtf \
     libboost-all-dev \
+    libglib2.0-dev \
+    libgnutls28-dev \
     libhdf5-dev \
     libjsoncpp-dev \
     libopencv-dev \
     libpugixml1v5 \
+    libtiff-dev \
     libuvc0 \
+    libyaml-dev \
+    meson \
+    networkx \
+    ninja-build \
+    openssl \
+    pam \
+    pkg-config \
+    protobuf \
+    pyserial \
     python3-argcomplete \
     python3-colcon-common-extensions \
+    python3-jinja2 \
     python3-opencv \
     python3-pip \
+    python3-ply \
     python3-rosinstall \
     python3-venv \
     python3-websocket \
+    python3-yaml \
     ros-dev-tools \
     ros-humble-compressed-image-transport \
     ros-humble-cv-bridge \
     ros-humble-image-transport \
     ros-humble-pybind11-vendor \
     ros-humble-ros-base \
-    ros-humble-test-msgs
+    ros-humble-test-msgs \
+    unidecode
 
 sudo pip3 install -U "setuptools==58.2.0" pip catkin_pkg "Cython==0.29.28"
 

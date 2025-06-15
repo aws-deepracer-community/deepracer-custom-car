@@ -120,7 +120,11 @@ for pkg in $PACKAGES; do
                 opt/aws/deepracer/camera/installed/bin/querydump \
                 opt/aws/deepracer/camera/installed/lib
             cp $DIR/deps/geocam-bin-armhf/files/usr/bin/mxcam opt/aws/deepracer/camera/installed/bin
-            cp $DIR/install_scripts/rpi4-22.04/aws_deepracer-community.list etc/apt/sources.list.d/aws_deepracer-community.list
+            if [ $ROS_DISTRO == "humble" ]; then
+                cp $DIR/install_scripts/rpi4-22.04/aws_deepracer-community.list etc/apt/sources.list.d/aws_deepracer-community.list
+            else
+                cp $DIR/install_scripts/rpi-24.04/aws_deepracer-community.list etc/apt/sources.list.d/aws_deepracer-community.list
+            fi
             rm etc/apt/sources.list.d/aws_deepracer.list
             cp $DIR/build_scripts/files/pi/otg_eth.sh opt/aws/deepracer/util/otg_eth.sh
             cp $DIR/build_scripts/files/pi/isc-dhcp-server opt/aws/deepracer/util/isc-dhcp-server
@@ -166,10 +170,25 @@ for pkg in $PACKAGES; do
 
     if [ "$pkg" == "aws-deepracer-core" ]; then
         VERSION=$(jq -r ".[\"aws-deepracer-core\"]" $DIR/build_scripts/versions.json)-$(lsb_release -cs)
-        PACKAGE_DEPS="gnupg, python3-apt, python3-psutil, libomp5, ros-$ROS_DISTRO-ros-core, ros-$ROS_DISTRO-image-transport, ros-$ROS_DISTRO-compressed-image-transport, ros-$ROS_DISTRO-pybind11-vendor, ros-$ROS_DISTRO-cv-bridge"
-        if [ "$ROS_DISTRO" == "humble" ]; then
-            PACKAGE_DEPS="$PACKAGE_DEPS, ros-$ROS_DISTRO-rplidar-ros, ros-$ROS_DISTRO-libcamera, ros-$ROS_DISTRO-camera-ros, ros-$ROS_DISTRO-web-video-server, ros-$ROS_DISTRO-rosbag2, ros-$ROS_DISTRO-rosbag2-py, ros-$ROS_DISTRO-rosbag2-storage-mcap"
+        PACKAGE_DEPS="gnupg, python3-apt, python3-psutil, libomp5, ros-$ROS_DISTRO-ros-core, \
+                        ros-$ROS_DISTRO-image-transport, ros-$ROS_DISTRO-compressed-image-transport, \
+                        ros-$ROS_DISTRO-pybind11-vendor, ros-$ROS_DISTRO-cv-bridge"
+        if [ "$ROS_DISTRO" == "humble" ] || [ "$ROS_DISTRO" == "jazzy" ]; then
+            PACKAGE_DEPS="$PACKAGE_DEPS, \
+                            gpiod, python3-libgpiod, libgpiod-dev, \
+                            ros-$ROS_DISTRO-rplidar-ros, \
+                            ros-$ROS_DISTRO-camera-info-manager, \
+                            ros-$ROS_DISTRO-libcamera, \
+                            ros-$ROS_DISTRO-web-video-server, \
+                            ros-$ROS_DISTRO-rosbag2, \
+                            ros-$ROS_DISTRO-rosbag2-py, \
+                            ros-$ROS_DISTRO-rosbag2-storage-mcap"
         fi
+        if [ "$ROS_DISTRO" == "jazzy" ]; then
+            PACKAGE_DEPS="$PACKAGE_DEPS, ros-$ROS_DISTRO-image-view, ros-$ROS_DISTRO-libcamera (>= 1:0.5.0+drpi)"
+        fi
+        # Clean PACKAGE_DEPS variable for additional white space
+        PACKAGE_DEPS=$(echo "$PACKAGE_DEPS" | tr -s ' ' | sed 's/^ *//;s/ *$//')
         echo -e "\n### Building aws-deepracer-core $VERSION ###\n"
         dpkg-deb -R src/aws-deepracer-core_*amd64.deb aws-deepracer-core
         cd aws-deepracer-core

@@ -27,9 +27,8 @@ export DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/../.. >/dev/null 2>&1 && pwd)"
 
 # Now add the ROS 2 GPG key with apt.
 # Then add the repository to your sources list.
-export ROS_APT_SOURCE_VERSION=$(curl -s https://api.github.com/repos/ros-infrastructure/ros-apt-source/releases/latest | grep -F "tag_name" | awk -F\" '{print $4}')
-curl -L -o /tmp/ros2-apt-source.deb "https://github.com/ros-infrastructure/ros-apt-source/releases/download/${ROS_APT_SOURCE_VERSION}/ros2-apt-source_${ROS_APT_SOURCE_VERSION}.$(. /etc/os-release && echo $UBUNTU_CODENAME)_all.deb"
-apt install /tmp/ros2-apt-source.deb
+curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key | gpg --no-default-keyring --keyring /usr/share/keyrings/ros-archive-keyring.gpg --import 
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | tee /etc/apt/sources.list.d/ros2.list >/dev/null
 
 # Install ROS Core and Development Tools
 apt -y update && apt install -y --no-install-recommends \
@@ -44,51 +43,33 @@ apt -y update && apt install -y --no-install-recommends \
     libpugixml1v5 \
     libuvc0 \
     python3-argcomplete \
-    python3-colcon-common-extensions \
     python3-opencv \
     python3-pip \
-    python3-rosinstall \
+    python3-protobuf \
+    python3-pyudev \
     python3-venv \
+    python3-testresources \
     python3-websocket \
+    python3-networkx \
+    python3-unidecode \
     ros-dev-tools \
-    ros-humble-ros-core
+    ros-jazzy-ros-core
 
-rosdep init && rosdep update --rosdistro=humble -q
-
-# Update build tools and utilities for Python
-sudo pip3 install -U "setuptools==58.2.0" pip "Cython==0.29.28" testresources
-
-# Get OpenVINO
-mkdir -p $DIR/dist/
-cd $DIR/dist/
-[ ! -f "$DIR/dist/openvino_2022.3.1_arm64.tgz" ] && curl -O https://aws-deepracer-community-sw.s3.eu-west-1.amazonaws.com/openvino/openvino_2022.3.1_arm64.tgz
-cd /
-tar xvzf $DIR/dist/openvino_2022.3.1_arm64.tgz
-ln -sf /opt/intel/openvino_2022.3.1 /opt/intel/openvino_2022
-ln -sf /opt/intel/openvino_2022.3.1 /opt/intel/openvino
-/opt/intel/openvino_2022.3.1/install_dependencies/install_NCS_udev_rules.sh
-systemctl restart systemd-resolved
+rosdep init && rosdep update --rosdistro=jazzy -q
 
 # Tensorflow and dependencies
-pip3 install -U pyudev \
+pip3 install -U --break-system-packages \
     "flask<3" \
     flask_cors \
     flask_wtf \
-    pam \
-    networkx \
-    unidecode \
     pyserial \
     "tensorflow==2.17.1" \
-    "numpy>=1.16.6,<=1.23.4" \
-    "protobuf" \
     "tensorboard" \
-    "blinker==1.4" \
     pyclean \
-    /opt/intel/openvino_2022.3.1/tools/openvino_dev-2022.3.1-1-py3-none-any.whl \
-    /opt/intel/openvino_2022.3.1/tools/openvino-2022.3.1-1-cp310-cp310-manylinux_2_35_aarch64.whl
+    pam
 
 # Install packages
-cp $DIR/install_scripts/rpi4-22.04/aws_deepracer-community.list /etc/apt/sources.list.d/aws_deepracer-community.list
+cp $DIR/install_scripts/rpi-24.04/aws_deepracer-community.list /etc/apt/sources.list.d/aws_deepracer-community.list
 cp $DIR/install_scripts/common/deepracer-community.asc /etc/apt/trusted.gpg.d/
 apt update -y && apt install -y aws-deepracer-core aws-deepracer-community-device-console aws-deepracer-util aws-deepracer-sample-models
 
