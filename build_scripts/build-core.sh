@@ -80,14 +80,14 @@ if [ "$CACHE" != "true" ]; then
         rosws merge --merge-replace - <.rosinstall-foxy
     fi
 
-    # if [ $ROS_DISTRO == "humble" ]; then
-    #    rosws merge --merge-replace - < .rosinstall-humble
-    # fi
+    if [ $ROS_DISTRO == "humble" ]; then
+        rosws merge --merge-replace - < .rosinstall-humble
+    fi
 
     if [ $ROS_DISTRO == "jazzy" ]; then
         export PYTHONWARNINGS=ignore::DeprecationWarning
         vcs import --input .rosinstall .
-        # vcs import --input .rosinstall-jazzy .
+        vcs import --input .rosinstall-jazzy .
     else
         rosws update
     fi

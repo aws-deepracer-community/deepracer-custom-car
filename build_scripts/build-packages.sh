@@ -177,7 +177,8 @@ for pkg in $PACKAGES; do
             PACKAGE_DEPS="$PACKAGE_DEPS, \
                             gpiod, python3-libgpiod, libgpiod-dev, \
                             ros-$ROS_DISTRO-rplidar-ros, \
-                            ros-$ROS_DISTRO-camera-ros, \
+                            ros-$ROS_DISTRO-camera-info-manager, \
+                            ros-$ROS_DISTRO-libcamera, \
                             ros-$ROS_DISTRO-web-video-server, \
                             ros-$ROS_DISTRO-rosbag2, \
                             ros-$ROS_DISTRO-rosbag2-py, \
