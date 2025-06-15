@@ -47,7 +47,8 @@ DISK_AMOUNT_CMD = "df / -h | awk '{print $2 \"B\"}' | tail -1"
 RAM_AMOUNT_CMD = "free -m | grep 'Mem' | awk '{print $2}'"
 
 # Latency measurement
-MAX_LATENCY_HISTORY = 150
+MAX_LATENCY_HISTORY = 100
+LATENCY_SAMPLE_RATE = 2
 
 # System type
 

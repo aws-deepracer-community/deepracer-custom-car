@@ -43,7 +43,7 @@ namespace PWM {
 
 
     ServoMgr::ServoMgr(rclcpp::Logger logger_, std::shared_ptr<rclcpp::Clock> clock,
-                       std::shared_ptr<rclcpp::Publisher<deepracer_interfaces_pkg::msg::LatencyMeasure, std::allocator<void>>> latencyPub)  
+                       std::shared_ptr<rclcpp::Publisher<deepracer_interfaces_pkg::msg::LatencyMeasureMsg, std::allocator<void>>> latencyPub)  
         : throttle_(std::make_unique<Servo>(0, logger_)),
           angle_(std::make_unique<Servo>(1, logger_)),
 	      logger_(logger_),
@@ -109,9 +109,9 @@ namespace PWM {
         
         // If there is a soruce_stamp and a subsccription count, publish the latency message
         if (servoMsg->source_stamp.sec != 0 && latencyPub_->get_subscription_count() > 0) {
-            auto latency_msg = deepracer_interfaces_pkg::msg::LatencyMeasure();
-            latency_msg.send = servoMsg->source_stamp;
-            latency_msg.receive = now;
+            auto latency_msg = deepracer_interfaces_pkg::msg::LatencyMeasureMsg();
+            latency_msg.send_time_ns = static_cast<uint64_t>(servoMsg->source_stamp.sec) * 1000000000LL + servoMsg->source_stamp.nanosec;
+            latency_msg.receive_time_ns = static_cast<uint64_t>(now.nanoseconds());
             latencyPub_->publish(latency_msg);
         } 
 

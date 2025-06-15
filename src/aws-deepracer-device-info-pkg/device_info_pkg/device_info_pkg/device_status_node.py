@@ -30,13 +30,14 @@ import psutil
 import rclpy
 from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
+from rclpy.serialization import deserialize_message
 from collections import deque
 import numpy as np
 
 from deepracer_interfaces_pkg.srv import GetDeviceStatusSrv
-from deepracer_interfaces_pkg.msg import DeviceStatusMsg, LatencyMeasure
+from deepracer_interfaces_pkg.msg import DeviceStatusMsg, LatencyMeasureMsg
 from device_info_pkg import constants
-
+from device_info_pkg.ring_buffer import RingBuffer
 
 #########################################################################################
 # DeviceStatusNode
@@ -70,14 +71,15 @@ class DeviceStatusNode(Node):
             "median": 0.0,
             "p95": 0.0
         }
-        self.latency_history = deque(maxlen=constants.MAX_LATENCY_HISTORY)
+        self.latency_history = RingBuffer(maxsize=constants.MAX_LATENCY_HISTORY)
 
         # Subscribe to the latency topic
         self.latency_subscriber = self.create_subscription(
-            LatencyMeasure,
+            LatencyMeasureMsg,
             constants.SERVO_LATENCY_TOPIC_NAME,
             self.latency_callback,
-            10  # QoS depth
+            10,  # QoS depth,
+            raw=True  # Use raw=True for performance optimization
         )
         self.get_logger().info(f"Subscribed to {constants.SERVO_LATENCY_TOPIC_NAME} topic")
 
@@ -102,36 +104,47 @@ class DeviceStatusNode(Node):
         self.timer_count = 0
         self.update_timer = self.create_timer(2.5, self.update_timer_callback)
 
-    def latency_callback(self, msg: LatencyMeasure):
-        """Callback for the latency subscriber.
+        # Cache temperature sensor path on startup
+        self.temp_sensor_path = self._find_temp_sensor_path()
+
+        # Pre-allocate for better performance
+        self.last_latency_msg_ns = 0.0
+        self.latency_msg_counter = 0
+        self.percentile_update_interval = 20  # Update p95 every 20 timer calls (50 seconds)
+
+    def latency_callback(self, msg):
+        """Callback for the latency subscriber - optimized for performance.
 
         Args:
             msg (LatencyMeasure): The latency message containing send and receive timestamps
         """
         try:
-            # Calculate latency as the difference between receive and send times
-            # Convert nanoseconds to milliseconds by dividing by 1,000,000
-            receive_time_ns = msg.receive.sec * 1e9 + msg.receive.nanosec
-            send_time_ns = msg.send.sec * 1e9 + msg.send.nanosec
 
-            # Calculate latency in milliseconds
-            latency_value = (receive_time_ns - send_time_ns) / 1.0e6
-            current_timestamp = msg.receive
+            self.latency_msg_counter += 1
+            if self.latency_msg_counter % constants.LATENCY_SAMPLE_RATE != 0:
+                # Skip every other message to reduce processing load
+                return
+
+            latency_msg: LatencyMeasureMsg = deserialize_message(msg, LatencyMeasureMsg)
+
+            # Calculate latency more efficiently
+            send_time_ns = latency_msg.send_time_ns
+            receive_time_ns = latency_msg.receive_time_ns
+            self.last_latency_msg_ns = latency_msg.receive_time_ns
+
+            # Convert to milliseconds in one operation
+            latency_ns = (receive_time_ns - send_time_ns)
 
             # Check if we should clear the history due to a time gap
             if self.latency_history:
-                last_timestamp = self.latency_history[-1][1]
-                last_time_ns = last_timestamp.sec * 1e9 + last_timestamp.nanosec
-                current_time_ns = current_timestamp.sec * 1e9 + current_timestamp.nanosec
-                time_gap_ms = (current_time_ns - last_time_ns) / 1.0e6
-                
-                if time_gap_ms > 500.0:  # If more than 500ms since last measurement
+                if (receive_time_ns - self.last_latency_msg_ns) > 500_000_000:  # If more than 500ms since last measurement
+                    time_gap_ms = (receive_time_ns - self.last_latency_msg_ns) / 1.0e6
                     self.get_logger().info(f"Latency gap detected ({time_gap_ms:.1f}ms). Clearing latency history.")
                     self.latency_history.clear()
 
             # Store the latency value and timestamp in the history deque
-            self.latency_history.append((latency_value, current_timestamp))
-            self.get_logger().debug(f"Received latency: {latency_value:.2f}ms (send to receive)")
+            self.latency_history.append(latency_ns, receive_time_ns)
+
         except Exception as ex:
             self.get_logger().error(f"Error processing latency message: {ex}")
 
@@ -184,44 +197,54 @@ class DeviceStatusNode(Node):
         self.update_latency_statistics()
 
     def update_cpu_load(self):
-        """Function to update CPU utilization percentage using psutil.
-        """
+        """Function to update CPU utilization percentage using psutil."""
         try:
-            # Get overall CPU utilization as percentage
-            self.cpu_percent = psutil.cpu_percent()
-
-            self.get_logger().debug(f"CPU utilization updated: {self.cpu_percent}%")
+            # Use interval=1 for more accurate reading with less frequent calls
+            self.cpu_percent = psutil.cpu_percent(interval=0.2)
+            self.get_logger().debug(f"CPU utilization: {self.cpu_percent:.1f}%")
         except Exception as ex:
             self.get_logger().error(f"Failed to get CPU utilization: {ex}")
 
-    def update_cpu_temp(self):
-        """Function to update CPU temperature using psutil.
-        """
+    def _find_temp_sensor_path(self):
+        """Find the best temperature sensor path once at startup."""
         try:
-            # Try to get CPU temperature via psutil
             temps = psutil.sensors_temperatures()
-            # Different systems report temperature under different keys
-            # First try 'coretemp' which is common on Intel systems
             if 'coretemp' in temps:
-                # Take the first core temperature as representative
-                self.cpu_temp = temps['coretemp'][0].current
-            # Then try 'cpu_thermal' which is common on ARM/Raspberry Pi
+                return ('psutil', 'coretemp', 0)
             elif 'cpu_thermal' in temps:
-                self.cpu_temp = temps['cpu_thermal'][0].current
-            # Try any other available temperature sensor
+                return ('psutil', 'cpu_thermal', 0)
             elif temps:
-                # Get the first available sensor's first reading
                 first_sensor = list(temps.keys())[0]
-                self.cpu_temp = temps[first_sensor][0].current
+                return ('psutil', first_sensor, 0)
             else:
-                # If no temperature sensors available through psutil, try reading directly
-                try:
-                    with open('/sys/class/thermal/thermal_zone0/temp', 'r') as f:
-                        self.cpu_temp = float(f.read().strip()) / 1000.0
-                except:
+                # Check if thermal zone file exists
+                import os
+                if os.path.exists('/sys/class/thermal/thermal_zone0/temp'):
+                    return ('file', '/sys/class/thermal/thermal_zone0/temp', None)
+        except Exception:
+            pass
+        return None
+
+    def update_cpu_temp(self):
+        """Function to update CPU temperature using cached sensor path."""
+        try:
+            if not self.temp_sensor_path:
+                self.cpu_temp = 0.0
+                return
+
+            method, path, index = self.temp_sensor_path
+
+            if method == 'psutil':
+                temps = psutil.sensors_temperatures()
+                if path in temps and len(temps[path]) > index:
+                    self.cpu_temp = temps[path][index].current
+                else:
                     self.cpu_temp = 0.0
-                    self.get_logger().debug("CPU temperature not available")
-            self.get_logger().debug(f"CPU temperature updated: {self.cpu_temp}°C")
+            elif method == 'file':
+                with open(path, 'r') as f:
+                    self.cpu_temp = float(f.read().strip()) / 1000.0
+
+            self.get_logger().debug(f"CPU temperature: {self.cpu_temp:.1f}°C")
         except Exception as ex:
             self.get_logger().error(f"Failed to get CPU temperature: {ex}")
             self.cpu_temp = 0.0
@@ -279,32 +302,20 @@ class DeviceStatusNode(Node):
             self.free_disk = 0.0
 
     def update_latency_statistics(self):
-        """Get statistics for the latency values.
-
-        Returns:
-            dict: Dictionary containing mean, std, min, max, etc.
-        """
+        """Get statistics for the latency values - update less frequently."""
         if not self.latency_history:
-            return {"mean": 0.0, "std": 0.0, "min": 0.0, "max": 0.0}
+            return
 
-        # Extract just latency values from the deque (not timestamps)
-        latency_values = np.array([item[0] for item in self.latency_history])
-        # Calculate the difference between the maximum and minimum timestamps
-        time_diff_ns = (self.latency_history[-1][1].sec * 1e9 + self.latency_history[-1][1].nanosec) - \
-            (self.latency_history[0][1].sec * 1e9 + self.latency_history[0][1].nanosec)
-        time_diff_ms = time_diff_ns / 1.0e6  # Convert nanoseconds to milliseconds
-        # Calculate fps
-        if time_diff_ms > 0:
-            self.fps_mean = (len(latency_values) - 1) / (time_diff_ms / 1000.0)
+        # Get basic statistics in O(1) time
+        self.latency_stats["mean"] = self.latency_history.get_mean()
 
-        self.latency_stats = {
-            "mean": np.mean(latency_values),
-            # "std": np.std(latency_values),
-            # "min": np.min(latency_values),
-            # "max": np.max(latency_values),
-            # "median": np.median(latency_values),
-            "p95": np.percentile(latency_values, 95)
-        }
+        min_val, max_val = self.latency_history.get_min_max()
+        self.latency_stats["min"] = min_val
+        self.latency_stats["max"] = max_val
+        self.latency_stats["p95"] = self.latency_history.get_percentile(0.95)
+
+        # Calculate FPS in O(1) time
+        self.fps_mean = self.latency_history.get_fps()
 
     def publish_status(self):
         """Publish the current device status metrics.

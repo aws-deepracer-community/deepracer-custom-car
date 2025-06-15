@@ -41,7 +41,7 @@ int main(int argc, char **argv) {
     
     std::shared_ptr<rclcpp::Node> node = rclcpp::Node::make_shared("servo_node");
 
-    auto pub_ = node->create_publisher<deepracer_interfaces_pkg::msg::LatencyMeasure>(LATENCY_TOPIC, rclcpp::SystemDefaultsQoS());
+    auto pub_ = node->create_publisher<deepracer_interfaces_pkg::msg::LatencyMeasureMsg>(LATENCY_TOPIC, rclcpp::SystemDefaultsQoS());
 
     auto servoMgr = std::make_unique<PWM::ServoMgr>(node->get_logger(), node->get_clock(), pub_);
     auto ledMgr = std::make_unique<PWM::LedMgr>(node->get_logger());

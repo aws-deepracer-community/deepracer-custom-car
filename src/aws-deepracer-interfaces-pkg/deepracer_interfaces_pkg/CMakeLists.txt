@@ -43,7 +43,7 @@ set(msg_files
   "msg/NetworkConnectionStatus.msg"
   "msg/SoftwareUpdatePctMsg.msg"
   "msg/USBFileSystemNotificationMsg.msg"
-  "msg/LatencyMeasure.msg"
+  "msg/LatencyMeasureMsg.msg"
 )
 set(srv_files
   "srv/ActiveStateSrv.srv"

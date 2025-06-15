@@ -190,7 +190,7 @@ namespace TFLiteInferenceEngine {
 
             // Set number of CPU threads for inference
             // Use the number of available CPU cores or a specific number (e.g., 4)
-            int num_threads = std::thread::hardware_concurrency() - 1; // Get available CPU cores
+            int num_threads = std::thread::hardware_concurrency() - 2; // Get available CPU cores
             if (num_threads == 0) num_threads = 2; // Fallback if detection fails
             interpreter_->SetNumThreads(num_threads);
             // Set OpenMP threads (for operations that use OpenMP)
