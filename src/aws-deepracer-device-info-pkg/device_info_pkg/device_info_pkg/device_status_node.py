@@ -31,8 +31,7 @@ import rclpy
 from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.serialization import deserialize_message
-from collections import deque
-import numpy as np
+from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 
 from deepracer_interfaces_pkg.srv import GetDeviceStatusSrv
 from deepracer_interfaces_pkg.msg import DeviceStatusMsg, LatencyMeasureMsg
@@ -78,13 +77,9 @@ class DeviceStatusNode(Node):
             LatencyMeasureMsg,
             constants.SERVO_LATENCY_TOPIC_NAME,
             self.latency_callback,
-            10,  # QoS depth,
-            raw=True  # Use raw=True for performance optimization
+            10  # QoS depth,
         )
         self.get_logger().info(f"Subscribed to {constants.SERVO_LATENCY_TOPIC_NAME} topic")
-
-        # Initialize metrics on startup
-        self.update_metrics()
 
         # Service to get the system metrics
         self.get_device_status_service = self.create_service(
@@ -102,48 +97,39 @@ class DeviceStatusNode(Node):
 
         # Timer to periodically update the metrics
         self.timer_count = 0
-        self.update_timer = self.create_timer(2.5, self.update_timer_callback)
+        self.update_timer = self.create_timer(constants.DEVICE_STATUS_TIMING, self.update_timer_callback)
+
+
+        # Pre-allocate for better performance
+        self.last_latency_msg =  self.get_clock().now()
+        self.latency_msg_counter = 0
 
         # Cache temperature sensor path on startup
         self.temp_sensor_path = self._find_temp_sensor_path()
 
-        # Pre-allocate for better performance
-        self.last_latency_msg_ns = 0.0
-        self.latency_msg_counter = 0
-        self.percentile_update_interval = 20  # Update p95 every 20 timer calls (50 seconds)
+        # Initialize metrics on startup
+        self.update_metrics()
 
-    def latency_callback(self, msg):
+    def latency_callback(self, latency_msg: LatencyMeasureMsg):
         """Callback for the latency subscriber - optimized for performance.
 
         Args:
             msg (LatencyMeasure): The latency message containing send and receive timestamps
         """
         try:
-
-            self.latency_msg_counter += 1
-            if self.latency_msg_counter % constants.LATENCY_SAMPLE_RATE != 0:
-                # Skip every other message to reduce processing load
-                return
-
-            latency_msg: LatencyMeasureMsg = deserialize_message(msg, LatencyMeasureMsg)
-
             # Calculate latency more efficiently
-            send_time_ns = latency_msg.send_time_ns
-            receive_time_ns = latency_msg.receive_time_ns
-            self.last_latency_msg_ns = latency_msg.receive_time_ns
-
-            # Convert to milliseconds in one operation
-            latency_ns = (receive_time_ns - send_time_ns)
+            latency_ms = latency_msg.latency_ms
+            receive_time = self.get_clock().now()
 
             # Check if we should clear the history due to a time gap
-            if self.latency_history:
-                if (receive_time_ns - self.last_latency_msg_ns) > 500_000_000:  # If more than 500ms since last measurement
-                    time_gap_ms = (receive_time_ns - self.last_latency_msg_ns) / 1.0e6
-                    self.get_logger().info(f"Latency gap detected ({time_gap_ms:.1f}ms). Clearing latency history.")
-                    self.latency_history.clear()
+            if (receive_time - self.last_latency_msg).nanoseconds > 500_000_000:  # If more than 500ms since last measurement
+                time_gap_ms = (receive_time - self.last_latency_msg).nanoseconds / 1.0e6
+                self.get_logger().info(f"Latency gap detected ({time_gap_ms:.1f}ms). Clearing latency history.")
+                self.latency_history.clear()
 
             # Store the latency value and timestamp in the history deque
-            self.latency_history.append(latency_ns, receive_time_ns)
+            self.latency_history.append(latency_ms, receive_time)
+            self.last_latency_msg = receive_time
 
         except Exception as ex:
             self.get_logger().error(f"Error processing latency message: {ex}")
@@ -308,10 +294,6 @@ class DeviceStatusNode(Node):
 
         # Get basic statistics in O(1) time
         self.latency_stats["mean"] = self.latency_history.get_mean()
-
-        min_val, max_val = self.latency_history.get_min_max()
-        self.latency_stats["min"] = min_val
-        self.latency_stats["max"] = max_val
         self.latency_stats["p95"] = self.latency_history.get_percentile(0.95)
 
         # Calculate FPS in O(1) time

@@ -47,12 +47,11 @@ DISK_AMOUNT_CMD = "df / -h | awk '{print $2 \"B\"}' | tail -1"
 RAM_AMOUNT_CMD = "free -m | grep 'Mem' | awk '{print $2}'"
 
 # Latency measurement
-MAX_LATENCY_HISTORY = 100
-LATENCY_SAMPLE_RATE = 2
+MAX_LATENCY_HISTORY = 50
+LATENCY_SAMPLE_RATE = 5
+DEVICE_STATUS_TIMING = 2.5  # seconds
 
 # System type
-
-
 class SystemType(Enum):
     DR = auto()
     RPI4 = auto()

@@ -51,6 +51,7 @@ namespace PWM {
         // Default for DeepRacer (DR)
         #define GPIO_CHANNEL 436
     #endif
+    #define LATENCY_MEASURE_FREQ 5
 
     class ServoMgr
         {
@@ -107,6 +108,8 @@ namespace PWM {
             std::shared_ptr<rclcpp::Clock> clock_;
             /// ROS Publisher for latency measure
             std::shared_ptr<rclcpp::Publisher<deepracer_interfaces_pkg::msg::LatencyMeasureMsg, std::allocator<void>>> latencyPub_;
+            /// Message count for latency measurement
+            int latency_msg_count_ = 0;
     };
 }
 #endif

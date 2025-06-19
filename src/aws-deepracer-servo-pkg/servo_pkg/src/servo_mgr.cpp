@@ -46,9 +46,9 @@ namespace PWM {
                        std::shared_ptr<rclcpp::Publisher<deepracer_interfaces_pkg::msg::LatencyMeasureMsg, std::allocator<void>>> latencyPub)  
         : throttle_(std::make_unique<Servo>(0, logger_)),
           angle_(std::make_unique<Servo>(1, logger_)),
-	      logger_(logger_),
+          logger_(logger_),
           clock_(clock),
-          latencyPub_(latencyPub)
+          latencyPub_(latencyPub)    
     {
         throttle_->setPeriod(SERVO_PERIOD);
         angle_->setPeriod(SERVO_PERIOD);
@@ -106,12 +106,13 @@ namespace PWM {
         setPWM(throttle_, servoMsg->throttle, motor);
         setPWM(angle_, servoMsg->angle, servo);
         auto now = clock_->now();
+        latency_msg_count_ = (latency_msg_count_ + 1) % LATENCY_MEASURE_FREQ;
         
         // If there is a soruce_stamp and a subsccription count, publish the latency message
-        if (servoMsg->source_stamp.sec != 0 && latencyPub_->get_subscription_count() > 0) {
+        if (servoMsg->source_stamp.sec != 0 && latencyPub_->get_subscription_count() > 0 && latency_msg_count_ == 0) {
             auto latency_msg = deepracer_interfaces_pkg::msg::LatencyMeasureMsg();
-            latency_msg.send_time_ns = static_cast<uint64_t>(servoMsg->source_stamp.sec) * 1000000000LL + servoMsg->source_stamp.nanosec;
-            latency_msg.receive_time_ns = static_cast<uint64_t>(now.nanoseconds());
+            int64_t latency_ns = now.nanoseconds() - (servoMsg->source_stamp.sec * 1000000000LL + servoMsg->source_stamp.nanosec);
+            latency_msg.latency_ms = static_cast<float>(latency_ns) / 1.0e6;
             latencyPub_->publish(latency_msg);
         } 
 
