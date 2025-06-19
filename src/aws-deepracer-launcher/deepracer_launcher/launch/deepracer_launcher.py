@@ -53,7 +53,8 @@ def launch_setup(context, *args, **kwargs):
         # Camera configuration
         camera_params = {'width': resolution[0],
                          'height': resolution[1],
-                         'FrameDurationLimits': [math.floor(1e6 / fps), math.ceil(1e6 / fps)]}
+                         'FrameDurationLimits': [math.floor(1e6 / fps), math.ceil(1e6 / fps)],
+                         'timestamp_source': 'node'}
 
         # Camera detection
         try:
