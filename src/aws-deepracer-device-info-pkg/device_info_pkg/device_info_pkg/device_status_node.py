@@ -30,8 +30,6 @@ import psutil
 import rclpy
 from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
-from rclpy.serialization import deserialize_message
-from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 
 from deepracer_interfaces_pkg.srv import GetDeviceStatusSrv
 from deepracer_interfaces_pkg.msg import DeviceStatusMsg, LatencyMeasureMsg
