@@ -109,9 +109,9 @@ cd $DIR
 # Build the core
 export PYTHONWARNINGS=ignore:::setuptools.command.install
 if [ "$ROS_DISTRO" == "humble" ] || [ "$ROS_DISTRO" == "jazzy" ]; then
-    colcon build --packages-up-to deepracer_launcher logging_pkg camera_ros
+    colcon build --packages-up-to deepracer_launcher logging_pkg camera_ros --cmake-args -DCMAKE_BUILD_TYPE=Release
 else
-    colcon build --packages-up-to deepracer_launcher rplidar_ros logging_pkg
+    colcon build --packages-up-to deepracer_launcher rplidar_ros logging_pkg --cmake-args -DCMAKE_BUILD_TYPE=Release
 fi
 
 set +e

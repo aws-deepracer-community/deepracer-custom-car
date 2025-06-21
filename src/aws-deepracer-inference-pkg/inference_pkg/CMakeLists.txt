@@ -55,7 +55,6 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   
   # Common optimizations for all architectures
   add_compile_options(
-    -O3                   # Maximum optimization level
     -flto=auto            # Link-time optimization
     -ffast-math           # Faster floating-point math
   )
