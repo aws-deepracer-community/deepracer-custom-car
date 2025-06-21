@@ -1,0 +1,12 @@
+diff --git a/ctrl_pkg/src/ctrl_state.cpp b/ctrl_pkg/src/ctrl_state.cpp
+index a75a58a..1dec583 100644
+--- a/ctrl_pkg/src/ctrl_state.cpp
++++ b/ctrl_pkg/src/ctrl_state.cpp
+@@ -127,6 +127,7 @@ namespace SysCtrl {
+             return;
+         }
+         auto servoMsg = deepracer_interfaces_pkg::msg::ServoCtrlMsg();
++        servoMsg.source_stamp = msg->source_stamp;
+         servoMsg.angle = msg->angle;
+         servoMsg.throttle = msg->throttle;
+         servoPub_->publish(servoMsg);  // Publish it along.

@@ -1,0 +1,28 @@
+diff --git a/camera_pkg/src/camera_node.cpp b/camera_pkg/src/camera_node.cpp
+index 5ba40b1..80a82b0 100644
+--- a/camera_pkg/src/camera_node.cpp
++++ b/camera_pkg/src/camera_node.cpp
+@@ -139,12 +139,14 @@ namespace MediaEng {
+         void produceFrames() {
+             while (produceFrames_) {
+                 deepracer_interfaces_pkg::msg::CameraMsg msg;
++                std_msgs::msg::Header header;
+                 for (auto& cap :  videoCaptureList_) {
+                     if (!cap.isOpened()) {
+                         continue;
+                     }
+                     cv::Mat frame;
+                     cap >> frame;
++                    header.stamp = this->get_clock()->now();
+                     if (frame.empty()) {
+                         RCLCPP_ERROR(this->get_logger(), "No frame returned. Check if camera is plugged in correctly.");
+                         continue;
+@@ -153,7 +155,7 @@ namespace MediaEng {
+                         if(resizeImages_) {
+                             cv::resize(frame, frame, cv::Size(DEFAULT_IMAGE_WIDTH, DEFAULT_IMAGE_HEIGHT));
+                         }
+-                        msg.images.push_back(*(cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", frame).toImageMsg().get()));
++                        msg.images.push_back(*(cv_bridge::CvImage(header, "bgr8", frame).toImageMsg().get()));
+                     }
+                     catch (cv_bridge::Exception& e) {
+                         RCLCPP_ERROR(this->get_logger(), "cv_bridge exception: %s", e.what());

@@ -1,0 +1,13 @@
+diff --git a/deepracer_interfaces_pkg/msg/ServoCtrlMsg.msg b/deepracer_interfaces_pkg/msg/ServoCtrlMsg.msg
+index ebfe8d2..f6b4c11 100644
+--- a/deepracer_interfaces_pkg/msg/ServoCtrlMsg.msg
++++ b/deepracer_interfaces_pkg/msg/ServoCtrlMsg.msg
+@@ -8,4 +8,5 @@ float32 angle       # Angle ratio w.r.t steering_max/steering_min
+                     # to the servo.
+ float32 throttle    # Throttle ratio w.r.t speed_max/speed_min
+                     # in calibration file or raw PWM value to be sent
+-                    # to the motor.   
+\ No newline at end of file
++                    # to the motor.
++builtin_interfaces/Time  source_stamp    # Timestamp for the inference input (optional)                    
+\ No newline at end of file

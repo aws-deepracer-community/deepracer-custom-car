@@ -206,23 +206,6 @@ def launch_setup(context, *args, **kwargs):
                 'default_transport': 'compressed'
         }]
     )
-    bag_log_node = Node(
-        package='logging_pkg',
-        namespace='logging_pkg',
-        executable='bag_log_node',
-        name='bag_log_node',
-        parameters=[{
-                'logging_mode': LaunchConfiguration(
-                    'logging_mode').perform(context),
-                'logging_provider': LaunchConfiguration(
-                    'logging_provider').perform(context),
-                'monitor_topic_timeout': 15,
-                'output_path': '/opt/aws/deepracer/logs',
-                'monitor_topic': '/deepracer_navigation_pkg/auto_drive',
-                'file_name_topic': '/inference_pkg/model_artifact',
-                'log_topics': ['/inference_pkg/rl_results']
-        }]
-    )
 
     ld.append(camera_node)
     ld.append(ctrl_node)
@@ -242,7 +225,6 @@ def launch_setup(context, *args, **kwargs):
     ld.append(usb_monitor_node)
     ld.append(webserver_publisher_node)
     ld.append(web_video_server_node)
-    ld.append(bag_log_node)
 
     if rplidar:
         ld.append(rplidar_node)

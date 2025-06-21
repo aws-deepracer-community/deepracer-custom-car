@@ -3,10 +3,6 @@
     local-name: web_video_server
     version: fc7338449da5789a59337d57d7ca374bbd7a0ad9
 - git:
-    uri: https://github.com/ros2/rosbag2
-    local-name: rosbag2
-    version: foxy-future
-- git:
     uri: https://github.com/GT-RAIL/async_web_server_cpp.git
     local-name: async_web_server_cpp
     version: ros2

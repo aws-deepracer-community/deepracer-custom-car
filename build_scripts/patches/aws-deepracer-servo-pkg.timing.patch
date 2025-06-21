@@ -1,0 +1,66 @@
+diff --git a/servo_pkg/include/servo_pkg/servo_mgr.hpp b/servo_pkg/include/servo_pkg/servo_mgr.hpp
+index a14fb5d..93955ad 100644
+--- a/servo_pkg/include/servo_pkg/servo_mgr.hpp
++++ b/servo_pkg/include/servo_pkg/servo_mgr.hpp
+@@ -49,7 +49,7 @@ namespace PWM {
+     class ServoMgr
+         {
+         public:
+-            ServoMgr(rclcpp::Logger logger_);
++            ServoMgr(rclcpp::Logger logger_, std::shared_ptr<rclcpp::Clock> clock);
+             ~ServoMgr();
+             void servoSubscriber(const deepracer_interfaces_pkg::msg::ServoCtrlMsg::SharedPtr servoMsg);
+             void rawPWMSubscriber(const deepracer_interfaces_pkg::msg::ServoCtrlMsg::SharedPtr servoMsg);
+@@ -96,6 +96,8 @@ namespace PWM {
+             std::unordered_map<int, std::unordered_map<std::string, int>> calibrationMap_;
+             /// ROS Logger object to log messages.
+ 	        rclcpp::Logger logger_;
++            /// ROS Clock object to get the current time.
++            std::shared_ptr<rclcpp::Clock> clock_;
+     };
+ }
+ #endif
+diff --git a/servo_pkg/src/servo_mgr.cpp b/servo_pkg/src/servo_mgr.cpp
+index e50be4c..5382368 100644
+--- a/servo_pkg/src/servo_mgr.cpp
++++ b/servo_pkg/src/servo_mgr.cpp
+@@ -42,10 +42,11 @@ namespace PWM {
+     };
+ 
+ 
+-    ServoMgr::ServoMgr(rclcpp::Logger logger_)
++    ServoMgr::ServoMgr(rclcpp::Logger logger_, std::shared_ptr<rclcpp::Clock> clock)
+         : throttle_(std::make_unique<Servo>(0, logger_)),
+           angle_(std::make_unique<Servo>(1, logger_)),
+-	      logger_(logger_)
++	      logger_(logger_),
++          clock_(clock)
+     {
+         throttle_->setPeriod(SERVO_PERIOD);
+         angle_->setPeriod(SERVO_PERIOD);
+@@ -102,6 +103,12 @@ namespace PWM {
+ 
+         setPWM(throttle_, servoMsg->throttle, motor);
+         setPWM(angle_, servoMsg->angle, servo);
++        auto now = clock_->now();
++        if (servoMsg->source_stamp.sec != 0) {
++            int64_t latency_ns = now.nanoseconds() - (servoMsg->source_stamp.sec * 1000000000LL + servoMsg->source_stamp.nanosec);
++            RCLCPP_INFO(logger_, "Servo latency: %ld ns", latency_ns);
++        } 
++        
+         // Make sure that the pulse goes through a full period
+         std::this_thread::sleep_for(std::chrono::nanoseconds(SERVO_PERIOD));
+     }
+diff --git a/servo_pkg/src/servo_node.cpp b/servo_pkg/src/servo_node.cpp
+index 631af08..a0cfe53 100644
+--- a/servo_pkg/src/servo_node.cpp
++++ b/servo_pkg/src/servo_node.cpp
+@@ -41,7 +41,7 @@ int main(int argc, char **argv) {
+ 
+     
+     std::shared_ptr<rclcpp::Node> node = rclcpp::Node::make_shared("servo_node");
+-    auto servoMgr = std::make_unique<PWM::ServoMgr>(node->get_logger());
++    auto servoMgr = std::make_unique<PWM::ServoMgr>(node->get_logger(), node->get_clock());
+     auto ledMgr = std::make_unique<PWM::LedMgr>(node->get_logger());
+     auto qos = rclcpp::QoS(rclcpp::KeepLast(1));
+     qos.best_effort();

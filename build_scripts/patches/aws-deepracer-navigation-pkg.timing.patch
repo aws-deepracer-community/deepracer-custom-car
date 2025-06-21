@@ -1,0 +1,13 @@
+diff --git a/deepracer_navigation_pkg/deepracer_navigation_pkg/deepracer_navigation_node.py b/deepracer_navigation_pkg/deepracer_navigation_pkg/deepracer_navigation_node.py
+index bf1f77e..3ecb3fc 100644
+--- a/deepracer_navigation_pkg/deepracer_navigation_pkg/deepracer_navigation_node.py
++++ b/deepracer_navigation_pkg/deepracer_navigation_pkg/deepracer_navigation_node.py
+@@ -111,6 +111,8 @@ class DRNavigationNode(Node):
+             servo (ServoCtrlMsg): Message to be published to the servo with all
+                                   relevant servo data.
+         """
++        # Add the source_stamp header
++        servo_msg.source_stamp = inference_msg.images[0].header.stamp        
+         # Negative value moves the car forward, positive values move the car backwards
+         servo_msg.throttle = self.throttle_scale
+         try:

@@ -1,5 +1,5 @@
 {
-	"aws-deepracer-core": "2.1.3.3+community",
+	"aws-deepracer-core": "2.0.383.0+time",
 	"aws-deepracer-device-console": "2.0.196.3+community",
 	"aws-deepracer-sample-models": "2.0.9.0",
 	"aws-deepracer-util": "2.0.62.0+community"
