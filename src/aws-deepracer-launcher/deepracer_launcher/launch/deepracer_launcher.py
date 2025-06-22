@@ -276,10 +276,13 @@ def launch_setup(context, *args, **kwargs):
 
     ros_distro = os.environ.get('ROS_DISTRO', '').lower()
     if ros_distro in ['jazzy', 'humble']:
+        zenoh_env = os.environ.copy()
+        zenoh_env['ZENOH_CONFIG_OVERRIDE'] = 'listen/endpoints=["tcp/0.0.0.0:7447"]'
         rmw_zenoh_daemon_node = Node(
             package='rmw_zenoh_cpp',
             executable='rmw_zenohd',
             name='rmw_zenohd',
+            env=zenoh_env
         )
         ld.append(rmw_zenoh_daemon_node)
 
