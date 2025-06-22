@@ -18,6 +18,10 @@
 
 source /opt/aws/deepracer/lib/setup.bash
 
+if [ "$ROS_DISTRO" == "humble" ] || [ "$ROS_DISTRO" == "jazzy" ]; then
+    export RMW_IMPLEMENTATION=rmw_zenoh_cpp
+fi
+
 if [ -f /opt/intel/openvino_2022/setupvars.sh ]; then
     source /opt/intel/openvino_2022/setupvars.sh
 elif [ -f /opt/intel/openvino_2021/bin/setupvars.sh ]; then
