@@ -14,10 +14,9 @@
 #   limitations under the License.                                              #
 #################################################################################
 
-from calendar import c
+import os
 import math
 
-from numpy import e
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch.substitutions import LaunchConfiguration
@@ -274,6 +273,15 @@ def launch_setup(context, *args, **kwargs):
                 'log_topics': ['/inference_pkg/rl_results', '/device_info_pkg/device_status']
         }]
     )
+
+    ros_distro = os.environ.get('ROS_DISTRO', '').lower()
+    if ros_distro in ['jazzy', 'humble']:
+        rmw_zenoh_daemon_node = Node(
+            package='rmw_zenoh_cpp',
+            executable='rmw_zenohd',
+            name='rmw_zenohd',
+        )
+        ld.append(rmw_zenoh_daemon_node)
 
     ld.append(camera_node)
     ld.append(ctrl_node)
