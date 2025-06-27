@@ -45,6 +45,7 @@ else
 fi
 echo "Detected ROS version: $ROS_DISTRO"
 source /opt/ros/$ROS_DISTRO/setup.bash
+export RMW_IMPLEMENTATION=rmw_zenoh_cpp
 
 # Set the OpenVINO environment
 if [ -f /opt/intel/openvino_2021/bin/setupvars.sh ]; then
