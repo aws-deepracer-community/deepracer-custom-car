@@ -77,7 +77,8 @@ def get_device_info():
         return jsonify(data)
 
     except Exception as ex:
-        webserver_node.get_logger().error(f"Unable to reach revision info server: {ex}")
+        if (webserver_node.get_logger() is not None):
+            webserver_node.get_logger().error(f"Unable to reach revision info server: {ex}")
         return jsonify(success=False, reason="Error")
 
 
@@ -106,7 +107,8 @@ def get_battery_level():
         else:
             return jsonify(success=False, reason="Error")
     except Exception as ex:
-        webserver_node.get_logger().error(f"Unable to reach battery level server: {ex}")
+        if (webserver_node.get_logger() is not None):
+            webserver_node.get_logger().error(f"Unable to reach battery level server: {ex}")
         return jsonify(success=False, reason="Error")
 
 
@@ -142,15 +144,18 @@ def get_sensor_status():
             data["stereo_status"] = "error"
             data["lidar_status"] = "error"
     except Exception as ex:
-        webserver_node.get_logger().error("Unable to reach sensor status server: {ex}")
+        if (webserver_node.get_logger() is not None):
+            webserver_node.get_logger().error("Unable to reach sensor status server: {ex}")
         data["camera_status"] = "error"
         data["stereo_status"] = "error"
         data["lidar_status"] = "error"
     finally:
-        webserver_node.get_logger().info(f"Camera status: {data['camera_status']}, "
-                                         f"Stereo status: {data['stereo_status']}, "
-                                         f"Lidar status: {data['lidar_status']}")
+        if (webserver_node.get_logger() is not None):
+            webserver_node.get_logger().info(f"Camera status: {data['camera_status']}, "
+                                             f"Stereo status: {data['stereo_status']}, "
+                                             f"Lidar status: {data['lidar_status']}")
         return jsonify(data)
+
 
 def get_registered_apis():
     """Helper function that collects all registered API routes from the Flask application.
@@ -166,6 +171,7 @@ def get_registered_apis():
             api_routes.append(rule.rule)
     return sorted(api_routes)
 
+
 @DEVICE_INFO_API_BLUEPRINT.route("/api/supported_apis", methods=["GET"])
 def get_supported_apis():
     """API to get a list of all supported API endpoints.
@@ -178,13 +184,14 @@ def get_supported_apis():
         "apis_supported": get_registered_apis()
     })
 
+
 @DEVICE_INFO_API_BLUEPRINT.route("/api/get_device_status", methods=["GET"])
 def get_device_status():
     """API to get the current system metrics including CPU load, temperature, memory usage, etc.
-    
+
     This endpoint retrieves the latest metrics from the device_status_node via subscription
     to the DeviceStatusMsg topic.
-    
+
     Returns:
         dict: JSON object containing device metrics and success status:
               - cpu_percent: CPU utilization percentage
@@ -198,12 +205,11 @@ def get_device_status():
               - fps_mean: Mean frames per second
     """
     webserver_node = webserver_publisher_node.get_webserver_node()
-    webserver_node.get_logger().debug("Getting device status metrics")
-    
+
     try:
         # Get the latest device status from the subscription data
         latest_device_status: DeviceStatusMsg = webserver_node.latest_device_status
-        
+
         if latest_device_status is not None:
             data = {
                 "cpu_percent": latest_device_status.cpu_percent,
@@ -229,7 +235,8 @@ def get_device_status():
                 "success": False
             }
         return jsonify(data)
-        
+
     except Exception as ex:
-        webserver_node.get_logger().error(f"Error retrieving device status: {ex}")
+        if (webserver_node.get_logger() is not None):
+            webserver_node.get_logger().error(f"Error retrieving device status: {ex}")
         return jsonify(success=False, reason=f"Error retrieving device status: {str(ex)}")
