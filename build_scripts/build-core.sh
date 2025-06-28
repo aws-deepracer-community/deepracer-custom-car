@@ -65,15 +65,6 @@ if [ "$CACHE" != "true" ]; then
 
     cd external
 
-    # Undo checkouts / patches
-    for pkg_dir in $(find . -mindepth 1 -maxdepth 1 -type d); do
-        cd $pkg_dir
-        if [ -d .git ]; then
-            git reset --hard
-        fi
-        cd ..
-    done
-
     cp .rosinstall-core .rosinstall
 
     if [ $ROS_DISTRO == "foxy" ]; then
