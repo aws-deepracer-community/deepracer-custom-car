@@ -78,7 +78,7 @@ def get_device_info():
         return jsonify(data)
 
     except Exception as ex:
-        if (webserver_node.get_logger() is not None):
+        if (webserver_node is not None):
             webserver_node.get_logger().error(f"Unable to reach revision info server: {ex}")
         return jsonify(success=False, reason="Error")
 
