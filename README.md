@@ -2,14 +2,14 @@
 
 ## Description
 
-DeepRacer Custom Car provides a set of features that will improve your DeepRacer car.
-
-The repository is a merge of [deepracer-scripts](https://github.com/davidfsmith/deepracer-scripts) that contained improvements for the original car and [deepracer-pi](https://github.com/larsll/deepracer-pi) that ported DeepRacer to a Raspberry Pi4.
+DeepRacer Custom Car provides an updated software stack that contains a set of features that will improve your DeepRacer car.
 
 This repository contains a few different things:
- - Build and install scripts for a custom ROS2 software stack for DeepRacer.
- - Drawings and build instructions for building a DeepRacer compatible car based on a WLToys A979 and a Raspberry Pi4.
- - Utilities, e.g. to create a USB stick to flash the original DeepRacer.
+ - Build and install scripts for a custom ROS2 software stack for DeepRacer, supporting original DeepRacer, Raspberry Pi 4 and Raspberry Pi 5.
+ - Drawings and build instructions for building a DeepRacer compatible car based on a WLToys A979 and a Raspberry Pi.
+ - Utilities, e.g. to create a USB stick to flash the original DeepRacer with the custom 
+
+The repository is a merge of [deepracer-scripts](https://github.com/davidfsmith/deepracer-scripts) that contained improvements for the original car and [deepracer-pi](https://github.com/larsll/deepracer-pi) that ported DeepRacer to a Raspberry Pi4.
 
 ## Table of Contents
 
