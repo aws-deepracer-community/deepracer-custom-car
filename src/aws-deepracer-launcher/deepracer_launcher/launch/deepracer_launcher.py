@@ -73,9 +73,12 @@ def launch_setup(context, *args, **kwargs):
 
                 # Select the sensor mode based on the camera model
                 # RPi Cameras need specific sensor modes to avoid cropping
+                # Enable auto-focus for IMX708 camera
                 if camera_model == 'imx708':
                     camera_params['sensor_mode'] = '2304:1296'
                     camera_params['format'] = 'BGR888'
+                    camera_params['AfMode'] = 2
+                    camera_params['AfPause'] = 2
                 elif camera_model == 'imx219':
                     camera_params['sensor_mode'] = '1640:1232'
                     camera_params['format'] = 'BGR888'
