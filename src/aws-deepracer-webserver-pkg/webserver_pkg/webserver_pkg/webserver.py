@@ -36,6 +36,7 @@ from webserver_pkg.led_api import LED_API_BLUEPRINT
 from webserver_pkg.models import MODELS_BLUEPRINT
 from webserver_pkg.software_update import SOFTWARE_UPDATE_BLUEPRINT
 from webserver_pkg.ssh_api import SSH_API_BLUEPRINT
+from webserver_pkg.time_api import TIME_API_BLUEPRINT
 from webserver_pkg.vehicle_logs import VEHICLE_LOGS_BLUEPRINT
 from webserver_pkg.vehicle_control import VEHICLE_CONTROL_BLUEPRINT
 from webserver_pkg.wifi_settings import WIFI_SETTINGS_BLUEPRINT
@@ -55,6 +56,7 @@ app.register_blueprint(LOGIN_BLUEPRINT)
 app.register_blueprint(SOFTWARE_UPDATE_BLUEPRINT)
 app.register_blueprint(CALIBRATION_BLUEPRINT)
 app.register_blueprint(SSH_API_BLUEPRINT)
+app.register_blueprint(TIME_API_BLUEPRINT)
 app.register_blueprint(LED_API_BLUEPRINT)
 app.register_blueprint(DEVICE_INFO_API_BLUEPRINT)
 app.register_blueprint(MODELS_BLUEPRINT)
