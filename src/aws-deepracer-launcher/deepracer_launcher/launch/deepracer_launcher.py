@@ -14,10 +14,8 @@
 #   limitations under the License.                                              #
 #################################################################################
 
-from calendar import c
 import math
 
-from numpy import e
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch.substitutions import LaunchConfiguration
@@ -75,9 +73,12 @@ def launch_setup(context, *args, **kwargs):
 
                 # Select the sensor mode based on the camera model
                 # RPi Cameras need specific sensor modes to avoid cropping
+                # Enable auto-focus for IMX708 camera
                 if camera_model == 'imx708':
                     camera_params['sensor_mode'] = '2304:1296'
                     camera_params['format'] = 'BGR888'
+                    camera_params['AfMode'] = 2
+                    camera_params['AfPause'] = 2
                 elif camera_model == 'imx219':
                     camera_params['sensor_mode'] = '1640:1232'
                     camera_params['format'] = 'BGR888'
@@ -96,14 +97,7 @@ def launch_setup(context, *args, **kwargs):
                 # Topic remappings
                 ('/camera_pkg/camera/camera_info', '/camera_pkg/camera_info'),
                 ('/camera_pkg/camera/image_raw', '/camera_pkg/display_mjpeg'),
-                ('/camera_pkg/camera/image_raw/compressed', '/camera_pkg/display_mjpeg/compressed'),
-                # Service remappings
-                ('/camera_pkg/camera/describe_parameters', '/camera_pkg/describe_parameters'),
-                ('/camera_pkg/camera/get_parameter_types', '/camera_pkg/get_parameter_types'),
-                ('/camera_pkg/camera/get_parameters', '/camera_pkg/get_parameters'),
-                ('/camera_pkg/camera/list_parameters', '/camera_pkg/list_parameters'),
-                ('/camera_pkg/camera/set_parameters', '/camera_pkg/set_parameters'),
-                ('/camera_pkg/camera/set_parameters_atomically', '/camera_pkg/set_parameters_atomically')
+                ('/camera_pkg/camera/image_raw/compressed', '/camera_pkg/display_mjpeg/compressed')
             ]
         )
 
