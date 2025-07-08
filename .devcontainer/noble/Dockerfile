@@ -51,6 +51,8 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
 
 RUN gem install deb-s3
 
+RUN pip install flask flask-cors flask-wtf --break-system-packages
+
 # Install AWS CLI v2 (support both ARM and x86 architectures)
 RUN ARCH=$(uname -m) && \
     if [ "$ARCH" = "x86_64" ]; then \

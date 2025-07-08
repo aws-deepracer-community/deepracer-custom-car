@@ -1,8 +1,8 @@
 {
     "cmake.configureOnOpen": false,
     "search.exclude": {
-      "**/build": true,
-      "**/pkg-build": true
+        "**/build": true,
+        "**/pkg-build": true
     },
     "autopep8.args": [
         "--max-line-length=120"
@@ -14,5 +14,10 @@
     ],
     "files.associations": {
         "memory": "cpp"
+    },
+    "files.exclude": {
+        "**/build": true,
+        "**/log": true,
+        "**/install": false
     },
 }
