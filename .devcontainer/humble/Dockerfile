@@ -54,7 +54,7 @@ RUN cd / && curl -O https://aws-deepracer-community-sw.s3.eu-west-1.amazonaws.co
 # Add deb-s3
 RUN gem install deb-s3
 
-RUN pip3 install -U awscli smbus2 pillow transforms3d autopep8 opencv-python pyserial "setuptools==58.2.0" "Cython<3" $(find /opt/intel/openvino_2022.3.1/tools/ -name *.whl)
+RUN pip3 install -U awscli smbus2 pillow transforms3d autopep8 opencv-python pyserial "setuptools==58.2.0" "Cython<3" $(find /opt/intel/openvino_2022.3.1/tools/ -name *.whl) flask flask-cors flask-wtf
 
 # Create the user
 RUN groupadd --gid $USER_GID $USERNAME \
