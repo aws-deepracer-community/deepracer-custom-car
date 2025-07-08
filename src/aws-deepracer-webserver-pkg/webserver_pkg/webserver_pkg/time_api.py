@@ -30,6 +30,9 @@ from webserver_pkg import utility
 from webserver_pkg import webserver_publisher_node
 import subprocess
 
+_timezone_changed = False
+
+
 TIME_API_BLUEPRINT = Blueprint("time_api", __name__)
 
 
@@ -41,15 +44,17 @@ def get_time_info():
         dict: Execution status if the API call was successful, current time,
               timezone name, abbreviation, and UTC offset, with error reason if call fails.
     """
+    global _timezone_changed
+
     try:
         webserver_node = webserver_publisher_node.get_webserver_node()
         webserver_node.get_logger().info("Providing time and timezone information as response")
 
         current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-        
+
         # Get timezone name (e.g., Europe/Berlin)
         timezone_name = _get_timezone_name(webserver_node)
-        
+
         # Get timezone abbreviation (e.g., CEST) and UTC offset
         timezone_abbr, utc_offset = _get_timezone_details(webserver_node)
 
@@ -57,7 +62,8 @@ def get_time_info():
                        time=current_time,
                        timezone=timezone_name,
                        timezone_abbr=timezone_abbr,
-                       utc_offset=utc_offset)
+                       utc_offset=utc_offset,
+                       timezone_changed=_timezone_changed)
 
     except Exception as ex:
         webserver_node.get_logger().error(f"Failed to get time and timezone information: {ex}")
@@ -96,9 +102,9 @@ def _get_timezone_details(webserver_node):
             utc_offset = f"{sign}{hours:02d}{minutes:02d}"
         else:
             utc_offset = "+0000"
-            
+
         return timezone_abbr, utc_offset
-        
+
     except Exception as ex:
         webserver_node.get_logger().warning(f"Failed to get timezone details: {ex}")
         fallback_abbr = time.tzname[time.daylight] if time.daylight else time.tzname[0]
@@ -112,6 +118,8 @@ def set_timezone():
     Returns:
         dict: Execution status if the API call was successful, with error reason if call fails.
     """
+    global _timezone_changed
+
     try:
         webserver_node = webserver_publisher_node.get_webserver_node()
 
@@ -131,13 +139,14 @@ def set_timezone():
 
             if timezone not in valid_timezones:
                 return jsonify(success=False, reason=f"Invalid timezone: {timezone}")
-                
+
         except Exception as validation_ex:
             webserver_node.get_logger().warning(f"Failed to validate timezone list: {validation_ex}")
             # Continue with the operation if validation fails - let timedatectl handle the error
 
         result = utility.execute(f"timedatectl set-timezone {timezone}", shlex_split=True)
         if result[0] == 0:
+            _timezone_changed = True
             return jsonify(success=True, reason="Timezone updated successfully")
         else:
             webserver_node.get_logger().error(f"Failed to set timezone: {result.stderr}")
