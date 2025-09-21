@@ -25,6 +25,12 @@ from enum import Enum
 
 BASE_PATH = "/opt/aws/deepracer/"
 
+# Steering mode enum
+class SteeringMode(Enum):
+    """Enum representing different steering modes for the DeepRacer."""
+    SERVO = "servo"
+    DIFFDRIVE = "diffdrive"
+
 # Service and topic names.
 
 # webserver_pkg

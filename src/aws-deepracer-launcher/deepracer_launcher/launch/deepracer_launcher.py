@@ -217,12 +217,24 @@ def launch_setup(context, *args, **kwargs):
                 'enable_overlay': rplidar
         }]
     )
-    servo_node = Node(
-        package='servo_pkg',
-        namespace='servo_pkg',
-        executable='servo_node',
-        name='servo_node'
-    )
+
+    if LaunchConfiguration("steering_mode").perform(context) == "servo":
+        servo_node = Node(
+            package='servo_pkg',
+            namespace='servo_pkg',
+            executable='servo_node',
+            name='servo_node'
+        )
+    elif LaunchConfiguration("steering_mode").perform(context) == "diffdrive":
+        servo_node = Node(
+            package='differential_drive_pkg',
+            namespace='differential_drive_pkg',
+            executable='differential_drive_node',
+            name='differential_drive_node'
+        )
+    else:
+        raise ValueError("Invalid steering_mode. Must be 'servo' or 'diffdrive'.")
+    
     status_led_node = Node(
         package='status_led_pkg',
         namespace='status_led_pkg',
@@ -240,7 +252,10 @@ def launch_setup(context, *args, **kwargs):
         namespace='webserver_pkg',
         executable='webserver_publisher_node',
         name='webserver_publisher_node',
-        arguments=['--ros-args', '--log-level', 'info']
+        arguments=['--ros-args', '--log-level', 'info'],
+        parameters=[{
+                'steering_mode': LaunchConfiguration("steering_mode").perform(context)
+        }]
     )
     web_video_server_node = Node(
         package='web_video_server',
@@ -339,5 +354,9 @@ def generate_launch_description():
                 name="rplidar",
                 default_value="True",
                 description="Enable RPLIDAR node"),
+            DeclareLaunchArgument(
+                name="steering_mode",
+                default_value="servo",
+                description="Steering mode: servo or diffdrive"),
             OpaqueFunction(function=launch_setup)
         ])
