@@ -58,13 +58,16 @@ DifferentialDriveNode::DifferentialDriveNode()
     // Sync calibration data to drive controller
   syncCalibrationToController();
 
-    // Create subscribers
+    // Create subscribers with compatible QoS settings
+  auto qos = rclcpp::QoS(rclcpp::KeepLast(1));
+  qos.best_effort();
+  
   servo_msg_sub_ = this->create_subscription<deepracer_interfaces_pkg::msg::ServoCtrlMsg>(
-        "/ctrl_pkg/servo_msg", 10,
+        "/ctrl_pkg/servo_msg", qos,
         std::bind(&DifferentialDriveNode::servoMsgCallback, this, std::placeholders::_1));
 
   raw_pwm_sub_ = this->create_subscription<deepracer_interfaces_pkg::msg::ServoCtrlMsg>(
-        "/ctrl_pkg/raw_pwm", 10,
+        "/ctrl_pkg/raw_pwm", qos,
         std::bind(&DifferentialDriveNode::rawPwmCallback, this, std::placeholders::_1));
 
     // Create services

@@ -227,10 +227,10 @@ def launch_setup(context, *args, **kwargs):
         )
     elif LaunchConfiguration("steering_mode").perform(context) == "diffdrive":
         servo_node = Node(
-            package='differential_drive_pkg',
-            namespace='differential_drive_pkg',
-            executable='differential_drive_node',
-            name='differential_drive_node'
+            package='diffdrive_motor_pkg',
+            namespace='diffdrive_motor_pkg',
+            executable='diffdrive_motor_node',
+            name='diffdrive_motor_node'
         )
     else:
         raise ValueError("Invalid steering_mode. Must be 'servo' or 'diffdrive'.")
