@@ -35,7 +35,7 @@ from deepracer_interfaces_pkg.srv import (ActiveStateSrv,
 from webserver_pkg.constants import (PWM_ANGLE_CONVERSION,
                                      PWM_THROTTLE_CONVERSION,
                                      PWM_OFFSET,
-                                     CALIBRATION_MODE)
+                                     CALIBRATION_MODE, SteeringMode)
 from webserver_pkg.utility import (api_fail,
                                    call_service_sync)
 from webserver_pkg import webserver_publisher_node
@@ -88,7 +88,6 @@ def api_get_calibration(cali_type):
         dict: Execution status if the API call was successful.
     """
     state = 0 if cali_type == "angle" else 1
-    conversion = PWM_ANGLE_CONVERSION if state == 0 else PWM_THROTTLE_CONVERSION
     webserver_node = webserver_publisher_node.get_webserver_node()
     try:
         get_cal_req = GetCalibrationSrv.Request()
@@ -100,15 +99,28 @@ def api_get_calibration(cali_type):
         webserver_node.get_logger().error(f"Unable to reach get vehicle calibration server: {ex}")
         return api_fail("Unable to reach get vehicle calibration server")
 
-    converted_min = (get_cal_res.min - PWM_OFFSET) / conversion
-    converted_max = (get_cal_res.max - PWM_OFFSET) / conversion
-    data = {
-        "mid": (get_cal_res.mid - PWM_OFFSET) / conversion,
-        "min": (converted_min if (get_cal_res.polarity) else converted_max),
-        "max": (converted_max if (get_cal_res.polarity) else converted_min),
-        "polarity": get_cal_res.polarity,
-        "success": True
-    }
+    if webserver_node.get_steering_mode() == SteeringMode.DIFFDRIVE:
+        # In differential drive mode, steering calibration is not applicable.
+        # Return default values.
+        data = {
+            "mid": get_cal_res.mid,
+            "min": get_cal_res.min,
+            "max": get_cal_res.max,
+            "polarity": get_cal_res.polarity,
+            "success": True
+        }
+        return jsonify(data)
+    else:
+        conversion = PWM_ANGLE_CONVERSION if state == 0 else PWM_THROTTLE_CONVERSION
+        converted_min = (get_cal_res.min - PWM_OFFSET) / conversion
+        converted_max = (get_cal_res.max - PWM_OFFSET) / conversion
+        data = {
+            "mid": (get_cal_res.mid - PWM_OFFSET) / conversion,
+            "min": (converted_min if (get_cal_res.polarity) else converted_max),
+            "max": (converted_max if (get_cal_res.polarity) else converted_min),
+            "polarity": get_cal_res.polarity,
+            "success": True
+        }
     webserver_node.get_logger().info(f"Current calibration state: {state} "
                                      f"MID: {data['mid']} "
                                      f"MIN: {data['min']} "
@@ -132,11 +144,19 @@ def api_set_calibration(cali_type):
     webserver_node = webserver_publisher_node.get_webserver_node()
     webserver_node.get_logger().info(f"set_calibration: {data}")
     state = 0 if cali_type == "angle" else 1
-    conversion = PWM_ANGLE_CONVERSION if state == 0 else PWM_THROTTLE_CONVERSION
-    set_mid = int(data["mid"]) * conversion + PWM_OFFSET
-    set_min = int(data["min"]) * conversion + PWM_OFFSET
-    set_max = int(data["max"]) * conversion + PWM_OFFSET
-    set_polarity = int(data["polarity"])
+
+    if webserver_node.get_steering_mode() == SteeringMode.DIFFDRIVE:
+        set_mid = int(data["mid"])
+        set_min = int(data["min"])
+        set_max = int(data["max"])
+        set_polarity = int(data["polarity"])
+    else:
+        conversion = PWM_ANGLE_CONVERSION if state == 0 else PWM_THROTTLE_CONVERSION
+        set_mid = int(data["mid"]) * conversion + PWM_OFFSET
+        set_min = int(data["min"]) * conversion + PWM_OFFSET
+        set_max = int(data["max"]) * conversion + PWM_OFFSET
+        set_polarity = int(data["polarity"])
+
     webserver_node.get_logger().info(f"State: {state} "
                                      f"mid: {set_mid} "
                                      f"min: {set_min} "
