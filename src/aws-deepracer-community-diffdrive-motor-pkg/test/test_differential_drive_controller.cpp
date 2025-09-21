@@ -88,22 +88,22 @@ TEST_F(DifferentialDriveControllerTest, Stopping)
 }
 
 /**
- * @brief Test right turn (positive angle)
+ * @brief Test right turn (negative angle)
  */
 TEST_F(DifferentialDriveControllerTest, RightTurn)
 {
-  auto speeds = controller_->convertServoToMotorSpeeds(0.5f, 0.5f);
+  auto speeds = controller_->convertServoToMotorSpeeds(-0.5f, 0.5f);
 
   // Left motor should be faster than right for right turn
   EXPECT_GT(speeds.left_speed, speeds.right_speed);
 }
 
 /**
- * @brief Test left turn (negative angle)
+ * @brief Test left turn (positive angle)
  */
 TEST_F(DifferentialDriveControllerTest, LeftTurn)
 {
-  auto speeds = controller_->convertServoToMotorSpeeds(-0.5f, 0.5f);
+  auto speeds = controller_->convertServoToMotorSpeeds(0.5f, 0.5f);
 
   // Right motor should be faster than left for left turn
   EXPECT_GT(speeds.right_speed, speeds.left_speed);
@@ -124,16 +124,18 @@ TEST_F(DifferentialDriveControllerTest, NewAlgorithmRightTurn)
   config.motor_polarity = 1;
   auto custom_controller = std::make_unique<DifferentialDriveController>(config);
 
-  // Right turn: left wheel is outer (full speed), right wheel is inner (reduced)
-  auto speeds = custom_controller->convertServoToMotorSpeeds(0.5f, 0.8f);
+  // Right turn (negative angle): left wheel is outer (increased), right wheel is inner (reduced)
+  auto speeds = custom_controller->convertServoToMotorSpeeds(-0.5f, 0.8f);
 
-  // Left wheel (outer) should be at commanded speed * max_forward_speed
-  EXPECT_FLOAT_EQ(speeds.left_speed, 0.8f * 1.0f);
+  // Left wheel (outer) should be increased by differential factor
+  // left_speed = commanded * max_speed * (1 - max_differential * angle / 2)
+  // = 0.8 * 1.0 * (1 - 0.5 * (-0.5) / 2) = 0.8 * (1 + 0.125) = 0.9
+  EXPECT_FLOAT_EQ(speeds.left_speed, 0.9f);
 
   // Right wheel (inner) should be reduced by differential factor
-  // inner_speed = commanded * max_speed * (1 - max_differential * steering)
-  // = 0.8 * 1.0 * (1 - 0.5 * 0.5) = 0.8 * 0.75 = 0.6
-  EXPECT_FLOAT_EQ(speeds.right_speed, 0.6f);
+  // right_speed = commanded * max_speed * (1 + max_differential * angle / 2)
+  // = 0.8 * 1.0 * (1 + 0.5 * (-0.5) / 2) = 0.8 * (1 - 0.125) = 0.7
+  EXPECT_FLOAT_EQ(speeds.right_speed, 0.7f);
 }
 
 /**
@@ -150,16 +152,18 @@ TEST_F(DifferentialDriveControllerTest, NewAlgorithmLeftTurn)
   config.motor_polarity = 1;
   auto custom_controller = std::make_unique<DifferentialDriveController>(config);
 
-  // Left turn: right wheel is outer (full speed), left wheel is inner (reduced)
-  auto speeds = custom_controller->convertServoToMotorSpeeds(-0.6f, 0.7f);
+  // Left turn (positive angle): right wheel is outer (increased), left wheel is inner (reduced)
+  auto speeds = custom_controller->convertServoToMotorSpeeds(0.6f, 0.7f);
 
-  // Right wheel (outer) should be at commanded speed * max_forward_speed
-  EXPECT_FLOAT_EQ(speeds.right_speed, 0.7f * 1.0f);
+  // Right wheel (outer) should be increased by differential factor
+  // right_speed = commanded * max_speed * (1 + max_differential * angle / 2)
+  // = 0.7 * 1.0 * (1 + 0.4 * 0.6 / 2) = 0.7 * 1.12 = 0.784
+  EXPECT_FLOAT_EQ(speeds.right_speed, 0.784f);
 
   // Left wheel (inner) should be reduced by differential factor
-  // inner_speed = commanded * max_speed * (1 - max_differential * abs(steering))
-  // = 0.7 * 1.0 * (1 - 0.4 * 0.6) = 0.7 * 0.76 = 0.532
-  EXPECT_NEAR(speeds.left_speed, 0.532f, 0.001f);
+  // left_speed = commanded * max_speed * (1 - max_differential * angle / 2)
+  // = 0.7 * 1.0 * (1 - 0.4 * 0.6 / 2) = 0.7 * 0.88 = 0.616
+  EXPECT_NEAR(speeds.left_speed, 0.616f, 0.001f);
 }
 
 /**
@@ -179,8 +183,8 @@ TEST_F(DifferentialDriveControllerTest, CenterOffset)
   // Test straight line driving with center offset
   auto speeds = custom_controller->convertServoToMotorSpeeds(0.0f, 1.0f);
 
-  // With positive center offset, right wheel should be faster (causing left bias)
-  EXPECT_GT(speeds.right_speed, speeds.left_speed);
+  // With positive center offset, left wheel should be faster (causing right bias)
+  EXPECT_GT(speeds.left_speed, speeds.right_speed);
 }
 
 /**
