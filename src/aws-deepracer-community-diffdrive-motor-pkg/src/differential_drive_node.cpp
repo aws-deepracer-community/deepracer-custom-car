@@ -183,11 +183,11 @@ void DifferentialDriveNode::rawPwmCallback(
   }
 
     // Direct motor speed setting (assuming angle controls differential and throttle controls speed)
-  float base_speed = msg->throttle;
-  float turn_differential = msg->angle * 0.5f;   // Scale turn factor
+  float base_speed = msg->throttle / 100.0f;
+  float turn_differential = msg->angle / 100.0f;   // Scale turn factor
 
-  float left_speed = base_speed + turn_differential;
-  float right_speed = base_speed - turn_differential;
+  float left_speed = base_speed * (1 - turn_differential / 2.0f);
+  float right_speed = base_speed * (1 + turn_differential / 2.0f);
 
   if (!motor_manager_->setMotorSpeeds(left_speed, right_speed)) {
     RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
