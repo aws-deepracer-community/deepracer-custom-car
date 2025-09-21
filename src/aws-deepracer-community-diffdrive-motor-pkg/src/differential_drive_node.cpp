@@ -60,11 +60,11 @@ DifferentialDriveNode::DifferentialDriveNode()
 
     // Create subscribers
   servo_msg_sub_ = this->create_subscription<deepracer_interfaces_pkg::msg::ServoCtrlMsg>(
-        "/servo_pkg/servo_msg", 10,
+        "/ctrl_pkg/servo_msg", 10,
         std::bind(&DifferentialDriveNode::servoMsgCallback, this, std::placeholders::_1));
 
   raw_pwm_sub_ = this->create_subscription<deepracer_interfaces_pkg::msg::ServoCtrlMsg>(
-        "/servo_pkg/raw_pwm", 10,
+        "/ctrl_pkg/raw_pwm", 10,
         std::bind(&DifferentialDriveNode::rawPwmCallback, this, std::placeholders::_1));
 
     // Create services
