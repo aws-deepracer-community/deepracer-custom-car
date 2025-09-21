@@ -98,7 +98,7 @@ DifferentialDriveNode::DifferentialDriveNode()
 
     // Create publisher for latency measurement
   latency_pub_ = this->create_publisher<deepracer_interfaces_pkg::msg::LatencyMeasureMsg>(
-        "/servo_pkg/latency_measure", 10);
+        "/servo_pkg/latency", rclcpp::SystemDefaultsQoS());
 
   RCLCPP_INFO(this->get_logger(), "DifferentialDriveNode initialized successfully");
 }
