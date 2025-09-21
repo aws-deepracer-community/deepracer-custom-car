@@ -102,7 +102,7 @@ class WebServerNode(Node):
         
         # Declare and get steering mode parameter
         self.declare_parameter("steering_mode", SteeringMode.SERVO.value)
-        steering_mode_value = self.get_parameter("steering_mode").as_string()
+        steering_mode_value = self.get_parameter("steering_mode").value
         try:
             self.steering_mode = SteeringMode(steering_mode_value)
         except ValueError:
