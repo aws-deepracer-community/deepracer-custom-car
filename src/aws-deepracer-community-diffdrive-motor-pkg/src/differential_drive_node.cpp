@@ -194,7 +194,7 @@ void DifferentialDriveNode::rawPwmCallback(
         "Failed to set raw PWM speeds");
   }
 
-  RCLCPP_DEBUG(this->get_logger(), "Raw PWM: angle=%.3f, throttle=%.3f -> left=%.3f, right=%.3f",
+  RCLCPP_INFO(this->get_logger(), "Raw PWM: angle=%.3f, throttle=%.3f -> left=%.3f, right=%.3f",
                  msg->angle, msg->throttle, left_speed, right_speed);
 }
 
