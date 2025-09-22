@@ -205,11 +205,11 @@ def api_adjust_calibrating_wheels(cali_type):
             throttle = float(int(form_data["pwm"]) * PWM_THROTTLE_CONVERSION + PWM_OFFSET)
     elif webserver_node.get_steering_mode() == SteeringMode.DIFFDRIVE:
         if cali_type == "angle":
-            angle = int(form_data["pwm"])
-            throttle = 25
+            angle = float(int(form_data["pwm"])) * DIFFDRIVE_ANGLE_CONVERSION
+            throttle = 50.0
         else:
-            angle = 0
-            throttle = int(form_data["pwm"])
+            angle = 0.0
+            throttle = float(int(form_data["pwm"])) * DIFFDRIVE_THROTTLE_CONVERSION
 
     webserver_node.get_logger().info(f"Angle: {angle}  Throttle: {throttle}")
     msg = ServoCtrlMsg()
