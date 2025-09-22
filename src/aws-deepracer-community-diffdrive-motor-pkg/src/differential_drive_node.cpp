@@ -236,6 +236,7 @@ void DifferentialDriveNode::servoGpioService(
 
   // Enable/disable motor control based on request
   // Note: request->enable = 0 means enable, request->enable = 1 means disable
+  RCLCPP_INFO(this->get_logger(), "Servo GPIO request: enable=%d", request->enable);
   bool enable_motors = (request->enable == 0);
 
   if (enable_motors) {
