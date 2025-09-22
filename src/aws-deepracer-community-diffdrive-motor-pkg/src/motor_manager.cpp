@@ -10,23 +10,21 @@ namespace aws_deepracer_community_diffdrive_motor_pkg
 MotorManager::MotorManager(rclcpp::Logger logger)
 : logger_(logger), initialized_(false), hardware_ready_(false)
 {
-    // Initialize motor state
+  // Initialize motor state
   current_state_.left_speed = 0.0f;
   current_state_.right_speed = 0.0f;
   current_state_.left_pwm = 0;    // 0% duty cycle (stopped)
   current_state_.right_pwm = 0;   // 0% duty cycle (stopped)
-  current_state_.enabled = false;
 }
 
 MotorManager::MotorManager(const MotorConfig & config, rclcpp::Logger logger)
 : config_(config), logger_(logger), initialized_(false), hardware_ready_(false)
 {
-    // Initialize motor state
+  // Initialize motor state
   current_state_.left_speed = 0.0f;
   current_state_.right_speed = 0.0f;
   current_state_.left_pwm = 0;    // 0% duty cycle (stopped)
   current_state_.right_pwm = 0;   // 0% duty cycle (stopped)
-  current_state_.enabled = false;
 }
 
 MotorManager::~MotorManager()
@@ -72,9 +70,8 @@ bool MotorManager::initialize()
   current_state_.right_speed = 0.0f;
   current_state_.left_pwm = 0;    // 0% duty cycle (stopped)
   current_state_.right_pwm = 0;   // 0% duty cycle (stopped)
-  current_state_.enabled = false;
 
-    // Set initial motor directions to stop
+  // Set initial motor directions to stop
   if (!setMotorDirection(0, MotorDirection::STOP) ||
     !setMotorDirection(1, MotorDirection::STOP))
   {
@@ -96,12 +93,7 @@ bool MotorManager::setMotorSpeeds(float left_speed, float right_speed)
     return false;
   }
 
-  if (!current_state_.enabled) {
-    RCLCPP_WARN(rclcpp::get_logger("motor_manager"), "Motors are disabled");
-    return false;
-  }
-
-    // Clamp speeds to valid range
+  // Clamp speeds to valid range
   left_speed = std::max(-1.0f, std::min(1.0f, left_speed));
   right_speed = std::max(-1.0f, std::min(1.0f, right_speed));
 
@@ -140,22 +132,6 @@ bool MotorManager::stopMotors()
   }
 
   return success;
-}
-
-bool MotorManager::setMotorsEnabled(bool enabled)
-{
-  if (!initialized_ || !hardware_ready_) {
-    return false;
-  }
-
-  if (!enabled) {
-      // Disable motors by stopping them
-    stopMotors();
-  }
-
-  current_state_.enabled = enabled;
-  RCLCPP_INFO(logger_, "Motors %s", enabled ? "enabled" : "disabled");
-  return true;
 }
 
 MotorState MotorManager::getMotorState() const

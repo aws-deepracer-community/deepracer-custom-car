@@ -43,15 +43,12 @@ DifferentialDriveNode::DifferentialDriveNode()
 
   motor_manager_ = std::make_unique<MotorManager>(motor_config, this->get_logger());
 
-    // Initialize motor hardware
+  // Initialize motor hardware
   if (!motor_manager_->initialize()) {
     RCLCPP_ERROR(this->get_logger(), "Failed to initialize motor manager");
-  } else {
-    // Motors start disabled by default for safety - must be explicitly enabled via GPIO service
-    motor_manager_->setMotorsEnabled(false);
   }
 
-    // Initialize calibration manager with ROS parameters as defaults
+  // Initialize calibration manager with ROS parameters as defaults
   calibration_manager_ = std::make_unique<CalibrationManager>("", drive_config);
   led_handler_ = std::make_unique<SilentLEDHandler>();
 
@@ -61,7 +58,6 @@ DifferentialDriveNode::DifferentialDriveNode()
     // Create subscribers with compatible QoS settings
   auto qos = rclcpp::QoS(rclcpp::KeepLast(1));
   qos.best_effort();
-  
   servo_msg_sub_ = this->create_subscription<deepracer_interfaces_pkg::msg::ServoCtrlMsg>(
         "/ctrl_pkg/servo_msg", qos,
         std::bind(&DifferentialDriveNode::servoMsgCallback, this, std::placeholders::_1));
@@ -107,7 +103,6 @@ DifferentialDriveNode::~DifferentialDriveNode()
 {
   if (motor_manager_) {
     motor_manager_->stopMotors();
-    motor_manager_->setMotorsEnabled(false);
   }
   RCLCPP_INFO(this->get_logger(), "DifferentialDriveNode shutting down");
 }
@@ -125,14 +120,7 @@ void DifferentialDriveNode::servoMsgCallback(
     return;
   }
 
-  // Check if motors are enabled before processing commands
-  if (!motor_manager_->getMotorState().enabled) {
-    RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 2000,
-        "Motors are disabled - ignoring servo command");
-    return;
-  }
-
-    // Convert servo commands to motor speeds
+  // Convert servo commands to motor speeds
   auto motor_speeds = drive_controller_->convertServoToMotorSpeeds(msg->angle, msg->throttle);
 
     // Apply motor speeds
@@ -175,14 +163,7 @@ void DifferentialDriveNode::rawPwmCallback(
     return;
   }
 
-  // Check if motors are enabled before processing commands
-  if (!motor_manager_->getMotorState().enabled) {
-    RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 2000,
-        "Motors are disabled - ignoring raw PWM command");
-    return;
-  }
-
-    // Direct motor speed setting (assuming angle controls differential and throttle controls speed)
+  // Direct motor speed setting (assuming angle controls differential and throttle controls speed)
   float base_speed = msg->throttle / 100.0f;
   float turn_differential = msg->angle / 100.0f;   // Scale turn factor
 
@@ -237,15 +218,12 @@ void DifferentialDriveNode::servoGpioService(
   // Enable/disable motor control based on request
   // Note: request->enable = 0 means enable, request->enable = 1 means disable
   RCLCPP_INFO(this->get_logger(), "Servo GPIO request: enable=%d", request->enable);
-  bool enable_motors = (request->enable == 0);
+  bool enable_motors = (request->enable == 1);
 
-  if (enable_motors) {
-    // Enable motors
-    motor_manager_->setMotorsEnabled(true);
-  } else {
-    // Disable motors - stop them first, then disable
+  if (!enable_motors) {
+    // Stop motors
+    RCLCPP_INFO(this->get_logger(), "Stopping motors");
     motor_manager_->stopMotors();
-    motor_manager_->setMotorsEnabled(false);
   }
 
   response->error = 0;  // Success
