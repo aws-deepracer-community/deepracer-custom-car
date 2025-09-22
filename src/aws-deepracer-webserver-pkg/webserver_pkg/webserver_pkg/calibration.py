@@ -32,7 +32,9 @@ from deepracer_interfaces_pkg.srv import (ActiveStateSrv,
                                           EnableStateSrv,
                                           SetCalibrationSrv,
                                           GetCalibrationSrv)
-from webserver_pkg.constants import (PWM_ANGLE_CONVERSION,
+from webserver_pkg.constants import (DIFFDRIVE_THROTTLE_CONVERSION, 
+                                     DIFFDRIVE_ANGLE_CONVERSION,
+                                     PWM_ANGLE_CONVERSION,
                                      PWM_THROTTLE_CONVERSION,
                                      PWM_OFFSET,
                                      CALIBRATION_MODE, SteeringMode)
@@ -100,12 +102,12 @@ def api_get_calibration(cali_type):
         return api_fail("Unable to reach get vehicle calibration server")
 
     if webserver_node.get_steering_mode() == SteeringMode.DIFFDRIVE:
-        # In differential drive mode, steering calibration is not applicable.
+        conversion = DIFFDRIVE_ANGLE_CONVERSION if state == 0 else DIFFDRIVE_THROTTLE_CONVERSION
         # Return default values.
         data = {
-            "mid": get_cal_res.mid,
-            "min": get_cal_res.min,
-            "max": get_cal_res.max,
+            "mid": int(get_cal_res.mid / conversion),
+            "min": int(get_cal_res.min / conversion),
+            "max": int(get_cal_res.max / conversion),
             "polarity": get_cal_res.polarity,
             "success": True
         }
@@ -146,9 +148,10 @@ def api_set_calibration(cali_type):
     state = 0 if cali_type == "angle" else 1
 
     if webserver_node.get_steering_mode() == SteeringMode.DIFFDRIVE:
-        set_mid = int(data["mid"])
-        set_min = int(data["min"])
-        set_max = int(data["max"])
+        conversion = DIFFDRIVE_ANGLE_CONVERSION if state == 0 else DIFFDRIVE_THROTTLE_CONVERSION
+        set_mid = int(data["mid"]) * conversion
+        set_min = int(data["min"]) * conversion
+        set_max = int(data["max"]) * conversion
         set_polarity = int(data["polarity"])
     else:
         conversion = PWM_ANGLE_CONVERSION if state == 0 else PWM_THROTTLE_CONVERSION
