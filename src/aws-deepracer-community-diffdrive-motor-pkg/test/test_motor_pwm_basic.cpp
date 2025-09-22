@@ -66,7 +66,6 @@ TEST_F(MotorPWMBasicTest, StateWithoutInit)
   EXPECT_FLOAT_EQ(state.right_speed, 0.0f);
   EXPECT_EQ(state.left_pwm, 0);
   EXPECT_EQ(state.right_pwm, 0);
-  EXPECT_FALSE(state.enabled);
 }
 
 /**
@@ -77,7 +76,6 @@ TEST_F(MotorPWMBasicTest, CommandsWithoutInit)
   // These should fail gracefully when not initialized
   EXPECT_FALSE(motor_manager_->setMotorSpeeds(0.5f, 0.5f));
   EXPECT_FALSE(motor_manager_->stopMotors());
-  EXPECT_FALSE(motor_manager_->setMotorsEnabled(true));
 
   // Ready should be false
   EXPECT_FALSE(motor_manager_->isReady());

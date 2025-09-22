@@ -40,7 +40,8 @@ void writeJSONToFile(const Json::Value & jsonValue, const std::string & filePath
 CalibrationManager::CalibrationManager(
   const std::string & calibration_file_path,
   const DifferentialDriveConfig & default_config)
-: calibration_file_path_(calibration_file_path), calibration_loaded_(false), default_config_(default_config)
+: calibration_file_path_(calibration_file_path), calibration_loaded_(false),
+  default_config_(default_config)
 {
   if (calibration_file_path_.empty()) {
     calibration_file_path_ = "/opt/aws/deepracer/calibration.json";

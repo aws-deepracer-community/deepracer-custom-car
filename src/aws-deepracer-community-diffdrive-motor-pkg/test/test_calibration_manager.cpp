@@ -21,7 +21,7 @@ protected:
     test_config.max_right_differential = 0.5f;
     test_config.center_offset = 0.0f;
     test_config.motor_polarity = 1;
-    
+
     calibration_manager_ = std::make_unique<CalibrationManager>("", test_config);
   }
 

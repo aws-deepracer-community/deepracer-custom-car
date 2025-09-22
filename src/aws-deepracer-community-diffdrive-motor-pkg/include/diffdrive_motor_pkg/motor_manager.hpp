@@ -49,16 +49,15 @@ enum class MotorDirection
   BRAKE       // IN1=1, IN2=1 (brake)
 };
 
-  /**
-   * @brief Motor state information
-   */
+/**
+ * @brief Motor state information
+ */
 struct MotorState
 {
   float left_speed;    // Normalized speed [-1.0, 1.0]
   float right_speed;   // Normalized speed [-1.0, 1.0]
   int left_pwm;        // PWM value for left motor
   int right_pwm;       // PWM value for right motor
-  bool enabled;        // Motor enable state
 };
 
   /**
@@ -102,30 +101,23 @@ public:
      */
   bool setMotorSpeeds(float left_speed, float right_speed);
 
-    /**
-     * @brief Stop all motors immediately
-     * @return true if successful, false otherwise
-     */
+  /**
+   * @brief Stop all motors immediately
+   * @return true if successful, false otherwise
+   */
   bool stopMotors();
 
-    /**
-     * @brief Enable or disable motors
-     * @param enabled Motor enable state
-     * @return true if successful, false otherwise
-     */
-  bool setMotorsEnabled(bool enabled);
-
-    /**
-     * @brief Get current motor state
-     * @return Current motor state
-     */
+  /**
+   * @brief Get current motor state
+   * @return Current motor state
+   */
   MotorState getMotorState() const;
-
-    /**
-     * @brief Update motor configuration
-     * @param config New configuration
-     * @return true if successful, false otherwise
-     */
+  
+  /**
+   * @brief Update motor configuration
+   * @param config New configuration
+   * @return true if successful, false otherwise
+   */
   bool updateConfig(const MotorConfig & config);
 
     /**

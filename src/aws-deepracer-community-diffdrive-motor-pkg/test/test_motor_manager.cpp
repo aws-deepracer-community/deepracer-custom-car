@@ -60,7 +60,6 @@ TEST_F(MotorManagerTest, MotorStateManagement)
   // Initial state should be stopped
   EXPECT_FLOAT_EQ(state.left_speed, 0.0f);
   EXPECT_FLOAT_EQ(state.right_speed, 0.0f);
-  EXPECT_FALSE(state.enabled);
 }
 
 int main(int argc, char **argv)
