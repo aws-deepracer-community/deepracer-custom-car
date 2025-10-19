@@ -39,11 +39,11 @@ VERSION=1:${VERSION_BASE}-$(lsb_release -cs)
 
 cd $DIR/deps/
 if [ ! -d "$DIR/deps/libcamera" ]; then
-    git clone --branch v0.5.1+rpt20250722 https://github.com/raspberrypi/libcamera.git
+    git clone --branch v0.5.2+rpt20250903 https://github.com/raspberrypi/libcamera.git
 else
     cd $DIR/deps/libcamera
     git fetch origin
-    git checkout v0.5.1+rpt20250722
+    git checkout v0.5.2+rpt20250903
 fi
 cd $DIR/deps/libcamera
 
@@ -58,7 +58,7 @@ rm -rf ${DESTDIR}
 ninja -C build install
 PYTHON_VERSION=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
 mkdir -p ${DESTDIR}/opt/ros/$ROS_DISTRO/lib/python${PYTHON_VERSION}/site-packages
-mv ${DESTDIR}/opt/ros/$ROS_DISTRO/lib/aarch64-linux-gnu/python${PYTHON_VERSION}/site-packages/libcamera ${DESTDIR}/opt/ros/$ROS_DISTRO/lib/python${PYTHON_VERSION}/site-packages/libcamera
+mv ${DESTDIR}/opt/ros/$ROS_DISTRO/lib/python3/dist-packages/libcamera ${DESTDIR}/opt/ros/$ROS_DISTRO/lib/python${PYTHON_VERSION}/site-packages/libcamera
 
 mkdir -p ${DIR}/deps/libcamera-build/DEBIAN
 cp ${DIR}/build_scripts/files/common/ros-$ROS_DISTRO-libcamera-control ${DIR}/deps/libcamera-build/DEBIAN/control
