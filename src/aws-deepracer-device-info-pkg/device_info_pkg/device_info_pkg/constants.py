@@ -38,7 +38,7 @@ SECURE_BOOT_CMD = "od -An -t u2 /sys/firmware/efi/efivars/SecureBoot-8be4df61-93
 
 OS_VERSION_CMD = "bash -c 'source /etc/os-release && echo $PRETTY_NAME'"
 
-CPU_MODEL_CMD = "lscpu | grep 'Model name' | awk -F: '{print $2}' | sed 's/^ *//' | sed 's/(R)//g' | sed 's/(TM)//g' | sed 's/Cortex/Arm Cortex/g'"
+CPU_MODEL_CMD = "lscpu | grep '^Model name' | awk -F: '{print $2}' | sed 's/^ *//' | sed 's/(R)//g' | sed 's/(TM)//g' | sed 's/Cortex/Arm Cortex/g'"
 
 ROS_DISTRO_CMD = "bash -c 'echo $ROS_DISTRO'"
 
@@ -73,3 +73,42 @@ def get_system_type():
 
 
 SYSTEM_TYPE = get_system_type()
+
+
+def is_ubuntu_24_04():
+    """Check if the system is running Ubuntu 24.04 (noble).
+    """
+    try:
+        with open("/etc/os-release") as f:
+            for line in f:
+                if line.startswith("VERSION_CODENAME="):
+                    codename = line.split("=")[1].strip().strip('"')
+                    return codename == "noble"
+                elif line.startswith("VERSION_ID="):
+                    version = line.split("=")[1].strip().strip('"')
+                    if version == "24.04":
+                        return True
+    except:
+        pass
+    return False
+
+
+IS_UBUNTU_24_04 = is_ubuntu_24_04()
+
+
+def get_board_id_gpio_pins():
+    """Get the GPIO pin numbers for board ID detection.
+       On Ubuntu 24.04, GPIO base changed from 357 to 590, requiring +233 offset.
+    
+    Returns:
+        tuple: (board_id1_pin, board_id0_pin)
+    """
+    if SYSTEM_TYPE == SystemType.DR and IS_UBUNTU_24_04:
+        # Ubuntu 24.04: base 590, so 383+233=616 and 387+233=620
+        return (616, 620)
+    else:
+        # Older systems: base 357
+        return (383, 387)
+
+
+BOARD_ID_PINS = get_board_id_gpio_pins()

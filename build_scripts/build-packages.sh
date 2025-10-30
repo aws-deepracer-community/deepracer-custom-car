@@ -130,7 +130,12 @@ for pkg in $PACKAGES; do
             cp $DIR/build_scripts/files/pi/isc-dhcp-server opt/aws/deepracer/util/isc-dhcp-server
             cp $DIR/build_scripts/files/pi/deepracer_dhcp.conf opt/aws/deepracer/util/deepracer_dhcp.conf
         else
-            cp $DIR/install_scripts/aws-20.04/aws_deepracer-community.list etc/apt/sources.list.d/aws_deepracer-community.list
+            if [ $ROS_DISTRO == "jazzy" ]; then
+                cp $DIR/install_scripts/aws-24.04/aws_deepracer-community.list etc/apt/sources.list.d/aws_deepracer-community.list
+                rm etc/apt/sources.list.d/aws_deepracer.list
+            else
+                cp $DIR/install_scripts/aws-20.04/aws_deepracer-community.list etc/apt/sources.list.d/aws_deepracer-community.list
+            fi
         fi
         cp $DIR/build_scripts/files/common/aws-deepracer-util-conffiles DEBIAN/conffiles
         cp $DIR/build_scripts/files/common/nginx_install_certs.sh opt/aws/deepracer/nginx/nginx_install_certs.sh
@@ -185,7 +190,12 @@ for pkg in $PACKAGES; do
                             ros-$ROS_DISTRO-rosbag2-storage-mcap"
         fi
         if [ "$ROS_DISTRO" == "jazzy" ]; then
-            PACKAGE_DEPS="$PACKAGE_DEPS, ros-$ROS_DISTRO-image-view, ros-$ROS_DISTRO-libcamera (>= 1:0.5.0+drpi)"
+            PACKAGE_DEPS="$PACKAGE_DEPS, ros-$ROS_DISTRO-image-view"
+            if [ $TARGET_ARCH == "arm64" ]; then
+                PACKAGE_DEPS="$PACKAGE_DEPS, ros-$ROS_DISTRO-libcamera (>= 1:0.5.0+drpi)"
+            else
+                PACKAGE_DEPS="$PACKAGE_DEPS, ros-$ROS_DISTRO-libcamera"
+            fi
         fi
         # Clean PACKAGE_DEPS variable for additional white space
         PACKAGE_DEPS=$(echo "$PACKAGE_DEPS" | tr -s ' ' | sed 's/^ *//;s/ *$//')
