@@ -73,5 +73,10 @@ cp $DIR/install_scripts/aws-24.04/aws_deepracer-community.list /etc/apt/sources.
 cp $DIR/install_scripts/common/deepracer-community.asc /etc/apt/trusted.gpg.d/
 apt update -y && apt install -y aws-deepracer-core aws-deepracer-community-device-console aws-deepracer-util aws-deepracer-sample-models
 
+# Copy and enable rc.local for PWM setup
+echo -e -n "\nInstalling rc.local for PWM configuration\n"
+cp $DIR/install_scripts/aws-24.04/rc.local /etc/rc.local
+chmod +x /etc/rc.local
+
 # Uncomment the below to disable deepracer-core automatic start
 # systemctl disable deepracer-core

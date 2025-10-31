@@ -133,6 +133,7 @@ for pkg in $PACKAGES; do
             if [ $ROS_DISTRO == "jazzy" ]; then
                 cp $DIR/install_scripts/aws-24.04/aws_deepracer-community.list etc/apt/sources.list.d/aws_deepracer-community.list
                 rm etc/apt/sources.list.d/aws_deepracer.list
+                cp $DIR/build_scripts/files/dr/otg_eth.sh opt/aws/deepracer/util/otg_eth.sh
             else
                 cp $DIR/install_scripts/aws-20.04/aws_deepracer-community.list etc/apt/sources.list.d/aws_deepracer-community.list
             fi

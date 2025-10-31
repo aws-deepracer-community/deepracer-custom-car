@@ -49,37 +49,60 @@ locale-gen en_US en_US.UTF-8
 update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
 export LANG=en_US.UTF-8
 
-# Enable PWM / PCA9685 on I2C 0x40
-# echo "dtparam=i2c1_baudrate=400000" | tee -a /boot/firmware/config.txt
-# echo "dtoverlay=i2c-pwm-pca9685a,addr=0x40" | tee -a /boot/firmware/config.txt
-
 # Switch nameserver
 ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
 echo "DNSStubListener=no" | tee -a /etc/systemd/resolved.conf >/dev/null
 systemctl restart systemd-resolved
 
+# Disable audio
+cat > /etc/modprobe.d/blacklist-audio.conf << EOF
+blacklist snd_soc_avs
+blacklist snd_soc_skl
+blacklist snd_hda_intel
+blacklist snd_hda_codec_hdmi
+blacklist snd_sof_pci_intel_apl
+EOF
+
+# Fix Wifi Stability
+cat > /etc/modprobe.d/mwifiex.conf << EOF
+options mwifiex disable_auto_ds=1 disable_tx_amsdu=1
+EOF
+
+# Update initramfs
+update-initramfs -u
+
+# Configure GRUB kernel parameters for DeepRacer compatibility and stability
+echo -e -n "\nConfiguring GRUB boot parameters\n"
+GRUB_PARAMS="net.ifnames=0 biosdevname=0 noxsave reboot=efi fsck.mode=skip"
+sed -i "s/^GRUB_CMDLINE_LINUX=\".*\"/GRUB_CMDLINE_LINUX=\"${GRUB_PARAMS}\"/" /etc/default/grub
+update-grub
+
 # Firewall enable
 ufw allow "OpenSSH"
 ufw enable
+ufw logging off
 
 # Install other tools / configure network management
-apt -y --no-install-recommends install curl network-manager wireless-tools net-tools i2c-tools v4l-utils
-cp $DIR/build_scripts/files/pi/10-manage-wifi.conf /etc/NetworkManager/conf.d/
+apt -y --no-install-recommends install linux-generic-hwe-24.04 url network-manager wireless-tools net-tools i2c-tools v4l-utils wpasupplicant rfkill iw
+echo "" > /etc/NetworkManager/conf.d/default-wifi-powersave-on.conf
+cp $DIR/build_scripts/files/dr/10-manage-wifi.conf /etc/NetworkManager/conf.d/
 systemctl disable systemd-networkd-wait-online
-
-sed -i 's/wifi.powersave = 3/wifi.powersave = 2/' /etc/NetworkManager/conf.d/default-wifi-powersave-on.conf
-# Replace the existing sed line with this more robust approach
-if grep -q "wlan0:" /etc/netplan/01-netcfg.yaml; then
-  # Check if renderer already exists under wlan0
-  if ! grep -A5 "wlan0:" /etc/netplan/01-netcfg.yaml | grep -q "renderer:"; then
-    # Add renderer under wlan0 using awk
-    awk '/wlan0:/{print; print "      renderer: NetworkManager"; next}1' /etc/netplan/01-netcfg.yaml > /tmp/netplan.yaml && mv /tmp/netplan.yaml /etc/netplan/01-netcfg.yaml
-  fi
+# Copy netplan configuration if it doesn't exist
+if [ ! -f /etc/netplan/01-netcfg.yaml ]; then
+  cp $DIR/build_scripts/files/dr/01-netcfg.yaml /etc/netplan/01-netcfg.yaml
 else
-  # If wlan0 section doesn't exist, fall back to replacing top-level renderer
-  sed -i 's/renderer: networkd/renderer: NetworkManager/' /etc/netplan/01-netcfg.yaml
+  # Replace the existing sed line with this more robust approach
+  if grep -q "mlan0:" /etc/netplan/01-netcfg.yaml; then
+    # Check if renderer already exists under mlan0
+    if ! grep -A5 "mlan0:" /etc/netplan/01-netcfg.yaml | grep -q "renderer:"; then
+      # Add renderer under mlan0 using awk
+      awk '/mlan0:/{print; print "      renderer: NetworkManager"; next}1' /etc/netplan/01-netcfg.yaml > /tmp/netplan.yaml && mv /tmp/netplan.yaml /etc/netplan/01-netcfg.yaml
+    fi
+  else
+    # If mlan0 section doesn't exist, fall back to replacing top-level renderer
+    sed -i 's/renderer: networkd/renderer: NetworkManager/' /etc/netplan/01-netcfg.yaml
+  fi
 fi
-
 # Set proper permissions for netplan configuration file (secure from others)
 chmod 600 /etc/netplan/01-netcfg.yaml
 
