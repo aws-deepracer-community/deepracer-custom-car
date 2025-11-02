@@ -43,6 +43,7 @@ apt update -y && apt remove -y --autoremove unattended-upgrades needrestart
 # First ensure that the Ubuntu Universe repository is enabled.
 add-apt-repository -y universe
 apt update -y && apt upgrade -y
+apt-mark hold linux-firmware
 
 # Ensure we have UTF-8
 locale-gen en_US en_US.UTF-8

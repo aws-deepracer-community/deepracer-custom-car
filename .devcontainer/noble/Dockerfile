@@ -47,8 +47,9 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
     sudo \
     unzip \
     v4l-utils \
-    wget
-
+    wget \
+    zstd
+    
 RUN gem install deb-s3
 
 RUN pip install flask flask-cors flask-wtf --break-system-packages
