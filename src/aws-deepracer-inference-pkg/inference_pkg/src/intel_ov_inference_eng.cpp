@@ -14,16 +14,12 @@
 //   limitations under the License.                                              //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#include "inference_pkg/tflite_inference_eng.hpp"
-
+#include "inference_pkg/intel_ov_inference_eng.hpp"
 // ROS2 message headers
 #include "deepracer_interfaces_pkg/msg/infer_results.hpp"
 #include "deepracer_interfaces_pkg/msg/infer_results_array.hpp"
 
-#include <thread>
 #include <exception>
-#include <omp.h>
-
 #define RAD2DEG(x) ((x)*180./M_PI)
 
 const std::string LIDAR = "LIDAR";
@@ -50,6 +46,64 @@ namespace {
         /// Store message in class so that the what method can dump it when invoked.
         const std::string msg_;
     };
+     /// Helper method that loads the multi head model into the desired plugin.
+     /// @returns Inference request object that will be used to perform inference
+     /// @param artifactPath Path to the artifact (xml) file
+     /// @param device String value of the device being used (CPU/GPU)
+     /// @param core Reference to a ov::Core object.
+     /// @param inputName Reference to the vector of input layer names
+     /// @param outputName Reference to the output layers name, the method will populate this string
+     /// @param compiledModel Reference to the compiled model object to be populated
+     /// @param inferenceNode The inference node for logging
+     ov::InferRequest setMultiHeadModel(std::string artifactPath, const std::string &device,
+                                            ov::Core& core, std::vector<std::string> &inputNamesArr,
+                                            std::string &outputName, ov::CompiledModel &compiledModel,
+                                            std::shared_ptr<rclcpp::Node> inferenceNode) {
+
+        RCLCPP_INFO(inferenceNode->get_logger(), "******* In setMultiHeadModel *******");
+        // Validate the artifact path.
+        auto strIdx = artifactPath.rfind('.');
+        if (strIdx == std::string::npos) {
+            throw InferenceExcept("Artifact missing file extension");
+        }
+        if (artifactPath.substr(strIdx+1) != "xml") {
+            throw InferenceExcept("No xml extension found");
+        }
+
+        auto model = core.read_model(artifactPath);
+        
+        // Get input names from the model
+        for (const auto& input : model->inputs()) {
+            std::string inputName = input.get_any_name();
+            if(inputName.rfind(OBS) != std::string::npos
+               || inputName.rfind(LIDAR) != std::string::npos
+               || inputName.rfind(FRONT) != std::string::npos
+               || inputName.rfind(STEREO) != std::string::npos
+               || inputName.rfind(LEFT) != std::string::npos) {
+                inputNamesArr.push_back(inputName);
+            }
+        }
+        
+        // Get output name from the model
+        if (!model->outputs().empty()) {
+            outputName = model->outputs().begin()->get_any_name();
+        }
+
+        // Configure for optimal latency-focused execution
+        ov::AnyMap config = {
+            {ov::num_streams(1)},                              // Single stream for low-latency
+            {ov::hint::performance_mode(ov::hint::PerformanceMode::LATENCY)},  // Optimize for latency
+            {ov::hint::inference_precision(ov::element::f16)}  // Use FP16 for better performance
+        };
+        if (device == "CPU") {
+            config.insert({ov::inference_num_threads(2)});                    // Limit to 2 threads
+        }
+
+        RCLCPP_INFO(inferenceNode->get_logger(), "Configuring OpenVINO for low-latency execution");
+        
+        compiledModel = core.compile_model(model, device, config);
+        return compiledModel.create_infer_request();
+     }
 
      /// Helper method that loads grey images into the inference engine input
      /// @param inputPtr Pointer to the input data.
@@ -140,7 +194,7 @@ namespace {
      }
 }
 
-namespace TFLiteInferenceEngine {
+namespace IntelOVInferenceEngine {
     RLInferenceModel::RLInferenceModel(std::shared_ptr<rclcpp::Node> inferenceNodePtr, const std::string &sensorSubName)
      : doInference_(false)
     {
@@ -148,7 +202,7 @@ namespace TFLiteInferenceEngine {
         RCLCPP_INFO(inferenceNode->get_logger(), "Initializing RL Model");
         RCLCPP_INFO(inferenceNode->get_logger(), "%s", sensorSubName.c_str());
         // Subscribe to the sensor topic and set the call back
-        sensorSub_ = inferenceNode->create_subscription<deepracer_interfaces_pkg::msg::EvoSensorMsg>(sensorSubName, 10, std::bind(&TFLiteInferenceEngine::RLInferenceModel::sensorCB, this, std::placeholders::_1));
+        sensorSub_ = inferenceNode->create_subscription<deepracer_interfaces_pkg::msg::EvoSensorMsg>(sensorSubName, 10, std::bind(&IntelOVInferenceEngine::RLInferenceModel::sensorCB, this, std::placeholders::_1));
         resultPub_ = inferenceNode->create_publisher<deepracer_interfaces_pkg::msg::InferResultsArray>("rl_results", 1);
     }
 
@@ -167,84 +221,64 @@ namespace TFLiteInferenceEngine {
             RCLCPP_ERROR(inferenceNode->get_logger(), "Invalid image processing algorithm");
             return false;
         }
-
-        // Validate the artifact path.
-        auto strIdx = ((std::string) artifactPath).rfind('.');
-        if (strIdx == std::string::npos) {
-            throw InferenceExcept("Artifact missing file extension");
-        }
-        if (((std::string) artifactPath).substr(strIdx+1) != "tflite") {
-            throw InferenceExcept("No tflite extension found");
-        }
-                
         // Set the image processing algorithms
         imgProcess_ = imgProcess;
-
         // Load the model
         try {
-
-            model_ = tflite::FlatBufferModel::BuildFromFile(artifactPath);
-
-            tflite::ops::builtin::BuiltinOpResolver resolver;
-            tflite::InterpreterBuilder(*model_, resolver)(&interpreter_);
-
-            // Set number of CPU threads for inference
-            // Use the number of available CPU cores or a specific number (e.g., 4)
-            int num_threads = std::thread::hardware_concurrency() - 2; // Get available CPU cores
-            if (num_threads <= 0) num_threads = 2; // Fallback if detection fails
-            interpreter_->SetNumThreads(num_threads);
-            // Set OpenMP threads (for operations that use OpenMP)
-            omp_set_num_threads(num_threads);
-
-            RCLCPP_INFO(inferenceNode->get_logger(), "TFLite interpreter using %d threads", num_threads);
-
-            interpreter_->AllocateTensors();
-
-            // Cache input tensor pointers for performance (like OpenVINO)
+            inferRequest_ = setMultiHeadModel(artifactPath, device, core_, inputNamesArr_,
+                                     outputName_, compiledModel_, inferenceNode);
+            
+            // Cache input tensor pointers for performance
             inputTensorPtrs_.clear();
-            
-            // Determine input and output dimensions
-            for (auto i : interpreter_->inputs())
-            {
-                auto const *input_tensor = interpreter_->tensor(i);
+            for(size_t i = 0; i != inputNamesArr_.size(); ++i) {
+                auto inputTensor = inferRequest_.get_input_tensor(i);
+                auto shape = inputTensor.get_shape();
                 
-                // Cache the input tensor pointer
-                inputTensorPtrs_.push_back(interpreter_->typed_input_tensor<float>(i));
-
-                auto dims = std::vector<int>{}; 
-                std::copy(
-                    input_tensor->dims->data, input_tensor->dims->data + input_tensor->dims->size,
-                    std::back_inserter(dims));
-
-                inputNamesArr_.push_back(interpreter_->GetInputName(i));
-
-                std::unordered_map<std::string, int> params_ = {{"width", input_tensor->dims->data[2]},
-                       {"height", input_tensor->dims->data[1]},
-                       {"channels", input_tensor->dims->data[0]}};
+                // Cache the tensor data pointer
+                inputTensorPtrs_.push_back(inputTensor.data<float>());
+                
+                std::unordered_map<std::string, int> params_;
+                
+                // Debug: Log tensor shape information
+                RCLCPP_INFO(inferenceNode->get_logger(), "Input[%zu] '%s': shape dimensions = %zu", 
+                           i, inputNamesArr_[i].c_str(), shape.size());
+                std::string shapeStr = "[";
+                for (size_t dim = 0; dim < shape.size(); ++dim) {
+                    shapeStr += std::to_string(shape[dim]);
+                    if (dim < shape.size() - 1) shapeStr += ", ";
+                }
+                shapeStr += "]";
+                RCLCPP_INFO(inferenceNode->get_logger(), "Shape values: %s", shapeStr.c_str());
+                
+                if (shape.size() >= 4) {
+                    // For NHWC format: [batch, height, width, channels]
+                    params_ = {{"width", static_cast<int>(shape[2])},
+                              {"height", static_cast<int>(shape[1])},
+                              {"channels", static_cast<int>(shape[3])}};
+                    RCLCPP_INFO(inferenceNode->get_logger(), "Parsed as NHWC: w=%d, h=%d, c=%d", 
+                               params_["width"], params_["height"], params_["channels"]);
+                } else if (shape.size() == 3) {
+                    // For NHW format: [batch, height, width] 
+                    params_ = {{"width", static_cast<int>(shape[2])},
+                              {"height", static_cast<int>(shape[1])},
+                              {"channels", static_cast<int>(shape[0])}};
+                    RCLCPP_INFO(inferenceNode->get_logger(), "Parsed as NHW: w=%d, h=%d, c=%d", 
+                               params_["width"], params_["height"], params_["channels"]);
+                } else if (shape.size() == 2) {
+                    // For 1D data like LIDAR: [batch, features]
+                    params_ = {{"width", static_cast<int>(shape[1])},
+                              {"height", 1},
+                              {"channels", 1}};
+                    RCLCPP_INFO(inferenceNode->get_logger(), "Parsed as 1D (LIDAR): features=%d", 
+                               params_["width"]);
+                }
                 paramsArr_.push_back(params_);
-
-                RCLCPP_INFO(inferenceNode->get_logger(), "Input name: %s", input_tensor->name);
-                RCLCPP_INFO(inferenceNode->get_logger(), "Input dimensions: %i x %i x %i", input_tensor->dims->data[2], input_tensor->dims->data[1], input_tensor->dims->data[0]);
-            }
-
-            for (auto o : interpreter_->outputs())
-            {
-                auto const *output_tensor = interpreter_->tensor(o);
-                output_tensors_.push_back(output_tensor);
-
-                auto dims = std::vector<int>{};
-                std::copy(
-                    output_tensor->dims->data, output_tensor->dims->data + output_tensor->dims->size,
-                    std::back_inserter(dims));
-
-                RCLCPP_INFO(inferenceNode->get_logger(), "Output name: %s", output_tensor->name);
-
-                outputDimsArr_.push_back(dims);
             }
             
-            // Cache output tensor pointer for performance
-            outputTensorPtr_ = interpreter_->typed_output_tensor<float>(0);
-
+            // Cache output tensor pointer and shape for performance
+            auto outputTensor = inferRequest_.get_output_tensor();
+            outputTensorPtr_ = outputTensor.data<float>();
+            outputShape_ = outputTensor.get_shape();
         }
         catch (const std::exception &ex) {
             RCLCPP_ERROR(inferenceNode->get_logger(), "Model failed to load: %s", ex.what());
@@ -270,23 +304,23 @@ namespace TFLiteInferenceEngine {
             return;
         }
         try {
-            // Use cached tensor pointers for performance (like OpenVINO)
+            // Use cached tensor pointers instead of fetching them every time
             for(size_t i = 0; i < inputNamesArr_.size(); ++i) {
-                float* inputLayer = inputTensorPtrs_[i];
+                auto inputPtr = inputTensorPtrs_[i];
 
                 // Object that will hold the data sent to the inference engine post processed.
                 cv::Mat retData;
                 if (inputNamesArr_[i].find(STEREO) != std::string::npos)
                 {
-                    loadStereoImg<cv::Vec2b, float>(inputLayer, retData, imgProcess_, msg->images, paramsArr_[i]);
+                    loadStereoImg<cv::Vec2b, float>(inputPtr, retData, imgProcess_, msg->images, paramsArr_[i]);
                 }
                 else if (inputNamesArr_[i].find(FRONT) != std::string::npos
                           || inputNamesArr_[i].find(LEFT) != std::string::npos
                           || inputNamesArr_[i].find(OBS) != std::string::npos) {
-                    load1DImg<uchar, float>(inputLayer, retData, imgProcess_, msg->images.front(), paramsArr_[i]);
+                    load1DImg<uchar, float>(inputPtr, retData, imgProcess_, msg->images.front(), paramsArr_[i]);
                 }
                 else if (inputNamesArr_[i].find(LIDAR) != std::string::npos){
-                    loadLidarData(inputLayer, msg->lidar_data);
+                    loadLidarData(inputPtr, msg->lidar_data);
                 }
                 else {
                     RCLCPP_ERROR(inferenceNode->get_logger(), "Invalid input head");
@@ -295,19 +329,16 @@ namespace TFLiteInferenceEngine {
                 imgProcess_->reset();
             }
             // Do inference
-            interpreter_->Invoke();
+            inferRequest_.infer();
 
-            // Use cached output tensor pointer
-            // Last dimension of output is number of classes
-            auto nClasses = outputDimsArr_[0].back();
-
+            // Use cached output tensor pointer and shape
             auto inferMsg = deepracer_interfaces_pkg::msg::InferResultsArray();
             for (size_t i = 0; i < msg->images.size(); ++i) {
                 // Send the image data over with the results
                 inferMsg.images.push_back(msg->images[i]) ;
             }
 
-            for (size_t label = 0; label < nClasses; ++label) {
+            for (size_t label = 0; label < outputShape_[1]; ++label) {
                 auto inferData = deepracer_interfaces_pkg::msg::InferResults();
                 inferData.class_label = label;
                 inferData.class_prob = outputTensorPtr_[label];

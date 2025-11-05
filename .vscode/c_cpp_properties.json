@@ -47,7 +47,8 @@
                 "${workspaceFolder}/build/inference_pkg/flatbuffers/include/"
             ],
             "defines": [
-                "HW_PLATFORM_RPI"
+                "HW_PLATFORM_DR",
+                "ROS_DISTRO_JAZZY"
             ],
             "cStandard": "gnu17",
             "cppStandard": "gnu++17",

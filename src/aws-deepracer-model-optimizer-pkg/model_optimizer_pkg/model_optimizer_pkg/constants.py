@@ -35,6 +35,9 @@ def get_mo_path_and_version():
     if os.path.exists(os.path.join(INTEL_PATH, "mo_tf.py")):
         mo_cmd = PYTHON_BIN + " " + os.path.join(INTEL_PATH, "mo_tf.py")
         mo_version = 2021
+    elif os.path.exists("/usr/bin/ovc"):
+        mo_cmd = "/usr/bin/ovc"
+        mo_version = 2024
     else:
         mo_cmd = "mo"
         mo_version = 2022

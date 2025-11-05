@@ -78,6 +78,7 @@ if(HW_PLATFORM STREQUAL "DR")
   endif()
   
 elseif(HW_PLATFORM STREQUAL "RPI")
+  message(STATUS "RPI architecture detected, enabling Cortex-A72 optimizations")
  
   # TensorFlow Lite optimization flags for ARM64
   set(TFLITE_ENABLE_XNNPACK ON CACHE BOOL "Enable XNNPACK acceleration")
@@ -87,24 +88,12 @@ elseif(HW_PLATFORM STREQUAL "RPI")
   set(TFLITE_ENABLE_GPU OFF CACHE BOOL "Disable GPU")
   set(TFLITE_ENABLE_NNAPI OFF CACHE BOOL "Disable Android NNAPI")
 
-  # if(HW_PLATFORM STREQUAL "RPI5")
-  #  message(STATUS "RPI5 architecture detected, enabling Cortex-A76 optimizations")
-  #  if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  #    add_compile_options(
-  #      -march=armv8.2-a      # ARMv8 architecture (required for 64-bit)
-  #      -mtune=cortex-a76   # Optimize for CM4's Cortex-A72 CPU
-  #      -ftree-vectorize    # Enable auto-vectorization
-  #    )
-  #  endif()
-  if(HW_PLATFORM STREQUAL "RPI")
-    message(STATUS "RPI architecture detected, enabling Cortex-A72 optimizations")
-    if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-      add_compile_options(
-        -march=armv8-a+crc  # ARMv8 architecture (required for 64-bit)
-        -mtune=cortex-a72   # Optimize for CM4's Cortex-A72 CPU
-        -ftree-vectorize    # Enable auto-vectorization
-      )
-    endif()  
+  if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    add_compile_options(
+      -march=armv8-a+crc  # ARMv8 architecture (required for 64-bit)
+      -mtune=cortex-a72   # Optimize for CM4's Cortex-A72 CPU
+      -ftree-vectorize    # Enable auto-vectorization
+    )
   endif()
 endif()
 
@@ -146,7 +135,37 @@ if(NOT OpenCV_FOUND)
 endif()
 
 # Check if ROS_DISTRO is jazzy and define a macro
-if("$ENV{ROS_DISTRO}" STREQUAL "jazzy")
+if("$ENV{ROS_DISTRO}" STREQUAL "jazzy" AND HW_PLATFORM STREQUAL "DR")
+
+  find_package(OpenVINO REQUIRED)
+  add_definitions(-DROS_DISTRO_JAZZY)
+
+  add_executable(inference_node
+    src/inference_node.cpp
+    src/intel_ov_inference_eng.cpp
+    src/tflite_inference_eng.cpp
+    src/image_process.cpp
+  )
+
+  target_include_directories(inference_node PRIVATE
+    include
+    ${OpenCV_INCLUDE_DIRS}
+    ${OpenVINO_INCLUDE_DIRS}
+    ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers/include
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  )
+
+  target_link_libraries(inference_node  -lm -ldl
+    ${OpenCV_LIBRARIES}
+    openvino::runtime
+    tensorflow-lite
+  )
+
+  ament_target_dependencies(inference_node rclcpp deepracer_interfaces_pkg sensor_msgs std_msgs cv_bridge image_transport OpenCV OpenVINO)
+
+elseif("$ENV{ROS_DISTRO}" STREQUAL "jazzy" AND HW_PLATFORM STREQUAL "RPI")
+
+  find_package(OpenVINO REQUIRED)
   add_definitions(-DROS_DISTRO_JAZZY)
 
   add_executable(inference_node

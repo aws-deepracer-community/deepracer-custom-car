@@ -96,13 +96,13 @@ The custom stack exposes the following arguments which can be changed through ch
 
 The different combinations of `inference_engine` and `inference_device` are not all compatible with the RPi4, and each option comes with pros and cons. The original car software only supports OpenVINO CPU.
 
-| Feature                   | Original (Ubuntu 20.04, ROS2 Foxy)  | RPi4 (Ubuntu 22.04, ROS2 Humble)  | RPi4/RPi5 (Ubuntu 24.04, ROS2 Jazzy)  | Notes                                                                 |
-|---------------------------|-------------------------------------|-----------------------------------|---------------------------------------|-----------------------------------------------------------------------|
-| Camera                    | Original USB (incl. Stereo)         | RPi Camera Module 2 + USB         | RPi Camera Module 2 & 3 + USB         |                                                                       |
-| TensorFlow Lite (CPU)     | Yes                                 | Yes                               | Yes                                   | Default for RPi                                                       |
-| OpenVINO (CPU)            | Yes                                 | No                                | No                                    | Default for Original                                                  |
-| OpenVINO (GPU)            | Yes                                 | No                                | No                                    | Reduces CPU load, but model takes longer to load                      |
-| OpenVINO (NCS2/Myriad X)  | Yes                                 | Yes                               | No                                    | Reduces CPU load, requires NCS2 stick, model takes longer to load     |
+| Feature                   | Original (Ubuntu 20.04, ROS2 Foxy)  | Original (Ubuntu 24.04, ROS2 Jazzy)  | RPi4 (Ubuntu 22.04, ROS2 Humble)  | RPi4/RPi5 (Ubuntu 24.04, ROS2 Jazzy)  | Notes                                                                 |
+|---------------------------|-------------------------------------|--------------------------------------|-----------------------------------|---------------------------------------|-----------------------------------------------------------------------|
+| Camera                    | Original USB (incl. Stereo)         | Original USB (incl. Stereo)          | RPi Camera Module 2 + USB         | RPi Camera Module 2 & 3 + USB         |                                                                       |
+| TensorFlow Lite (CPU)     | Yes                                 | Yes                                  | Yes                               | Yes                                   | Default for RPi                                                       |
+| OpenVINO (CPU)            | Yes                                 | Yes                                  | No                                | No                                    | Default for Original                                                  |
+| OpenVINO (GPU)            | Yes                                 | No                                   | No                                | No                                    | Reduces CPU load, but model takes longer to load                      |
+| OpenVINO (NCS2/Myriad X)  | Yes                                 | No                                   | Yes                               | No                                    | Reduces CPU load, requires NCS2 stick, model takes longer to load     |
 
 The different modes have been tested for equivalency, and it is verified that they provide the same results (identical picture in -> identical action taken). Less than 1 per 1000 frames are differing, mainly due to the model not having a clear action, and several actions are having very similar probabilities.
 

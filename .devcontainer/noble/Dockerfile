@@ -54,6 +54,11 @@ RUN gem install deb-s3
 
 RUN pip install flask flask-cors flask-wtf --break-system-packages
 
+# Install OpenVINO 2024.6.0 for Ubuntu 24.04
+RUN wget -qO- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB | gpg --dearmor -o /usr/share/keyrings/intel-openvino-2024.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/intel-openvino-2024.gpg] https://apt.repos.intel.com/openvino/2024 ubuntu24 main" | tee /etc/apt/sources.list.d/intel-openvino-2024.list && \
+    apt-get update && apt-get install -y --no-install-recommends openvino-2024.6.0
+
 # Install AWS CLI v2 (support both ARM and x86 architectures)
 RUN ARCH=$(uname -m) && \
     if [ "$ARCH" = "x86_64" ]; then \

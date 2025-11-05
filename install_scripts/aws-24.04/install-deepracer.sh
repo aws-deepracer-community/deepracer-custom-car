@@ -68,6 +68,11 @@ pip3 install -U --break-system-packages \
     pyclean \
     pam
 
+# Install OpenVINO
+wget -qO- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB | gpg --dearmor -o /usr/share/keyrings/intel-openvino-2024.gpg 
+echo "deb [signed-by=/usr/share/keyrings/intel-openvino-2024.gpg] https://apt.repos.intel.com/openvino/2024 ubuntu24 main" | tee /etc/apt/sources.list.d/intel-openvino-2024.list >/dev/null
+apt-get update && apt-get install -y --no-install-recommends openvino-2024.6.0 intel-opencl-icd
+
 # Install packages
 cp $DIR/install_scripts/aws-24.04/aws_deepracer-community.list /etc/apt/sources.list.d/aws_deepracer-community.list
 cp $DIR/install_scripts/common/deepracer-community.asc /etc/apt/trusted.gpg.d/

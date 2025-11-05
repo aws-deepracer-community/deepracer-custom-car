@@ -11,10 +11,14 @@
 //   distributed under the License is distributed on an "AS IS" BASIS,           //
 //   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    //
 //   See the License for the specific language governing permissions and         //
-//   limitations under the License.                                              //
+///   limitations under the License.                                              //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#ifndef ROS_DISTRO_JAZZY
+#if defined(ROS_DISTRO_JAZZY) && defined(HW_PLATFORM_DR)
+#include "inference_pkg/intel_ov_inference_eng.hpp"
+#elif defined(HW_PLATFORM_DR)
+#include "inference_pkg/intel_inference_eng.hpp"
+#elif defined(HW_PLATFORM_RPI) && !defined(ROS_DISTRO_JAZZY)
 #include "inference_pkg/intel_inference_eng.hpp"
 #endif
 #include "inference_pkg/tflite_inference_eng.hpp"
@@ -148,7 +152,11 @@ namespace InferTask {
                         if (inferenceEngine_.compare("TFLITE") == 0) {
                             itInferTask->second.reset(new TFLiteInferenceEngine::RLInferenceModel(this->shared_from_this(), "/sensor_fusion_pkg/sensor_msg"));
                         } else {
-                            #ifndef ROS_DISTRO_JAZZY
+                            #if defined(ROS_DISTRO_JAZZY) && defined(HW_PLATFORM_DR)
+                            itInferTask->second.reset(new IntelOVInferenceEngine::RLInferenceModel(this->shared_from_this(), "/sensor_fusion_pkg/sensor_msg"));
+                            #elif defined(HW_PLATFORM_RPI) && !defined(ROS_DISTRO_JAZZY)
+                            itInferTask->second.reset(new IntelInferenceEngine::RLInferenceModel(this->shared_from_this(), "/sensor_fusion_pkg/sensor_msg"));
+                            #elif defined(HW_PLATFORM_DR)
                             itInferTask->second.reset(new IntelInferenceEngine::RLInferenceModel(this->shared_from_this(), "/sensor_fusion_pkg/sensor_msg"));
                             #endif
                         }
