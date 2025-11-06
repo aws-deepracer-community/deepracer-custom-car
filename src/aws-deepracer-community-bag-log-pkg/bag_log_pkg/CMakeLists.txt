@@ -32,11 +32,41 @@ find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
+find_package(rosbag2_cpp REQUIRED)
+find_package(rosbag2_storage REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(std_srvs REQUIRED)
 find_package(deepracer_interfaces_pkg REQUIRED)
 
 # Include directories
 include_directories(
   include
+)
+
+# Create the bag_log_node_cpp executable
+add_executable(bag_log_node_cpp
+  src/bag_log_node.cpp
+)
+
+# Add include directories for C++ executable
+target_include_directories(bag_log_node_cpp PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+
+# Specify libraries to link against
+ament_target_dependencies(bag_log_node_cpp
+  rclcpp
+  rosbag2_cpp
+  rosbag2_storage
+  std_msgs
+  std_srvs
+  deepracer_interfaces_pkg
+)
+
+# Install the C++ executable
+install(TARGETS bag_log_node_cpp
+  DESTINATION lib/${PROJECT_NAME}
 )
 
 # Install C++ include directories

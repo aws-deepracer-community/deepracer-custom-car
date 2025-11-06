@@ -16,6 +16,8 @@
 
   <depend>rclcpp</depend>
   <depend>rclpy</depend>
+  <depend>rosbag2_cpp</depend>
+  <depend>rosbag2_storage</depend>
   <depend>rosbag2_py</depend>
   <depend>rcl_interfaces</depend>
   <depend>std_msgs</depend>
