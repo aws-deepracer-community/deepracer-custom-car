@@ -27,9 +27,6 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-if("$ENV{ROS_DISTRO}" STREQUAL "jazzy")
-  add_definitions(-DROS_DISTRO_JAZZY)
-else()
 
 # Find dependencies
 find_package(ament_cmake REQUIRED)
@@ -47,36 +44,42 @@ include_directories(
   include
 )
 
-# Create the bag_log_node_cpp executable
-add_executable(bag_log_node_cpp
-  src/bag_log_node.cpp
-)
+if("$ENV{ROS_DISTRO}" STREQUAL "jazzy")
+  add_definitions(-DROS_DISTRO_JAZZY)
 
-# Add include directories for C++ executable
-target_include_directories(bag_log_node_cpp PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>
-)
+  # Create the bag_log_node_cpp executable
+  add_executable(bag_log_node_cpp
+    src/bag_log_node.cpp
+  )
 
-# Specify libraries to link against
-ament_target_dependencies(bag_log_node_cpp
-  rclcpp
-  rosbag2_cpp
-  rosbag2_storage
-  std_msgs
-  std_srvs
-  deepracer_interfaces_pkg
-)
+  # Add include directories for C++ executable
+  target_include_directories(bag_log_node_cpp PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+  )
 
-# Install the C++ executable
-install(TARGETS bag_log_node_cpp
-  DESTINATION lib/${PROJECT_NAME}
-)
+  # Specify libraries to link against
+  ament_target_dependencies(bag_log_node_cpp
+    rclcpp
+    rosbag2_cpp
+    rosbag2_storage
+    std_msgs
+    std_srvs
+    deepracer_interfaces_pkg
+  )
 
-# Install C++ include directories
-install(DIRECTORY include/
-  DESTINATION include/
-)
+  # Install the C++ executable
+  install(TARGETS bag_log_node_cpp
+    DESTINATION lib/${PROJECT_NAME}
+  )
+
+  # Install C++ include directories
+  install(DIRECTORY include/
+    DESTINATION include/
+  )
+
+endif()
+
 
 # Install Python modules
 ament_python_install_package(${PROJECT_NAME})
