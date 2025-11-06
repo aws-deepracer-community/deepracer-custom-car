@@ -191,9 +191,8 @@ void BagLogNode::scan_for_topics_cb()
                 topic_info.name = monitor_topic_;
                 topic_info.type = endpoint.topic_type();
                 topic_info.serialization_format = "cdr";
-                topic_info.qos = rclcpp::QoS(10)
-                    .reliability(endpoint.qos_profile().reliability())
-                    .history(endpoint.qos_profile().history());
+                // Use keep_all history to record all messages
+                topic_info.qos = rclcpp::QoS(rclcpp::KeepAll());
                 
                 create_subscription_for_topic(topic_info);
                 
@@ -222,10 +221,8 @@ void BagLogNode::scan_for_topics_cb()
                 topic_info.name = *it;
                 topic_info.type = endpoint.topic_type();
                 topic_info.serialization_format = "cdr";
-                topic_info.qos = rclcpp::QoS(10)
-                    .reliability(endpoint.qos_profile().reliability())
-                    .history(endpoint.qos_profile().history())
-                    .keep_all();
+                // Use keep_all history to record all messages
+                topic_info.qos = rclcpp::QoS(rclcpp::KeepAll());
                 
                 create_subscription_for_topic(topic_info);
                 
