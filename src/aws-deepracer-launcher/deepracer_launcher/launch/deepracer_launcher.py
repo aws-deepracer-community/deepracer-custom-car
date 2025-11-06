@@ -252,8 +252,8 @@ def launch_setup(context, *args, **kwargs):
         }]
     )
     bag_log_node = Node(
-        package='logging_pkg',
-        namespace='logging_pkg',
+        package='bag_log_pkg',
+        namespace='bag_log_pkg',
         executable='bag_log_node',
         name='bag_log_node',
         parameters=[{
