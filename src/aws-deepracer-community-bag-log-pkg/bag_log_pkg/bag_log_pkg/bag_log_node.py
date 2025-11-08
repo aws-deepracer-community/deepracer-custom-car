@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 #################################################################################
-#   Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.          #
 #   Copyright AWS DeepRacer Community. All Rights Reserved.                     #
 #                                                                               #
 #   Licensed under the Apache License, Version 2.0 (the "License").             #
