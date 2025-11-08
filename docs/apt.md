@@ -6,8 +6,8 @@ There are two codenames `stable` and `experimental`, the former having more stab
 
 The component matrix / architecture support is as follows:
 
-| Hardware | Ubuntu 20.04 (Focal) + ROS2 Foxy | Ubuntu 22.04 (Jammy) + ROS2 Humble |
-|----------|----------------------------------|------------------------------------| 
-| Original (`amd64`) | `dr-focal`                    | No                                 |
-| Raspberry Pi (`arm64`) | No                 | `rpi4-jammy`                                | 
-| Other x86 (`amd64`) | No                    | Source only                  |                          
+| Hardware               | Ubuntu 20.04 (Focal) + ROS2 Foxy  | Ubuntu 22.04 (Jammy) + ROS2 Humble | Ubuntu 24.04 (Noble) + ROS2 Jazzy  |
+|------------------------|-----------------------------------|------------------------------------|------------------------------------|
+| Original (`amd64`)     | `dr-focal`                        | No                                 | `dr-noble`                         |
+| Raspberry Pi (`arm64`) | No                                | `rpi4-jammy`                       | `rpi-noble`                        |
+| Other x86 (`amd64`)    | No                                | Source only                        | Source only                        |                          
