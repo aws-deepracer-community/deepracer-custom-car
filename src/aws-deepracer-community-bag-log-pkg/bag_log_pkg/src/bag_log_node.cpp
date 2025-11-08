@@ -181,56 +181,67 @@ void BagLogNode::scan_for_topics_cb()
 {
     try {
         if (state_ == NodeState::SCANNING) {
-            // Get publishers for monitor topic
-            auto topic_endpoints = this->get_publishers_info_by_topic(monitor_topic_);
-            
-            if (!topic_endpoints.empty()) {
-                const auto& endpoint = topic_endpoints[0];
+            try {
+                // Get publishers for monitor topic
+                auto topic_endpoints = this->get_publishers_info_by_topic(monitor_topic_);
                 
-                TopicInfo topic_info;
-                topic_info.name = monitor_topic_;
-                topic_info.type = endpoint.topic_type();
-                topic_info.serialization_format = "cdr";
-                // Use keep_all history to record all messages
-                topic_info.qos = rclcpp::QoS(rclcpp::KeepAll());
-                
-                create_subscription_for_topic(topic_info);
-                
-                // Setup timeout check timer
-                timeout_check_timer_ = this->create_wall_timer(
-                    std::chrono::milliseconds(monitor_topic_timeout_ * 100),
-                    std::bind(&BagLogNode::timeout_check_timer_cb, this),
-                    main_cbg_);
-                
-                RCLCPP_INFO(this->get_logger(), 
-                            "Monitoring %s of type %s with timeout %d seconds",
-                            monitor_topic_.c_str(), topic_info.type.c_str(), monitor_topic_timeout_);
-                
-                state_ = NodeState::RUNNING;
+                if (!topic_endpoints.empty()) {
+                    const auto& endpoint = topic_endpoints[0];
+                    
+                    TopicInfo topic_info;
+                    topic_info.name = monitor_topic_;
+                    topic_info.type = endpoint.topic_type();
+                    topic_info.serialization_format = "cdr";
+                    // Use keep_all history to record all messages
+                    topic_info.qos = rclcpp::QoS(rclcpp::KeepAll());
+                    
+                    create_subscription_for_topic(topic_info);
+                    
+                    // Setup timeout check timer
+                    timeout_check_timer_ = this->create_wall_timer(
+                        std::chrono::milliseconds(monitor_topic_timeout_ * 100),
+                        std::bind(&BagLogNode::timeout_check_timer_cb, this),
+                        main_cbg_);
+                    
+                    RCLCPP_INFO(this->get_logger(), 
+                                "Monitoring %s of type %s with timeout %d seconds",
+                                monitor_topic_.c_str(), topic_info.type.c_str(), monitor_topic_timeout_);
+                    
+                    state_ = NodeState::RUNNING;
+                }
+            } catch (const std::exception& e) {
+                RCLCPP_DEBUG(this->get_logger(), "Error checking monitor topic %s: %s (will retry)", 
+                            monitor_topic_.c_str(), e.what());
             }
         }
         
         // Scan for additional topics
         for (auto it = topics_to_scan_.begin(); it != topics_to_scan_.end(); ) {
-            auto topic_endpoints = this->get_publishers_info_by_topic(*it);
-            
-            if (!topic_endpoints.empty()) {
-                const auto& endpoint = topic_endpoints[0];
+            try {
+                auto topic_endpoints = this->get_publishers_info_by_topic(*it);
                 
-                TopicInfo topic_info;
-                topic_info.name = *it;
-                topic_info.type = endpoint.topic_type();
-                topic_info.serialization_format = "cdr";
-                // Use keep_all history to record all messages
-                topic_info.qos = rclcpp::QoS(rclcpp::KeepAll());
-                
-                create_subscription_for_topic(topic_info);
-                
-                RCLCPP_INFO(this->get_logger(), "Logging %s of type %s.",
-                            it->c_str(), topic_info.type.c_str());
-                
-                it = topics_to_scan_.erase(it);
-            } else {
+                if (!topic_endpoints.empty()) {
+                    const auto& endpoint = topic_endpoints[0];
+                    
+                    TopicInfo topic_info;
+                    topic_info.name = *it;
+                    topic_info.type = endpoint.topic_type();
+                    topic_info.serialization_format = "cdr";
+                    // Use keep_all history to record all messages
+                    topic_info.qos = rclcpp::QoS(rclcpp::KeepAll());
+                    
+                    create_subscription_for_topic(topic_info);
+                    
+                    RCLCPP_INFO(this->get_logger(), "Logging %s of type %s.",
+                                it->c_str(), topic_info.type.c_str());
+                    
+                    it = topics_to_scan_.erase(it);
+                } else {
+                    ++it;
+                }
+            } catch (const std::exception& e) {
+                RCLCPP_DEBUG(this->get_logger(), "Error checking topic %s: %s (will retry)", 
+                            it->c_str(), e.what());
                 ++it;
             }
         }
