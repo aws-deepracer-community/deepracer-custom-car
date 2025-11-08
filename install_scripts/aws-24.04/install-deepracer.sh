@@ -58,12 +58,15 @@ apt -y update && apt install -y --no-install-recommends \
 rosdep init && rosdep update --rosdistro=jazzy -q
 
 # Tensorflow and dependencies
+mkdir -p $DIR/dist/
+[ ! -f "$DIR/dist/tensorflow-2.17.1-cp312-cp312-linux_x86_64.whl" ] && curl -o $DIR/dist/tensorflow-2.17.1-cp312-cp312-linux_x86_64.whl https://aws-deepracer-community-sw.s3.eu-west-1.amazonaws.com/tensorflow/tensorflow-2.17.1-cp312-cp312-linux_x86_64.whl
+
 pip3 install -U --break-system-packages \
     "flask<3" \
     flask_cors \
     flask_wtf \
     pyserial \
-    "tensorflow==2.17.1" \
+    $DIR/dist/tensorflow-2.17.1-cp312-cp312-linux_x86_64.whl \
     "tensorboard" \
     pyclean \
     pam

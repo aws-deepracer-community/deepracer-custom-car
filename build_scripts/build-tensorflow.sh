@@ -111,8 +111,8 @@ echo "Build started at: $(date)"
 
 # Build with limited parallelism to avoid OOM
 bazel build \
-    --jobs=8 \
-    --local_ram_resources=HOST_RAM*.8 \
+    --jobs=6 \
+    --local_ram_resources=HOST_RAM*.5 \
     --config=opt \
     --copt=-march=silvermont \
     --copt=-mtune=silvermont \
