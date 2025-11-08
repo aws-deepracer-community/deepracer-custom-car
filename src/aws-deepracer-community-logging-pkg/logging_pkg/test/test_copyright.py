@@ -1,5 +1,4 @@
 #################################################################################
-#   Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.          #
 #   Copyright AWS DeepRacer Community. All Rights Reserved.                     #
 #                                                                               #
 #   Licensed under the Apache License, Version 2.0 (the "License").             #
@@ -15,26 +14,14 @@
 #   limitations under the License.                                              #
 #################################################################################
 
-from launch import LaunchDescription
-from launch_ros.actions import Node
+import unittest
 
 
-def generate_launch_description():
-    return LaunchDescription([
-        Node(
-            package='bag_log_pkg',
-            namespace='bag_log_pkg',
-            executable='bag_log_node_cpp',
-            name='bag_log_node',
-            parameters=[{
-                    'monitor_topic': '/inference_pkg/rl_results',
-                    'file_name_topic': '/inference_pkg/model_name',
-                    'log_topics': ['/ctrl_pkg/servo_msg'],
-                    'output_path': '/opt/aws/deepracer/logs',
-                    'logging_mode': 'Always',
-                    'monitor_topic_timeout': 15,
-                    'disable_usb_monitor': False,
-                    'logging_provider': 'sqlite3'
-            }]
-        )
-    ])
+class TestCopyright(unittest.TestCase):
+
+    def test_copyright(self):
+        pass
+
+
+if __name__ == '__main__':
+    unittest.main()

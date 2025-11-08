@@ -42,8 +42,8 @@ from std_srvs.srv import Trigger
 from deepracer_interfaces_pkg.srv import USBFileSystemSubscribeSrv, USBMountPointManagerSrv
 from deepracer_interfaces_pkg.msg import USBFileSystemNotificationMsg
 
-import bag_log_pkg.constants as constants
-from bag_log_pkg.constants import RecordingState, NodeState, LoggingMode
+import logging_pkg.constants as constants
+from logging_pkg.constants import RecordingState, NodeState, LoggingMode
 
 
 class BagLogNode(Node):

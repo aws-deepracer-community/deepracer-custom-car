@@ -117,9 +117,9 @@ cd $DIR
 
 # Build the core
 if [ "$ROS_DISTRO" == "humble" ] || [ "$ROS_DISTRO" == "jazzy" ]; then
-    colcon build --packages-up-to deepracer_launcher bag_log_pkg camera_ros $COLCON_BUILD_ARGS --cmake-args $CMAKE_ARGS
+    colcon build --packages-up-to deepracer_launcher logging_pkg camera_ros $COLCON_BUILD_ARGS --cmake-args $CMAKE_ARGS
 else
-    colcon build --packages-up-to deepracer_launcher rplidar_ros bag_log_pkg $COLCON_BUILD_ARGS --cmake-args $CMAKE_ARGS
+    colcon build --packages-up-to deepracer_launcher rplidar_ros logging_pkg $COLCON_BUILD_ARGS --cmake-args $CMAKE_ARGS
 fi
 
 set +e

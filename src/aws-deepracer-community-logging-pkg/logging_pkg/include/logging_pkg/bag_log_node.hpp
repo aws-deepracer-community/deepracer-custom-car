@@ -14,8 +14,8 @@
 //   limitations under the License.                                              //
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef BAG_LOG_NODE_HPP
-#define BAG_LOG_NODE_HPP
+#ifndef LOGGING_NODE_HPP
+#define LOGGING_NODE_HPP
 
 #include <memory>
 #include <string>
@@ -35,7 +35,7 @@
 #include "deepracer_interfaces_pkg/srv/usb_mount_point_manager_srv.hpp"
 #include "deepracer_interfaces_pkg/msg/usb_file_system_notification_msg.hpp"
 
-namespace bag_log_pkg {
+namespace logging_pkg {
 
 // Constants
 namespace constants {
@@ -180,6 +180,6 @@ private:
         usb_mount_point_manager_client_;
 };
 
-}  // namespace bag_log_pkg
+}  // namespace logging_pkg
 
-#endif  // BAG_LOG_NODE_HPP
+#endif  // LOGGING_NODE_HPP

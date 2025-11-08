@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>bag_log_pkg</name>
+  <name>logging_pkg</name>
   <version>0.0.1</version>
   <description>
-    This package contains the bag logging node that records ROS2 topics to rosbag files
+    This package contains the logging node that records ROS2 topics to rosbag files
     for the AWS DeepRacer application. It supports automatic recording based on inference
     activity and USB-based log storage.
   </description>

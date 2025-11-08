@@ -14,13 +14,13 @@
 //   limitations under the License.                                              //
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "bag_log_pkg/bag_log_node.hpp"
+#include "logging_pkg/bag_log_node.hpp"
 #include <filesystem>
 #include <iomanip>
 #include <sstream>
 #include <algorithm>
 
-namespace bag_log_pkg {
+namespace logging_pkg {
 
 BagLogNode::BagLogNode()
     : Node("bag_log_node"),
@@ -520,14 +520,14 @@ LoggingMode BagLogNode::string_to_logging_mode(const std::string& mode_str)
     return LoggingMode::ALWAYS;
 }
 
-}  // namespace bag_log_pkg
+}  // namespace logging_pkg
 
 int main(int argc, char** argv)
 {
     rclcpp::init(argc, argv);
     
     try {
-        auto node = std::make_shared<bag_log_pkg::BagLogNode>();
+        auto node = std::make_shared<logging_pkg::BagLogNode>();
         
         // Use MultiThreadedExecutor to handle callbacks in parallel
         rclcpp::executors::MultiThreadedExecutor executor;
@@ -537,7 +537,7 @@ int main(int argc, char** argv)
         rclcpp::shutdown();
         
     } catch (const std::exception& e) {
-        RCLCPP_ERROR(rclcpp::get_logger("bag_log_node"), "Error in Node: %s", e.what());
+        RCLCPP_ERROR(rclcpp::get_logger("logging_node"), "Error in Node: %s", e.what());
         rclcpp::shutdown();
         return 1;
     }

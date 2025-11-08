@@ -1,10 +1,10 @@
-# AWS DeepRacer Community Bag Logging Package
+# AWS DeepRacer Community Logging Package
 
 ## Overview
 
-The AWS DeepRacer Community bag logging ROS package creates the `bag_log_node`, which records ROS2 topics to rosbag files for the AWS DeepRacer application. This node enables automatic data collection during autonomous driving sessions and supports USB-based log storage for easy data retrieval and analysis.
+The AWS DeepRacer Community logging ROS package creates the `bag_log_node`, which records ROS2 topics to rosbag files for the AWS DeepRacer application. This node enables automatic data collection during autonomous driving sessions and supports USB-based log storage for easy data retrieval and analysis.
 
-This package provides both **Python** and **C++** implementations of the bag logging node:
+This package provides both **Python** and **C++** implementations of the logging node:
 
 - **Python implementation** (`bag_log_node`): The original implementation, fully compatible with ROS2 Humble and earlier distributions. Ideal for development and testing environments.
 - **C++ implementation** (`bag_log_node_cpp`): A high-performance native implementation optimized for ROS2 Jazzy and newer distributions. Offers significantly improved performance with lower CPU overhead and reduced memory footprint, making it ideal for production deployments on resource-constrained devices like the AWS DeepRacer.
@@ -19,13 +19,13 @@ The source code is released under [Apache 2.0](https://aws.amazon.com/apache-2-0
 
 ## Installation
 
-Follow these steps to install the AWS DeepRacer Community bag logging package.
+Follow these steps to install the AWS DeepRacer Community logging package.
 
 ### Prerequisites
 
-The AWS DeepRacer device comes with all prerequisite packages and libraries installed to run the `bag_log_pkg`. For more details about the preinstalled packages and libraries on the AWS DeepRacer device and about installing required build systems, see [Getting started with AWS DeepRacer OpenSource](https://github.com/aws-deepracer/aws-deepracer-launcher/blob/main/getting-started.md).
+The AWS DeepRacer device comes with all prerequisite packages and libraries installed to run the `logging_pkg`. For more details about the preinstalled packages and libraries on the AWS DeepRacer device and about installing required build systems, see [Getting started with AWS DeepRacer OpenSource](https://github.com/aws-deepracer/aws-deepracer-launcher/blob/main/getting-started.md).
 
-The `bag_log_pkg` specifically depends on the following ROS 2 packages as build and run dependencies:
+The `logging_pkg` specifically depends on the following ROS 2 packages as build and run dependencies:
 
 1. `deepracer_interfaces_pkg`: This package contains the custom message and service type definitions used across the AWS DeepRacer core application.
 2. `rosbag2_py`: ROS2 bag Python API for recording and playing back ROS2 topics.
@@ -48,20 +48,20 @@ Open a terminal on the AWS DeepRacer device and run the following commands as th
         mkdir -p ~/deepracer_ws
         cd ~/deepracer_ws
 
-4. Clone the `aws-deepracer-community-bag-log-pkg` repository:
+4. Clone the `aws-deepracer-community-logging-pkg` repository:
 
         git clone https://github.com/aws-deepracer-community/deepracer-custom-car.git
-        cd deepracer-custom-car/src/aws-deepracer-community-bag-log-pkg
+        cd deepracer-custom-car/src/aws-deepracer-community-logging-pkg
 
-5. Resolve the `bag_log_pkg` dependencies:
+5. Resolve the `logging_pkg` dependencies:
 
         cd ~/deepracer_ws/deepracer-custom-car
         rosdep install -i --from-path src --rosdistro humble -y
 
-6. Build the `bag_log_pkg` and dependencies:
+6. Build the `logging_pkg` and dependencies:
 
         cd ~/deepracer_ws/deepracer-custom-car
-        colcon build --packages-select bag_log_pkg
+        colcon build --packages-select logging_pkg
 
 ## Usage
 
@@ -105,7 +105,7 @@ To launch the built `bag_log_node` as the root user on the AWS DeepRacer device,
 
 4. Launch the `bag_log_node` using the launch script:
 
-        ros2 launch bag_log_pkg bag_log_pkg_launch.py
+        ros2 launch logging_pkg logging_pkg_launch.py
 
 #### Running the C++ Node
 
@@ -125,7 +125,7 @@ To launch the C++ implementation `bag_log_node_cpp`:
 
 4. Launch the `bag_log_node_cpp` using the C++ launch script:
 
-        ros2 launch bag_log_pkg bag_log_cpp_launch.py
+        ros2 launch logging_pkg bag_log_cpp_launch.py
 
 ## Launch Files
 
@@ -133,7 +133,7 @@ The package includes launch files for both Python and C++ implementations:
 
 ### Python Node Launch File
 
-The `bag_log_pkg_launch.py` file launches the Python implementation:
+The `logging_pkg_launch.py` file launches the Python implementation:
 
 ```python
 from launch import LaunchDescription
@@ -143,8 +143,8 @@ from launch_ros.actions import Node
 def generate_launch_description():
     return LaunchDescription([
         Node(
-            package='bag_log_pkg',
-            namespace='bag_log_pkg',
+            package='logging_pkg',
+            namespace='logging_pkg',
             executable='bag_log_node',
             name='bag_log_node',
             parameters=[{
@@ -173,8 +173,8 @@ from launch_ros.actions import Node
 def generate_launch_description():
     return LaunchDescription([
         Node(
-            package='bag_log_pkg',
-            namespace='bag_log_pkg',
+            package='logging_pkg',
+            namespace='logging_pkg',
             executable='bag_log_node_cpp',
             name='bag_log_node',
             parameters=[{

@@ -1,5 +1,4 @@
 #################################################################################
-#   Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.          #
 #   Copyright AWS DeepRacer Community. All Rights Reserved.                     #
 #                                                                               #
 #   Licensed under the Apache License, Version 2.0 (the "License").             #
@@ -16,7 +15,7 @@
 #################################################################################
 
 cmake_minimum_required(VERSION 3.8)
-project(bag_log_pkg)
+project(logging_pkg)
 
 # Default to C++17
 if(NOT CMAKE_CXX_STANDARD)

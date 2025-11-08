@@ -257,8 +257,8 @@ def launch_setup(context, *args, **kwargs):
     bag_log_executable = 'bag_log_node_cpp' if os.environ.get('ROS_DISTRO') == 'jazzy' else 'bag_log_node'
 
     bag_log_node = Node(
-        package='bag_log_pkg',
-        namespace='bag_log_pkg',
+        package='logging_pkg',
+        namespace='logging_pkg',
         executable=bag_log_executable,
         name='bag_log_node',
         parameters=[{
