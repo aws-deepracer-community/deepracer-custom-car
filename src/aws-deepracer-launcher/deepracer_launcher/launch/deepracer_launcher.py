@@ -15,6 +15,7 @@
 #################################################################################
 
 import math
+import os
 
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, OpaqueFunction
@@ -60,7 +61,7 @@ def launch_setup(context, *args, **kwargs):
             camera_manager = CameraManager.singleton()
 
             camera_model = None
-            
+
             # If camera_index is specified, use it to select the camera
             if camera_index >= 0 and camera_index < len(camera_manager.cameras):
                 camera = camera_manager.cameras[camera_index]
@@ -251,10 +252,14 @@ def launch_setup(context, *args, **kwargs):
                 'default_transport': 'compressed'
         }]
     )
+
+    # Use C++ version for Jazzy, Python version for other distributions
+    bag_log_executable = 'bag_log_node_cpp' if os.environ.get('ROS_DISTRO') == 'jazzy' else 'bag_log_node'
+
     bag_log_node = Node(
         package='logging_pkg',
         namespace='logging_pkg',
-        executable='bag_log_node',
+        executable=bag_log_executable,
         name='bag_log_node',
         parameters=[{
                 'logging_mode': LaunchConfiguration(
@@ -334,7 +339,7 @@ def generate_launch_description():
             DeclareLaunchArgument(
                 name="camera_index",
                 default_value="0",
-                description="Index of the camera to use, applicable to modern camera_mode only"),                
+                description="Index of the camera to use, applicable to modern camera_mode only"),
             DeclareLaunchArgument(
                 name="rplidar",
                 default_value="True",
