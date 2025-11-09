@@ -157,12 +157,14 @@ class DeviceInfoNode(Node):
         board_id1 = None
         try:
             if constants.SYSTEM_TYPE == constants.SystemType.DR:
-                board1 = gpio_module.GPIO(base_path, 383, self.get_logger(), direction="in")
+                board_id1_pin, board_id0_pin = constants.BOARD_ID_PINS
+                
+                board1 = gpio_module.GPIO(base_path, board_id1_pin, self.get_logger(), direction="in")
                 if board1.enable():
                     board_id1 = board1.get()
                     self.get_logger().info(f"board_id1: {board_id1}")
 
-                board0 = gpio_module.GPIO(base_path, 387, self.get_logger(), direction="in")
+                board0 = gpio_module.GPIO(base_path, board_id0_pin, self.get_logger(), direction="in")
                 if (board_id1 is not None) and board0.enable():
                     board_id0 = board0.get()
                     self.get_logger().info(f"board_id0: {board_id0}")

@@ -47,6 +47,8 @@ namespace PWM {
     /// Servo GPIO channel based on hardware platform
     #if defined(HW_PLATFORM_RPI)
         #define GPIO_CHANNEL -1
+    #elif defined(HW_PLATFORM_DR) && defined(UBUNTU_NOBLE)    
+        #define GPIO_CHANNEL 514
     #else
         // Default for DeepRacer (DR)
         #define GPIO_CHANNEL 436

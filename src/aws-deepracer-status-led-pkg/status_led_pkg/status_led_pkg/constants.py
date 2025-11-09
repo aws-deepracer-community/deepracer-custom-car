@@ -45,6 +45,21 @@ def get_system_type():
 
 SYSTEM_TYPE = get_system_type()
 
+def is_ubuntu_24_04():
+    """Check if the system is running Ubuntu 24.04.
+    """
+    try:
+        with open("/etc/os-release") as f:
+            for line in f:
+                if line.startswith("VERSION_ID="):
+                    version = line.split("=")[1].strip().strip('"')
+                    return version == "24.04"
+    except:
+        pass
+    return False
+
+IS_UBUNTU_24_04 = is_ubuntu_24_04()
+
 def get_gpio_root_path():
     """Get the GPIO root path based on the system type.
     """
@@ -65,10 +80,12 @@ def get_led_ports():
     """
 
     if SYSTEM_TYPE == SystemType.DR:
+        # On Ubuntu 24.04, GPIO base changed from 434 to 512, requiring +78 offset
+        offset = 78 if IS_UBUNTU_24_04 else 0
         return (
-            (448, 447, 437),
-            (446, 445, 443),
-            (450, 457, 458)
+            (448 + offset, 447 + offset, 437 + offset),
+            (446 + offset, 445 + offset, 443 + offset),
+            (450 + offset, 457 + offset, 458 + offset)
         )
     elif SYSTEM_TYPE == SystemType.RPI4 or SYSTEM_TYPE == SystemType.RPI5:
         return (

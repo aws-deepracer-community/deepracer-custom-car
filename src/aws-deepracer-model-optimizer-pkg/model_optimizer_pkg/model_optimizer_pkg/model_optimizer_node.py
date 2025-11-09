@@ -371,6 +371,107 @@ class ModelOptimizerNode(Node):
             # Return error code 1, which means that the model optimizer failed even after retries.
             return 1, ""
 
+    def run_optimizer_ov(self, common_params, training_algorithm):
+        """Helper method that combines the common commands with the platform specific
+           commands.
+        Args:
+            common_params (dict): Dictionary containing the cli flags common to all
+                                  model optimizer.
+            training_algorithm (int): Which training algorithm is used.
+
+        Raises:
+            Exception: Custom exception if the model file is not present.
+
+        Returns:
+            tuple: Tuple whose first value is the error code and second value
+                   is a string to the location of the converted model if any.
+        """
+
+        # Import OpenVINO if optimizing for OV
+        import openvino as ov
+
+        if not os.path.isfile(common_params[constants.ParamKeys.MODEL_PATH]):
+            raise Exception(
+                f"Model file {common_params[constants.ParamKeys.MODEL_PATH]} not found")
+
+        # Check if model exists
+        if os.path.isfile(os.path.join(common_params[constants.ParamKeys.OUT_DIR],
+                                       f"{common_params[constants.ParamKeys.MODEL_NAME]}.xml")):
+            self.get_logger().info(
+                f"Cached model: {common_params[constants.ParamKeys.MODEL_NAME]}.xml")
+            return 0, os.path.join(common_params[constants.ParamKeys.OUT_DIR],
+                                   f"{common_params[constants.ParamKeys.MODEL_NAME]}.xml")
+
+        try:
+            # Parse input names and shapes - exactly like TFLite does it
+            input_names = common_params[constants.APIFlags.INPUT].split(constants.ParamKeys.INPUT_SHAPE_DELIM)
+            input_shapes = eval(f'[{common_params[constants.ParamKeys.INPUT_SHAPE]}]')
+            output_node = f'main_level/agent/{constants.INPUT_HEAD_NAME_MAPPING[constants.TrainingAlgorithms(training_algorithm)]}/online/network_1/ppo_head_0/policy'
+
+            self.get_logger().debug(f"Input names (from metadata): {input_names}")
+            self.get_logger().debug(f"Input shapes: {input_shapes}")
+            self.get_logger().debug(f"Output node (from metadata): {output_node}")
+
+            # First convert without input/output constraints to see what OpenVINO detects
+            self.get_logger().debug("Converting model without input/output constraints to inspect...")
+            temp_model = ov.convert_model(common_params[constants.ParamKeys.MODEL_PATH])
+            
+            # Log what OpenVINO actually found
+            detected_input_names = [inp.get_any_name() for inp in temp_model.inputs]
+            detected_output_names = [out.get_any_name() for out in temp_model.outputs]
+
+            self.get_logger().debug(f"Detected inputs: {detected_input_names}")
+            self.get_logger().debug(f"Detected outputs: {detected_output_names}")
+
+            # Build input/output specifications using detected names (which include :0 suffix)
+            input_specs = list(zip(detected_input_names[:len(input_names)], input_shapes))
+            
+            # Find the output that matches our desired output (may have :0 suffix)
+            output_spec = None
+            for detected_out in detected_output_names:
+                if detected_out.startswith(output_node):
+                    output_spec = detected_out
+                    break
+            
+            if output_spec is None:
+                self.get_logger().warn(f"Could not find output matching {output_node}, using first detected output: {detected_output_names[0]}")
+                output_spec = detected_output_names[0]
+            
+            self.get_logger().info(f"Using input specs: {input_specs}")
+            self.get_logger().info(f"Using output spec: {output_spec}")
+
+            # Convert again with proper input/output specifications using detected names
+            model = ov.convert_model(
+                common_params[constants.ParamKeys.MODEL_PATH],
+                input=input_specs,
+                output=output_spec
+            )
+
+            # Determine FP16 compression setting
+            use_fp16 = (constants.ParamKeys.DATA_TYPE in common_params and 
+                       common_params[constants.ParamKeys.DATA_TYPE] == "FP16") or \
+                       "--compress_to_fp16" in common_params
+
+            if use_fp16:
+                self.get_logger().info(f"Using FP16 compression during save.")
+            else:
+                self.get_logger().info(f"Using FP32 (no compression) during save.")
+
+            # Save the OpenVINO model with appropriate compression
+            output_file = os.path.join(common_params[constants.ParamKeys.OUT_DIR],
+                                       f"{common_params[constants.ParamKeys.MODEL_NAME]}.xml")
+            
+            ov.save_model(model, output_file, compress_to_fp16=use_fp16)
+
+            self.get_logger().info(f"Created OpenVINO model: {output_file}")
+
+            return 0, output_file
+
+        except Exception as e:  # noqa
+            self.get_logger().error(f"Failed to optimize model with OpenVINO: {e}")
+            # Return error code 1, which means that the model optimizer failed even after retries.
+            return 1, ""
+
     def set_platform_param(self, platform_param, aux_inputs):
         """Helper method that creates a dictionary with the platform specific
            optimizer parameters.
@@ -441,6 +542,8 @@ class ModelOptimizerNode(Node):
 
         if self._inference_engine == "TFLITE":
             return self.run_optimizer_tflite(common_params, training_algorithm)
+        elif self._inference_engine == "OV" and constants.MODEL_OPTIMIZER_VERSION == 2024:
+            return self.run_optimizer_ov(common_params, training_algorithm)
         else:
             return self.run_optimizer_mo(constants.MODEL_OPTIMIZER_COMMAND, common_params,
                                          self.set_platform_param(tf_params, aux_inputs))

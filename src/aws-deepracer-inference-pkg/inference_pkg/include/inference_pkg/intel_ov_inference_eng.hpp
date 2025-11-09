@@ -14,18 +14,16 @@
 //   limitations under the License.                                              //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#ifndef TFLITE_INFERENCE_ENG_HPP
-#define TFLITE_INFERENCE_ENG_HPP
+#ifndef INTEL_INFERENCE_ENG_HPP
+#define INTEL_INFERENCE_ENG_HPP
 
 #include "inference_pkg/inference_base.hpp"
-#include "tensorflow/lite/interpreter.h"
-#include "tensorflow/lite/kernels/register.h"
-#include "tensorflow/lite/model.h"
+#include "openvino/openvino.hpp"
 #include "deepracer_interfaces_pkg/msg/evo_sensor_msg.hpp"
 #include "deepracer_interfaces_pkg/msg/infer_results_array.hpp"
 #include <atomic>
 
-namespace TFLiteInferenceEngine {
+namespace IntelOVInferenceEngine {
     class RLInferenceModel : public InferTask::InferenceBase
     {
     /// Concrete inference task class for running reinforcement learning models
@@ -55,23 +53,24 @@ namespace TFLiteInferenceEngine {
         std::shared_ptr<InferTask::ImgProcessBase> imgProcess_;
         /// Inference state variable.
         std::atomic<bool> doInference_;
-        /// Neural network Inference engine core object.
-        std::unique_ptr<tflite::FlatBufferModel> model_;
+        /// Neural network OpenVINO core object.
+        ov::Core core_;
         /// Inference request object
-        std::unique_ptr<tflite::Interpreter> interpreter_;
+        ov::InferRequest inferRequest_;
+        /// Compiled model object
+        ov::CompiledModel compiledModel_;
         /// Vector of hash map that stores all relevant pre-processing parameters for each input head.
         std::vector<std::unordered_map<std::string, int>> paramsArr_;
         /// Vector of names of the input heads
         std::vector<std::string> inputNamesArr_;
         /// Name of the output layer
-        std::string outputName_;      
-        std::vector<std::vector<int>> outputDimsArr_;
-        std::vector<TfLiteTensor const *> output_tensors_;
-        /// Cached input tensor pointers for performance (like OpenVINO implementation)
+        std::string outputName_;
+        /// Cached input tensor pointers for performance
         std::vector<float*> inputTensorPtrs_;
         /// Cached output tensor pointer for performance
         float* outputTensorPtr_;
-
+        /// Cached output shape
+        ov::Shape outputShape_;
     };
 }
 #endif
