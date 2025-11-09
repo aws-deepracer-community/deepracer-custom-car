@@ -134,7 +134,8 @@ if(NOT OpenCV_FOUND)
   )
 endif()
 
-# Check if ROS_DISTRO is jazzy and define a macro
+# Build instructions for the DeepRacer on Ubuntu 24.04 (ROS2 Jazzy)
+# Includes TensorFlow Lite and modern OpenVINO inference engines
 if("$ENV{ROS_DISTRO}" STREQUAL "jazzy" AND HW_PLATFORM STREQUAL "DR")
 
   find_package(OpenVINO REQUIRED)
@@ -163,9 +164,10 @@ if("$ENV{ROS_DISTRO}" STREQUAL "jazzy" AND HW_PLATFORM STREQUAL "DR")
 
   ament_target_dependencies(inference_node rclcpp deepracer_interfaces_pkg sensor_msgs std_msgs cv_bridge image_transport OpenCV OpenVINO)
 
+# Build instructions for the Raspberry Pi on Ubuntu 24.04 (ROS2 Jazzy)
+# Includes TensorFlow Lite inference engine only
 elseif("$ENV{ROS_DISTRO}" STREQUAL "jazzy" AND HW_PLATFORM STREQUAL "RPI")
 
-  find_package(OpenVINO REQUIRED)
   add_definitions(-DROS_DISTRO_JAZZY)
 
   add_executable(inference_node
@@ -188,6 +190,8 @@ elseif("$ENV{ROS_DISTRO}" STREQUAL "jazzy" AND HW_PLATFORM STREQUAL "RPI")
 
   ament_target_dependencies(inference_node rclcpp deepracer_interfaces_pkg sensor_msgs std_msgs cv_bridge image_transport OpenCV)
 
+# Build instruction for original DR on Ubuntu 20.04 (ROS2 Foxy) and Raspberry Pi on Ubuntu 22.04 (ROS2 Humble)
+# This is the original DeepRacer configuration with TensorFlow Lite in addition.
 else()
 
   find_package(ngraph REQUIRED)
