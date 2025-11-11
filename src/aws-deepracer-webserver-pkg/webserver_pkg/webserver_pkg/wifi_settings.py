@@ -81,8 +81,7 @@ def get_connected_ssid():
     Returns:
         str: SSID details.
     """
-    cur_ssid = utility.execute(r'/usr/bin/nmcli -t -f active,ssid -e no dev wifi | egrep "^yes" | cut -d\: -f2',
-                               shell=True)[1]
+    cur_ssid = utility.execute("iwgetid -r", shell=True)[1]
     return cur_ssid.strip() if cur_ssid.strip() and cur_ssid else ""
 
 
