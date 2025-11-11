@@ -74,7 +74,10 @@ class DeepracerSystemsScriptsNode(Node):
             is_rule_present = self.is_keyword_in_file(constants.RSYSLOG_RULE, constants.RSYSLOG_CONFIG_FILE)
             if not is_rule_present:
                 self.prepend_keyword_to_file(constants.RSYSLOG_RULE, constants.RSYSLOG_CONFIG_FILE)
-            return self.execute_cmd(constants.RSYSLOG_RESTART_CMD)
+                return self.execute_cmd(constants.RSYSLOG_RESTART_CMD)
+            else:
+                self.get_logger().info("UVC suppression rule already present in rsyslog config file.")
+                return True
         except Exception as ex:
             self.get_logger().error(f"Failed to suppress_uvc_logs. Exception: {ex}")
             return False
