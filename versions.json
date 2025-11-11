@@ -1,8 +1,8 @@
 {
-	"aws-deepracer-core": "2.1.9.3+community2",
+	"aws-deepracer-core": "2.1.9.3+community3",
 	"aws-deepracer-device-console": "2.0.196.3+community",
 	"aws-deepracer-sample-models": "2.0.9.0",
-	"aws-deepracer-util": "2.1.0.9+community",
+	"aws-deepracer-util": "2.1.0.10+community",
 	"ros-jazzy-libcamera": "0.5.2+drpi",
 	"aws-deepracer-community-device-console": "2.2.12.0"
 }
