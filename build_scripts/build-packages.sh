@@ -151,6 +151,7 @@ for pkg in $PACKAGES; do
             fi
         fi
         cp $DIR/build_scripts/files/common/aws-deepracer-util-conffiles DEBIAN/conffiles
+        cp $DIR/build_scripts/files/common/setup.py opt/aws/deepracer/util/setup.py
         cp $DIR/build_scripts/files/common/nginx_install_certs.sh opt/aws/deepracer/nginx/nginx_install_certs.sh
         cp $DIR/build_scripts/files/common/nginx_configure.sh opt/aws/deepracer/nginx/nginx_configure.sh
         cp $DIR/build_scripts/files/common/nginx.default opt/aws/deepracer/nginx/data/nginx.default
