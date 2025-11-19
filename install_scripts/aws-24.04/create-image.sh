@@ -101,7 +101,7 @@ parted --script "${TARGET_DISK}" \
     mkpart DR2404-PRIMARY ext4 129MiB 12GiB
 
 mkfs.fat -F32 "${TARGET_DISK}1"
-mkfs.ext4 "${TARGET_DISK}2"
+mkfs.ext4 -F "${TARGET_DISK}2"
 
 mkdir -p ${TARGET_DIR}
 mount "${TARGET_DISK}2" ${TARGET_DIR}
@@ -189,7 +189,7 @@ chroot ${TARGET_DIR} /bin/bash -c "
     fi
     
     GRUB_PARAMS=\"net.ifnames=0 biosdevname=0 noxsave reboot=efi fsck.mode=skip\"
-    sed -i \"s/^GRUB_CMDLINE_LINUX=.*/GRUB_CMDLINE_LINUX=${GRUB_PARAMS}/\" /etc/default/grub
+    sed -i \"s/^GRUB_CMDLINE_LINUX=.*/GRUB_CMDLINE_LINUX=\\\"\${GRUB_PARAMS}\\\"/\" /etc/default/grub
     update-grub
 
     # Fix Kernel Modules / Disable audio
