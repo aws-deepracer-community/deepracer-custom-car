@@ -98,10 +98,10 @@ parted --script "${TARGET_DISK}" \
     mklabel gpt \
     mkpart DR2404-ESP fat32 1MiB 128MiB \
     set 1 esp on \
-    mkpart DR2404-PRIMARY ext4 129MiB 12GiB
+    mkpart DR2404-ROOT ext4 129MiB 12GiB
 
-mkfs.fat -F32 "${TARGET_DISK}1"
-mkfs.ext4 -F "${TARGET_DISK}2"
+mkfs.fat -F32 -n "DR2404-ESP" "${TARGET_DISK}1"
+mkfs.ext4 -F -L "DR2404-ROOT" "${TARGET_DISK}2"
 
 mkdir -p ${TARGET_DIR}
 mount "${TARGET_DISK}2" ${TARGET_DIR}
@@ -119,14 +119,18 @@ mount --bind /run ${TARGET_DIR}/run
 # Copy custom shim if provided
 if [ -n "${CUSTOM_SHIM}" ]; then
     mkdir -p ${TARGET_DIR}/usr/lib/shim
-    cp "${CUSTOM_SHIM}" ${TARGET_DIR}/usr/lib/shim/shimx64.efi.signed
-    echo "Custom shim copied to chroot"
+    
+    # Copy custom shim with a distinct name
+    cp "${CUSTOM_SHIM}" ${TARGET_DIR}/usr/lib/shim/shimx64.efi.signed.custom
+    echo "Custom shim copied as shimx64.efi.signed.custom"
 fi
 
 ROOT_UUID=$(blkid -s UUID -o value ${TARGET_DISK}2)
 EFI_UUID=$(blkid -s UUID -o value ${TARGET_DISK}1)
 
 chroot ${TARGET_DIR} /bin/bash -c "
+    set -uoe pipefail
+
     echo \"UUID=${ROOT_UUID} / ext4 defaults 0 1\" > /etc/fstab
     echo \"UUID=${EFI_UUID} /boot/efi vfat umask=0077 0 1\" >> /etc/fstab
     echo "deepracer" > /etc/hostname
@@ -155,6 +159,7 @@ chroot ${TARGET_DIR} /bin/bash -c "
     # Basic packages
     apt-get install -y --no-install-recommends \
         linux-generic \
+        initramfs-tools \
         curl \
         gpg \
         ufw \
@@ -167,30 +172,38 @@ chroot ${TARGET_DIR} /bin/bash -c "
         wpasupplicant \
         rfkill \
         iw \
-        grub-efi-amd64
+        grub-efi-amd64 \
+        shim-signed \
+        zstd
     
     apt-mark hold linux-firmware
 
-    # Install shim-signed before grub-install if not already present
-    SHIM_INSTALLED=false
-    if [ ! -f /usr/lib/shim/shimx64.efi.signed ]; then
-        apt-get install -y --no-install-recommends shim-signed
-        SHIM_INSTALLED=true
+    # Register custom shim as an alternative if provided
+    if [ -f /usr/lib/shim/shimx64.efi.signed.custom ]; then
+        update-alternatives --install /usr/lib/shim/shimx64.efi.signed shimx64.efi.signed /usr/lib/shim/shimx64.efi.signed.custom 100
+        update-alternatives --set shimx64.efi.signed /usr/lib/shim/shimx64.efi.signed.custom
+        echo \"Custom shim registered and activated via alternatives system\"
     fi
 
     # Install and configure GRUB
-    grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=deepracer --recheck --no-floppy
-    
-    # Copy shim files to deepracer directory only if we have a custom shim (didn't install package)
-    if [ \"\$SHIM_INSTALLED\" = \"false\" ] && [ -f /usr/lib/shim/shimx64.efi.signed ]; then
-        cp /usr/lib/shim/shimx64.efi.signed /boot/efi/EFI/deepracer/shimx64.efi
-        cp /usr/lib/shim/mmx64.efi /boot/efi/EFI/deepracer/ 2>/dev/null || true
-        cp /usr/lib/grub/x86_64-efi-signed/grubx64.efi.signed /boot/efi/EFI/deepracer/grubx64.efi
-    fi
-    
-    GRUB_PARAMS=\"net.ifnames=0 biosdevname=0 noxsave reboot=efi fsck.mode=skip\"
+    GRUB_PARAMS=\"net.ifnames=0 biosdevname=0 noxsave reboot=efi fsck.mode=skip rootwait\"
     sed -i \"s/^GRUB_CMDLINE_LINUX=.*/GRUB_CMDLINE_LINUX=\\\"\${GRUB_PARAMS}\\\"/\" /etc/default/grub
+    sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=\"\"/' /etc/default/grub
+    echo 'GRUB_DISABLE_OS_PROBER=true' >> /etc/default/grub
+    
+    grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=deepracer --recheck --no-floppy
     update-grub
+    
+    # Remove hardcoded disk hints from grub.cfg files (hd2,gpt2 won't exist on target system)
+    sed -i \"/set root='hd/d\" /boot/grub/grub.cfg
+    sed -i 's/--hint-bios=[^ ]* --hint-efi=[^ ]* --hint-baremetal=[^ ]* //' /boot/grub/grub.cfg
+    
+    # Fix kernel command line - replace /dev/sdX with UUID (device name won't be same on target)
+    ROOT_UUID=\$(blkid -s UUID -o value /dev/disk/by-label/DR2404-ROOT)
+    sed -i \"s|root=/dev/[^ ]*|root=UUID=\${ROOT_UUID}|g\" /boot/grub/grub.cfg
+    
+    # Fix EFI stub grub.cfg - remove disk hint from search command
+    sed -i 's/ hd[0-9]*,gpt[0-9]*//' /boot/efi/EFI/deepracer/grub.cfg
 
     # Fix Kernel Modules / Disable audio
     echo -e \"blacklist snd_soc_avs\nblacklist snd_soc_skl\nblacklist snd_hda_intel\nblacklist snd_hda_codec_hdmi\nblacklist snd_sof_pci_intel_apl\" > /etc/modprobe.d/blacklist-audio.conf
@@ -224,8 +237,10 @@ cp $DIR/install_scripts/aws-24.04/rc.local ${TARGET_DIR}/etc/rc.local
 chmod +x ${TARGET_DIR}/etc/rc.local
 
 chroot ${TARGET_DIR} /bin/bash -c "
+    set -uoe pipefail
+
     # ROS 2 GPG key and repository
-    curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key | gpg --no-default-keyring --keyring /usr/share/keyrings/ros-archive-keyring.gpg --import 
+    curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key | gpg --batch --no-default-keyring --keyring /usr/share/keyrings/ros-archive-keyring.gpg --import 
     echo \"deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main\" | tee /etc/apt/sources.list.d/ros2.list >/dev/null
 
     # Install ROS Core and Development Tools
@@ -250,6 +265,7 @@ chroot ${TARGET_DIR} /bin/bash -c "
         python3-websocket \
         python3-networkx \
         python3-unidecode \
+        python3-requests \
         ros-dev-tools \
         ros-jazzy-ros-core
 
@@ -258,14 +274,15 @@ chroot ${TARGET_DIR} /bin/bash -c "
     # Python packages, Tensorflow and dependencies
     curl -o /tmp/tensorflow-2.17.1-cp312-cp312-linux_x86_64.whl https://aws-deepracer-community-sw.s3.eu-west-1.amazonaws.com/tensorflow/tensorflow-2.17.1-cp312-cp312-linux_x86_64.whl
     pip3 install --break-system-packages \
-        flask\<3 \
+        'flask<3' \
         flask_cors \
         flask_wtf \
         pyserial \
         /tmp/tensorflow-2.17.1-cp312-cp312-linux_x86_64.whl \
         tensorboard \
         pyclean \
-        pam
+        pam \
+        'typing_extensions==4.10.0'
     rm /tmp/tensorflow-2.17.1-cp312-cp312-linux_x86_64.whl
 
     # Install OpenVINO

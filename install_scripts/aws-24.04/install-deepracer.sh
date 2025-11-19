@@ -52,6 +52,7 @@ apt -y update && apt install -y --no-install-recommends \
     python3-websocket \
     python3-networkx \
     python3-unidecode \
+    python3-requests \
     ros-dev-tools \
     ros-jazzy-ros-core
 
@@ -68,6 +69,7 @@ pip3 install --break-system-packages \
     pyserial \
     $DIR/dist/tensorflow-2.17.1-cp312-cp312-linux_x86_64.whl \
     tensorboard \
+    "typing_extensions==4.10.0" \
     pyclean \
     pam
 
