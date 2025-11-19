@@ -61,13 +61,13 @@ rosdep init && rosdep update --rosdistro=jazzy -q
 mkdir -p $DIR/dist/
 [ ! -f "$DIR/dist/tensorflow-2.17.1-cp312-cp312-linux_x86_64.whl" ] && curl -o $DIR/dist/tensorflow-2.17.1-cp312-cp312-linux_x86_64.whl https://aws-deepracer-community-sw.s3.eu-west-1.amazonaws.com/tensorflow/tensorflow-2.17.1-cp312-cp312-linux_x86_64.whl
 
-pip3 install -U --break-system-packages \
+pip3 install --break-system-packages \
     "flask<3" \
     flask_cors \
     flask_wtf \
     pyserial \
     $DIR/dist/tensorflow-2.17.1-cp312-cp312-linux_x86_64.whl \
-    "tensorboard" \
+    tensorboard \
     pyclean \
     pam
 

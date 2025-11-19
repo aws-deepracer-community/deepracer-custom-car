@@ -51,23 +51,14 @@ update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
 export LANG=en_US.UTF-8
 
 # Switch nameserver
-ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
 echo "DNSStubListener=no" | tee -a /etc/systemd/resolved.conf >/dev/null
 systemctl restart systemd-resolved
 
 # Disable audio
-cat > /etc/modprobe.d/blacklist-audio.conf << EOF
-blacklist snd_soc_avs
-blacklist snd_soc_skl
-blacklist snd_hda_intel
-blacklist snd_hda_codec_hdmi
-blacklist snd_sof_pci_intel_apl
-EOF
+echo -e "blacklist snd_soc_avs\nblacklist snd_soc_skl\nblacklist snd_hda_intel\nblacklist snd_hda_codec_hdmi\nblacklist snd_sof_pci_intel_apl" > /etc/modprobe.d/blacklist-audio.conf
 
 # Fix Wifi Stability
-cat > /etc/modprobe.d/mwifiex.conf << EOF
-options mwifiex disable_auto_ds=1 disable_tx_amsdu=1
-EOF
+echo 'options mwifiex disable_auto_ds=1 disable_tx_amsdu=1' > /etc/modprobe.d/mwifiex.conf
 
 # Update initramfs
 update-initramfs -u
@@ -78,16 +69,18 @@ GRUB_PARAMS="net.ifnames=0 biosdevname=0 noxsave reboot=efi fsck.mode=skip"
 sed -i "s/^GRUB_CMDLINE_LINUX=\".*\"/GRUB_CMDLINE_LINUX=\"${GRUB_PARAMS}\"/" /etc/default/grub
 update-grub
 
+# Install other tools / configure network management
+apt -y --no-install-recommends install linux-generic curl ufw openssh-server network-manager wireless-tools net-tools i2c-tools v4l-utils wpasupplicant rfkill iw
+echo "" > /etc/NetworkManager/conf.d/default-wifi-powersave-on.conf
+cp $DIR/build_scripts/files/dr/10-manage-wifi.conf /etc/NetworkManager/conf.d/
+systemctl disable systemd-networkd-wait-online
+systemctl disable NetworkManager-wait-online.service
+
 # Firewall enable
 ufw allow "OpenSSH"
 ufw enable
 ufw logging off
 
-# Install other tools / configure network management
-apt -y --no-install-recommends install linux-generic-hwe-24.04 url network-manager wireless-tools net-tools i2c-tools v4l-utils wpasupplicant rfkill iw
-echo "" > /etc/NetworkManager/conf.d/default-wifi-powersave-on.conf
-cp $DIR/build_scripts/files/dr/10-manage-wifi.conf /etc/NetworkManager/conf.d/
-systemctl disable systemd-networkd-wait-online
 # Copy netplan configuration if it doesn't exist
 if [ ! -f /etc/netplan/01-netcfg.yaml ]; then
   cp $DIR/build_scripts/files/dr/01-netcfg.yaml /etc/netplan/01-netcfg.yaml

@@ -1,0 +1,283 @@
+#!/usr/bin/env bash
+set -uoe pipefail
+
+export DEBIAN_FRONTEND=noninteractive
+export DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/../.. >/dev/null 2>&1 && pwd)"
+
+# Default values
+TARGET_DISK="/dev/sdc"
+TARGET_DIR="/mnt/dr-disk"
+CUSTOM_SHIM=""
+UNMOUNT_ON_EXIT=""
+UNMOUNT_ONLY=""
+
+# Function to unmount all mounts
+unmount_all() {
+    echo "Unmounting ${TARGET_DIR}..."
+    
+    # Unmount bind mounts (in reverse order)
+    mountpoint -q "${TARGET_DIR}/run" && umount -l "${TARGET_DIR}/run" || true
+    mountpoint -q "${TARGET_DIR}/sys" && umount -l "${TARGET_DIR}/sys" || true
+    mountpoint -q "${TARGET_DIR}/proc" && umount -l "${TARGET_DIR}/proc" || true
+    mountpoint -q "${TARGET_DIR}/dev/pts" && umount -l "${TARGET_DIR}/dev/pts" || true
+    mountpoint -q "${TARGET_DIR}/dev" && umount -l "${TARGET_DIR}/dev" || true
+    
+    # Unmount EFI partition
+    mountpoint -q "${TARGET_DIR}/boot/efi" && umount "${TARGET_DIR}/boot/efi" || true
+    
+    # Unmount root partition
+    mountpoint -q "${TARGET_DIR}" && umount "${TARGET_DIR}" || true
+    
+    echo "Unmount complete"
+}
+
+# Parse command-line arguments
+while getopts "d:m:s:uUh" opt; do
+    case ${opt} in
+        d )
+            TARGET_DISK="${OPTARG}"
+            ;;
+        m )
+            TARGET_DIR="${OPTARG}"
+            ;;
+        s )
+            CUSTOM_SHIM="${OPTARG}"
+            ;;
+        u )
+            UNMOUNT_ON_EXIT="true"
+            ;;
+        U )
+            UNMOUNT_ONLY="true"
+            ;;
+        h )
+            echo "Usage: $0 [-d TARGET_DISK] [-m TARGET_DIR] [-s CUSTOM_SHIM] [-u] [-U]"
+            echo "  -d TARGET_DISK   Target disk device (default: /dev/sdc)"
+            echo "  -m TARGET_DIR    Target mount directory (default: /mnt/dr-disk)"
+            echo "  -s CUSTOM_SHIM   Path to custom shim file (shimx64.efi.signed)"
+            echo "  -u               Unmount bind mounts and target disk on exit"
+            echo "  -U               Unmount only - unmount and exit without creating image"
+            echo "  -h               Show this help message"
+            exit 0
+            ;;
+        \? )
+            echo "Invalid option: -${OPTARG}" 1>&2
+            echo "Use -h for help"
+            exit 1
+            ;;
+        : )
+            echo "Option -${OPTARG} requires an argument" 1>&2
+            exit 1
+            ;;
+    esac
+done
+
+# Check we have the privileges we need
+if [ $(whoami) != root ]; then
+    echo "Please run this script as root or using sudo"
+    exit 1
+fi
+
+# Handle unmount-only mode
+if [ -n "${UNMOUNT_ONLY}" ]; then
+    unmount_all
+    exit 0
+fi
+
+# Validate custom shim if provided
+if [ -n "${CUSTOM_SHIM}" ] && [ ! -f "${CUSTOM_SHIM}" ]; then
+    echo "Error: Custom shim file not found: ${CUSTOM_SHIM}"
+    exit 1
+fi
+
+echo "Target disk: ${TARGET_DISK}"
+echo "Target directory: ${TARGET_DIR}"
+[ -n "${CUSTOM_SHIM}" ] && echo "Custom shim: ${CUSTOM_SHIM}"
+echo ""
+
+parted --script "${TARGET_DISK}" \
+    mklabel gpt \
+    mkpart DR2404-ESP fat32 1MiB 128MiB \
+    set 1 esp on \
+    mkpart DR2404-PRIMARY ext4 129MiB 12GiB
+
+mkfs.fat -F32 "${TARGET_DISK}1"
+mkfs.ext4 "${TARGET_DISK}2"
+
+mkdir -p ${TARGET_DIR}
+mount "${TARGET_DISK}2" ${TARGET_DIR}
+mkdir -p ${TARGET_DIR}/boot/efi
+mount "${TARGET_DISK}1" ${TARGET_DIR}/boot/efi
+
+debootstrap --arch=amd64 noble ${TARGET_DIR} http://archive.ubuntu.com/ubuntu/
+
+mount --bind /dev ${TARGET_DIR}/dev
+mount --bind /dev/pts ${TARGET_DIR}/dev/pts
+mount --bind /proc ${TARGET_DIR}/proc
+mount --bind /sys ${TARGET_DIR}/sys
+mount --bind /run ${TARGET_DIR}/run
+
+# Copy custom shim if provided
+if [ -n "${CUSTOM_SHIM}" ]; then
+    mkdir -p ${TARGET_DIR}/usr/lib/shim
+    cp "${CUSTOM_SHIM}" ${TARGET_DIR}/usr/lib/shim/shimx64.efi.signed
+    echo "Custom shim copied to chroot"
+fi
+
+ROOT_UUID=$(blkid -s UUID -o value ${TARGET_DISK}2)
+EFI_UUID=$(blkid -s UUID -o value ${TARGET_DISK}1)
+
+chroot ${TARGET_DIR} /bin/bash -c "
+    echo \"UUID=${ROOT_UUID} / ext4 defaults 0 1\" > /etc/fstab
+    echo \"UUID=${EFI_UUID} /boot/efi vfat umask=0077 0 1\" >> /etc/fstab
+    echo "deepracer" > /etc/hostname
+
+    # Add user deepracer
+    useradd -m -s /bin/bash -c 'AWS DeepRacer' deepracer
+    echo 'deepracer:deepracer' | chpasswd
+
+    # Grant deepracer user sudoers rights
+    echo 'deepracer ALL=(root) NOPASSWD:ALL' >/etc/sudoers.d/deepracer
+    chmod 0440 /etc/sudoers.d/deepracer
+
+    # Ensure we have UTF-8
+    locale-gen en_US en_US.UTF-8
+    update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+    export LANG=en_US.UTF-8
+
+    # First ensure that the Ubuntu repositories are enabled.
+    echo deb http://archive.ubuntu.com/ubuntu noble main restricted universe >/etc/apt/sources.list
+    echo deb http://archive.ubuntu.com/ubuntu noble-updates main restricted universe >>/etc/apt/sources.list
+    echo deb http://archive.ubuntu.com/ubuntu noble-backports main restricted universe >>/etc/apt/sources.list
+    echo deb http://security.ubuntu.com/ubuntu noble-security main restricted universe >>/etc/apt/sources.list
+    apt update -y
+    apt upgrade -y
+
+    # Basic packages
+    apt-get install -y --no-install-recommends \
+        linux-generic \
+        curl \
+        gpg \
+        ufw \
+        openssh-server \
+        network-manager \
+        wireless-tools \
+        net-tools \
+        i2c-tools \
+        v4l-utils \
+        wpasupplicant \
+        rfkill \
+        iw \
+        grub-efi-amd64
+    
+    apt-mark hold linux-firmware
+
+    # Install shim-signed before grub-install if not already present
+    SHIM_INSTALLED=false
+    if [ ! -f /usr/lib/shim/shimx64.efi.signed ]; then
+        apt-get install -y --no-install-recommends shim-signed
+        SHIM_INSTALLED=true
+    fi
+
+    # Install and configure GRUB
+    grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=deepracer --recheck --no-floppy
+    
+    # Copy shim files to deepracer directory only if we have a custom shim (didn't install package)
+    if [ \"\$SHIM_INSTALLED\" = \"false\" ] && [ -f /usr/lib/shim/shimx64.efi.signed ]; then
+        cp /usr/lib/shim/shimx64.efi.signed /boot/efi/EFI/deepracer/shimx64.efi
+        cp /usr/lib/shim/mmx64.efi /boot/efi/EFI/deepracer/ 2>/dev/null || true
+        cp /usr/lib/grub/x86_64-efi-signed/grubx64.efi.signed /boot/efi/EFI/deepracer/grubx64.efi
+    fi
+    
+    GRUB_PARAMS=\"net.ifnames=0 biosdevname=0 noxsave reboot=efi fsck.mode=skip\"
+    sed -i \"s/^GRUB_CMDLINE_LINUX=.*/GRUB_CMDLINE_LINUX=${GRUB_PARAMS}/\" /etc/default/grub
+    update-grub
+
+    # Fix Kernel Modules / Disable audio
+    echo -e \"blacklist snd_soc_avs\nblacklist snd_soc_skl\nblacklist snd_hda_intel\nblacklist snd_hda_codec_hdmi\nblacklist snd_sof_pci_intel_apl\" > /etc/modprobe.d/blacklist-audio.conf
+
+    # Fix Wifi Stability
+    echo 'options mwifiex disable_auto_ds=1 disable_tx_amsdu=1' > /etc/modprobe.d/mwifiex.conf
+
+    # Switch nameserver
+    echo 'DNSStubListener=no' | tee -a /etc/systemd/resolved.conf >/dev/null
+
+    # Firewall
+    ufw allow "OpenSSH"
+    ufw enable
+    ufw logging off
+
+    # Don't wait for network on boot
+    systemctl disable systemd-networkd-wait-online
+    systemctl disable NetworkManager-wait-online.service
+"
+
+# Network Manager configuration
+echo "" > ${TARGET_DIR}/etc/NetworkManager/conf.d/default-wifi-powersave-on.conf
+cp $DIR/build_scripts/files/dr/10-manage-wifi.conf ${TARGET_DIR}/etc/NetworkManager/conf.d/
+cp $DIR/build_scripts/files/dr/01-netcfg.yaml ${TARGET_DIR}/etc/netplan/01-netcfg.yaml
+chmod 600 ${TARGET_DIR}/etc/netplan/01-netcfg.yaml
+
+# Prepare for installation of DeepRacer packages
+cp $DIR/install_scripts/aws-24.04/aws_deepracer-community.list ${TARGET_DIR}/etc/apt/sources.list.d/aws_deepracer-community.list
+cp $DIR/install_scripts/common/deepracer-community.asc ${TARGET_DIR}/etc/apt/trusted.gpg.d/
+cp $DIR/install_scripts/aws-24.04/rc.local ${TARGET_DIR}/etc/rc.local
+chmod +x ${TARGET_DIR}/etc/rc.local
+
+chroot ${TARGET_DIR} /bin/bash -c "
+    # ROS 2 GPG key and repository
+    curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key | gpg --no-default-keyring --keyring /usr/share/keyrings/ros-archive-keyring.gpg --import 
+    echo \"deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main\" | tee /etc/apt/sources.list.d/ros2.list >/dev/null
+
+    # Install ROS Core and Development Tools
+    apt -y update && apt install -y --no-install-recommends \
+        cython3 \
+        libboost-dev \
+        libboost-filesystem-dev \
+        libboost-regex-dev \
+        libboost-thread-dev \
+        libhdf5-dev \
+        libjsoncpp-dev \
+        libopencv-dev \
+        libpugixml1v5 \
+        libuvc0 \
+        python3-argcomplete \
+        python3-opencv \
+        python3-pip \
+        python3-protobuf \
+        python3-pyudev \
+        python3-venv \
+        python3-testresources \
+        python3-websocket \
+        python3-networkx \
+        python3-unidecode \
+        ros-dev-tools \
+        ros-jazzy-ros-core
+
+    rosdep init && rosdep update --rosdistro=jazzy -q
+
+    # Python packages, Tensorflow and dependencies
+    curl -o /tmp/tensorflow-2.17.1-cp312-cp312-linux_x86_64.whl https://aws-deepracer-community-sw.s3.eu-west-1.amazonaws.com/tensorflow/tensorflow-2.17.1-cp312-cp312-linux_x86_64.whl
+    pip3 install --break-system-packages \
+        flask\<3 \
+        flask_cors \
+        flask_wtf \
+        pyserial \
+        /tmp/tensorflow-2.17.1-cp312-cp312-linux_x86_64.whl \
+        tensorboard \
+        pyclean \
+        pam
+    rm /tmp/tensorflow-2.17.1-cp312-cp312-linux_x86_64.whl
+
+    # Install OpenVINO
+    wget -qO- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB | gpg --dearmor -o /usr/share/keyrings/intel-openvino-2024.gpg 
+    echo \"deb [signed-by=/usr/share/keyrings/intel-openvino-2024.gpg] https://apt.repos.intel.com/openvino/2024 ubuntu24 main\" | tee /etc/apt/sources.list.d/intel-openvino-2024.list >/dev/null
+    apt-get update && apt-get install -y --no-install-recommends openvino-2024.6.0 intel-opencl-icd
+
+    # Install DeepRacer
+    apt install -y --no-install-recommends aws-deepracer-core aws-deepracer-community-device-console aws-deepracer-util aws-deepracer-sample-models
+
+"
+
+if [ -n "${UNMOUNT_ON_EXIT}" ]; then
+    unmount_all
+fi
