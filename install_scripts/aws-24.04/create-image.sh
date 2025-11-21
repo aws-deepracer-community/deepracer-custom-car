@@ -5,11 +5,14 @@ export DEBIAN_FRONTEND=noninteractive
 export DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/../.. >/dev/null 2>&1 && pwd)"
 
 # Default values
-TARGET_DISK="/dev/sdc"
-TARGET_DIR="/mnt/dr-disk"
+TARGET_DISK=""
+TARGET_FILE=""
+TARGET_DIR="/mnt/DEEPRACER"
 CUSTOM_SHIM=""
 UNMOUNT_ON_EXIT=""
 UNMOUNT_ONLY=""
+LOOPBACK_DEVICE=""
+DISK_SIZE_GIB=8
 
 # Function to unmount all mounts
 unmount_all() {
@@ -28,14 +31,23 @@ unmount_all() {
     # Unmount root partition
     mountpoint -q "${TARGET_DIR}" && umount "${TARGET_DIR}" || true
     
+    # Detach loopback device if it was set up
+    if [ -n "${LOOPBACK_DEVICE}" ] && [ -e "${LOOPBACK_DEVICE}" ]; then
+        echo "Detaching loopback device ${LOOPBACK_DEVICE}..."
+        losetup -d "${LOOPBACK_DEVICE}" || true
+    fi
+    
     echo "Unmount complete"
 }
 
 # Parse command-line arguments
-while getopts "d:m:s:uUh" opt; do
+while getopts "d:f:m:s:uUh" opt; do
     case ${opt} in
         d )
             TARGET_DISK="${OPTARG}"
+            ;;
+        f )
+            TARGET_FILE="${OPTARG}"
             ;;
         m )
             TARGET_DIR="${OPTARG}"
@@ -50,8 +62,9 @@ while getopts "d:m:s:uUh" opt; do
             UNMOUNT_ONLY="true"
             ;;
         h )
-            echo "Usage: $0 [-d TARGET_DISK] [-m TARGET_DIR] [-s CUSTOM_SHIM] [-u] [-U]"
+            echo "Usage: $0 [-d TARGET_DISK | -f TARGET_FILE | -U ] [-m TARGET_DIR] [-s CUSTOM_SHIM] [-u]"
             echo "  -d TARGET_DISK   Target disk device (default: /dev/sdc)"
+            echo "  -f TARGET_FILE   Target file for loopback device (alternative to -d)"
             echo "  -m TARGET_DIR    Target mount directory (default: /mnt/dr-disk)"
             echo "  -s CUSTOM_SHIM   Path to custom shim file (shimx64.efi.signed)"
             echo "  -u               Unmount bind mounts and target disk on exit"
@@ -83,12 +96,51 @@ if [ -n "${UNMOUNT_ONLY}" ]; then
     exit 0
 fi
 
+# Validate that one and only one of -d or -f is provided
+if [ -n "${TARGET_DISK}" ] && [ -n "${TARGET_FILE}" ]; then
+    echo "Error: Cannot specify both -d (disk) and -f (file). Please use only one."
+    exit 1
+elif [ -z "${TARGET_DISK}" ] && [ -z "${TARGET_FILE}" ]; then
+    echo "Error: Must specify either -d (disk) or -f (file)."
+    exit 1
+fi
+
 # Validate custom shim if provided
 if [ -n "${CUSTOM_SHIM}" ] && [ ! -f "${CUSTOM_SHIM}" ]; then
     echo "Error: Custom shim file not found: ${CUSTOM_SHIM}"
     exit 1
 fi
 
+# Calculate partition layout based on total disk size
+ESP_START_MIB=1
+ESP_SIZE_MIB=127
+ESP_END_MIB=$((ESP_START_MIB + ESP_SIZE_MIB))
+ROOT_START_MIB=$((ESP_END_MIB + 1))
+# Leave 1 MiB at the end for GPT backup table
+ROOT_END_MIB=$((DISK_SIZE_GIB * 1024 - 1))
+ROOT_SIZE_MIB=$((ROOT_END_MIB - ROOT_START_MIB))
+
+# If using file mode, create the file and set up loopback device
+if [ -n "${TARGET_FILE}" ]; then
+    # File must be at least 1 MiB larger than the last partition end
+    FILE_SIZE_MB=$((DISK_SIZE_GIB * 1024))
+    
+    echo "Creating image file: ${TARGET_FILE} (${FILE_SIZE_MB} MiB / ${DISK_SIZE_GIB} GiB)"
+    echo "  ESP: ${ESP_START_MIB}MiB - ${ESP_END_MIB}MiB (${ESP_SIZE_MIB}MiB)"
+    echo "  ROOT: ${ROOT_START_MIB}MiB - ${ROOT_END_MIB}MiB (${ROOT_SIZE_MIB}MiB)"
+    dd if=/dev/zero of="${TARGET_FILE}" bs=1M count="${FILE_SIZE_MB}" status=progress
+    
+    echo "Setting up loopback device..."
+    LOOPBACK_DEVICE=$(losetup -f --show "${TARGET_FILE}")
+    echo "Loopback device: ${LOOPBACK_DEVICE}"
+    
+    # Use loopback device as target
+    TARGET_DISK="${LOOPBACK_DEVICE}"
+fi
+
+if [ -n "${TARGET_FILE}" ]; then
+    echo "Target file: ${TARGET_FILE}"
+fi
 echo "Target disk: ${TARGET_DISK}"
 echo "Target directory: ${TARGET_DIR}"
 [ -n "${CUSTOM_SHIM}" ] && echo "Custom shim: ${CUSTOM_SHIM}"
@@ -96,17 +148,24 @@ echo ""
 
 parted --script "${TARGET_DISK}" \
     mklabel gpt \
-    mkpart DR2404-ESP fat32 1MiB 128MiB \
+    mkpart DR2404-ESP fat32 ${ESP_START_MIB}MiB ${ESP_END_MIB}MiB \
     set 1 esp on \
-    mkpart DR2404-ROOT ext4 129MiB 12GiB
+    mkpart DR2404-ROOT ext4 ${ROOT_START_MIB}MiB ${ROOT_END_MIB}MiB
 
-mkfs.fat -F32 -n "DR2404-ESP" "${TARGET_DISK}1"
-mkfs.ext4 -F -L "DR2404-ROOT" "${TARGET_DISK}2"
+# Determine partition suffix (p for devices ending in a number, empty otherwise)
+if [[ "${TARGET_DISK}" =~ [0-9]$ ]]; then
+    PART_SUFFIX="p"
+else
+    PART_SUFFIX=""
+fi
+
+mkfs.fat -F32 -n "DR2404-ESP" "${TARGET_DISK}${PART_SUFFIX}1"
+mkfs.ext4 -F -L "DR2404-ROOT" "${TARGET_DISK}${PART_SUFFIX}2"
 
 mkdir -p ${TARGET_DIR}
-mount "${TARGET_DISK}2" ${TARGET_DIR}
+mount "${TARGET_DISK}${PART_SUFFIX}2" ${TARGET_DIR}
 mkdir -p ${TARGET_DIR}/boot/efi
-mount "${TARGET_DISK}1" ${TARGET_DIR}/boot/efi
+mount "${TARGET_DISK}${PART_SUFFIX}1" ${TARGET_DIR}/boot/efi
 
 debootstrap --arch=amd64 noble ${TARGET_DIR} http://archive.ubuntu.com/ubuntu/
 
@@ -125,8 +184,8 @@ if [ -n "${CUSTOM_SHIM}" ]; then
     echo "Custom shim copied as shimx64.efi.signed.custom"
 fi
 
-ROOT_UUID=$(blkid -s UUID -o value ${TARGET_DISK}2)
-EFI_UUID=$(blkid -s UUID -o value ${TARGET_DISK}1)
+ROOT_UUID=$(blkid -s UUID -o value ${TARGET_DISK}${PART_SUFFIX}2)
+EFI_UUID=$(blkid -s UUID -o value ${TARGET_DISK}${PART_SUFFIX}1)
 
 chroot ${TARGET_DIR} /bin/bash -c "
     set -uoe pipefail
@@ -134,11 +193,14 @@ chroot ${TARGET_DIR} /bin/bash -c "
     echo \"UUID=${ROOT_UUID} / ext4 defaults 0 1\" > /etc/fstab
     echo \"UUID=${EFI_UUID} /boot/efi vfat umask=0077 0 1\" >> /etc/fstab
     echo "deepracer" > /etc/hostname
+    echo "127.0.0.1 localhost deepracer" > /etc/hosts
+    echo "::1 localhost" >> /etc/hosts
 
     # Add user deepracer
     useradd -m -s /bin/bash -c 'AWS DeepRacer' deepracer
     echo 'deepracer:deepracer' | chpasswd
-
+    usermod -aG adm deepracer
+    
     # Grant deepracer user sudoers rights
     echo 'deepracer ALL=(root) NOPASSWD:ALL' >/etc/sudoers.d/deepracer
     chmod 0440 /etc/sudoers.d/deepracer
@@ -158,7 +220,7 @@ chroot ${TARGET_DIR} /bin/bash -c "
 
     # Basic packages
     apt-get install -y --no-install-recommends \
-        linux-generic \
+        linux-image-generic \
         initramfs-tools \
         curl \
         gpg \
@@ -216,7 +278,7 @@ chroot ${TARGET_DIR} /bin/bash -c "
 
     # Firewall
     ufw allow "OpenSSH"
-    ufw enable
+    ufw --force enable
     ufw logging off
 
     # Don't wait for network on boot
@@ -240,7 +302,7 @@ chroot ${TARGET_DIR} /bin/bash -c "
     set -uoe pipefail
 
     # ROS 2 GPG key and repository
-    curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key | gpg --batch --no-default-keyring --keyring /usr/share/keyrings/ros-archive-keyring.gpg --import 
+    curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key | gpg --dearmor -o /usr/share/keyrings/ros-archive-keyring.gpg
     echo \"deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main\" | tee /etc/apt/sources.list.d/ros2.list >/dev/null
 
     # Install ROS Core and Development Tools
@@ -288,7 +350,7 @@ chroot ${TARGET_DIR} /bin/bash -c "
     # Install OpenVINO
     wget -qO- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB | gpg --dearmor -o /usr/share/keyrings/intel-openvino-2024.gpg 
     echo \"deb [signed-by=/usr/share/keyrings/intel-openvino-2024.gpg] https://apt.repos.intel.com/openvino/2024 ubuntu24 main\" | tee /etc/apt/sources.list.d/intel-openvino-2024.list >/dev/null
-    apt-get update && apt-get install -y --no-install-recommends openvino-2024.6.0 intel-opencl-icd
+    apt-get update && apt-get install -y --no-install-recommends libopenvino-2024.6.0 python3-openvino-2024.6.0
 
     # Install DeepRacer
     apt install -y --no-install-recommends aws-deepracer-core aws-deepracer-community-device-console aws-deepracer-util aws-deepracer-sample-models
