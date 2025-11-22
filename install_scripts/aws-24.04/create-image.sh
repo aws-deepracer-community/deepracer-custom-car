@@ -192,9 +192,9 @@ chroot ${TARGET_DIR} /bin/bash -c "
 
     echo \"UUID=${ROOT_UUID} / ext4 defaults 0 1\" > /etc/fstab
     echo \"UUID=${EFI_UUID} /boot/efi vfat umask=0077 0 1\" >> /etc/fstab
-    echo "deepracer" > /etc/hostname
-    echo "127.0.0.1 localhost deepracer" > /etc/hosts
-    echo "::1 localhost" >> /etc/hosts
+    echo 'deepracer' > /etc/hostname
+    echo '127.0.0.1 localhost deepracer' > /etc/hosts
+    echo '::1 localhost' >> /etc/hosts
 
     # Add user deepracer
     useradd -m -s /bin/bash -c 'AWS DeepRacer' deepracer
@@ -220,7 +220,7 @@ chroot ${TARGET_DIR} /bin/bash -c "
 
     # Basic packages
     apt-get install -y --no-install-recommends \
-        linux-image-generic \
+        linux-image-lowlatency \
         initramfs-tools \
         curl \
         gpg \
@@ -236,7 +236,8 @@ chroot ${TARGET_DIR} /bin/bash -c "
         iw \
         grub-efi-amd64 \
         shim-signed \
-        zstd
+        zstd \
+        nano
     
     apt-mark hold linux-firmware
 
@@ -354,6 +355,10 @@ chroot ${TARGET_DIR} /bin/bash -c "
 
     # Install DeepRacer
     apt install -y --no-install-recommends aws-deepracer-core aws-deepracer-community-device-console aws-deepracer-util aws-deepracer-sample-models
+
+    # Clean up data that needs to be unique per device
+    rm -f /opt/aws/deepracer/password.txt
+    rm -f /etc/ssh/ssh_host_*
 
 "
 

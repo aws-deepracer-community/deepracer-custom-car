@@ -27,7 +27,7 @@ export DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/../.. >/dev/null 2>&1 && pwd)"
 
 # Now add the ROS 2 GPG key with apt.
 # Then add the repository to your sources list.
-curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key | gpg --no-default-keyring --keyring /usr/share/keyrings/ros-archive-keyring.gpg --import 
+curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key | gpg --dearmor -o /usr/share/keyrings/ros-archive-keyring.gpg
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | tee /etc/apt/sources.list.d/ros2.list >/dev/null
 
 # Install ROS Core and Development Tools
@@ -61,22 +61,21 @@ rosdep init && rosdep update --rosdistro=jazzy -q
 # Tensorflow and dependencies
 mkdir -p $DIR/dist/
 [ ! -f "$DIR/dist/tensorflow-2.17.1-cp312-cp312-linux_x86_64.whl" ] && curl -o $DIR/dist/tensorflow-2.17.1-cp312-cp312-linux_x86_64.whl https://aws-deepracer-community-sw.s3.eu-west-1.amazonaws.com/tensorflow/tensorflow-2.17.1-cp312-cp312-linux_x86_64.whl
-
 pip3 install --break-system-packages \
-    "flask<3" \
+    'flask<3' \
     flask_cors \
     flask_wtf \
     pyserial \
     $DIR/dist/tensorflow-2.17.1-cp312-cp312-linux_x86_64.whl \
     tensorboard \
-    "typing_extensions==4.10.0" \
     pyclean \
-    pam
+    pam \
+    'typing_extensions==4.10.0'
 
 # Install OpenVINO
 wget -qO- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB | gpg --dearmor -o /usr/share/keyrings/intel-openvino-2024.gpg 
 echo "deb [signed-by=/usr/share/keyrings/intel-openvino-2024.gpg] https://apt.repos.intel.com/openvino/2024 ubuntu24 main" | tee /etc/apt/sources.list.d/intel-openvino-2024.list >/dev/null
-apt-get update && apt-get install -y --no-install-recommends openvino-2024.6.0 intel-opencl-icd
+apt-get update && apt-get install -y --no-install-recommends libopenvino-2024.6.0 python3-openvino-2024.6.0
 
 # Install packages
 cp $DIR/install_scripts/aws-24.04/aws_deepracer-community.list /etc/apt/sources.list.d/aws_deepracer-community.list
