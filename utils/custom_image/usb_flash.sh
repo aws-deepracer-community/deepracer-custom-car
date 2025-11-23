@@ -512,9 +512,25 @@ for mtabline in `cat /etc/mtab`; do
               
             if [ $MD5_PASS == 1 ]; then
               if [ $SEAL_TPM == 1 ]; then
+                # Run pre-seal configuration for Ubuntu 24.04 FIRST
+                # This updates initramfs so PCRs will be measured correctly
+                PRE_SEAL_SCRIPT="`dirname $TPM_SCRIPT_PATH`/tpm2_pre_seal.sh"
+                if [ -f "$PRE_SEAL_SCRIPT" ]; then
+                  echo $(date -u) "Configuring TPM2 boot environment for Ubuntu 24.04..."
+                  $PRE_SEAL_SCRIPT ${EMMC_PATH} ${ENCRYPT_NAME} ${EMMC_ROOT_PATH} ${Disk_PASS} "`dirname $TPM_SCRIPT_PATH`"
+                  if [ $? == 0 ]; then
+                    echo $(date -u) "TPM2 pre-seal configuration PASS!"
+                  else
+                    echo $(date -u) "TPM2 pre-seal configuration FAIL!"
+                    exit 1
+                  fi
+                else
+                  echo $(date -u) "Warning: tpm2_pre_seal.sh not found, skipping TPM2 boot configuration"
+                fi              
                 $TPM_SCRIPT_PATH ${EMMC_PATH} $RANDOM_KEY_PATH $PCR_DAT_PATH $SIGN_PUBLIC_KEY_DER_PATH $Disk_PASS $ENCRYPT_NAME $EMMC_ROOT_PATH
                 if [ $? == 0 ] ; then 
                   echo $(date -u) "Seal and luksChangeKey PASS!"
+                  
                   echo $(date -u) "Reboot system now..."
                   sleep 2
                   #reboot
