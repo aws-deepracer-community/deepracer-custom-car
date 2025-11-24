@@ -249,6 +249,29 @@ if [ -n "${CUSTOM_SHIM}" ]; then
     echo "Custom shim copied as shimx64.efi.signed.custom"
 fi
 
+# Copy TPM2 scripts if encryption is enabled
+if [ -n "${ENABLE_ENCRYPTION}" ]; then
+    TPM2_SCRIPTS_DIR="${DIR}/build_scripts/files/dr"
+    
+    if [ -f "${TPM2_SCRIPTS_DIR}/tpm2-unseal-keyscript" ]; then
+        mkdir -p ${TARGET_DIR}/lib/cryptsetup/scripts
+        cp "${TPM2_SCRIPTS_DIR}/tpm2-unseal-keyscript" ${TARGET_DIR}/lib/cryptsetup/scripts/
+        chmod +x ${TARGET_DIR}/lib/cryptsetup/scripts/tpm2-unseal-keyscript
+        echo "TPM2 keyscript installed"
+    else
+        echo "Warning: tpm2-unseal-keyscript not found at ${TPM2_SCRIPTS_DIR}"
+    fi
+    
+    if [ -f "${TPM2_SCRIPTS_DIR}/tpm2-initramfs-hook" ]; then
+        mkdir -p ${TARGET_DIR}/etc/initramfs-tools/hooks
+        cp "${TPM2_SCRIPTS_DIR}/tpm2-initramfs-hook" ${TARGET_DIR}/etc/initramfs-tools/hooks/tpm2
+        chmod +x ${TARGET_DIR}/etc/initramfs-tools/hooks/tpm2
+        echo "TPM2 initramfs hook installed"
+    else
+        echo "Warning: tpm2-initramfs-hook not found at ${TPM2_SCRIPTS_DIR}"
+    fi
+fi
+
 if [ -n "${ENABLE_ENCRYPTION}" ]; then
     ROOT_UUID=$(blkid -s UUID -o value ${TARGET_DISK}${PART_SUFFIX}3)
     BOOT_UUID=$(blkid -s UUID -o value ${TARGET_DISK}${PART_SUFFIX}2)
@@ -324,9 +347,10 @@ chroot ${TARGET_DIR} /bin/bash -c "
 
     # Configure LUKS encryption if enabled
     if [ -n \"${ENABLE_ENCRYPTION}\" ]; then
-        echo \"${ENCRYPT_NAME} UUID=${ROOT_UUID} none luks,discard\" > /etc/crypttab
-        
-        # Update initramfs to include cryptsetup
+        # Create /etc/crypttab for GRUB (needed for update-grub to configure cryptodisk)
+        echo \"${ENCRYPT_NAME} UUID=${ROOT_UUID} none luks,discard,initramfs,keyscript=/lib/cryptsetup/scripts/tpm2-unseal-keyscript\" > /etc/crypttab
+                
+        # Update initramfs to include cryptsetup and TPM2 tools
         update-initramfs -u -k all
     fi
 
