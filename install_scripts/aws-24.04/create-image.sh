@@ -13,6 +13,9 @@ UNMOUNT_ON_EXIT=""
 UNMOUNT_ONLY=""
 LOOPBACK_DEVICE=""
 DISK_SIZE_GIB=8
+ENABLE_ENCRYPTION=""
+DISK_PASS="pega#1234"
+ENCRYPT_NAME="encrypt_blk"
 
 # Function to unmount all mounts
 unmount_all() {
@@ -28,8 +31,17 @@ unmount_all() {
     # Unmount EFI partition
     mountpoint -q "${TARGET_DIR}/boot/efi" && umount "${TARGET_DIR}/boot/efi" || true
     
+    # Unmount /boot partition if it exists (encrypted systems)
+    mountpoint -q "${TARGET_DIR}/boot" && umount "${TARGET_DIR}/boot" || true
+    
     # Unmount root partition
     mountpoint -q "${TARGET_DIR}" && umount "${TARGET_DIR}" || true
+    
+    # Close LUKS device if encryption is enabled
+    if [ -n "${ENABLE_ENCRYPTION}" ] && [ -e "/dev/mapper/${ENCRYPT_NAME}" ]; then
+        echo "Closing LUKS encrypted device..."
+        cryptsetup luksClose "${ENCRYPT_NAME}" || true
+    fi
     
     # Detach loopback device if it was set up
     if [ -n "${LOOPBACK_DEVICE}" ] && [ -e "${LOOPBACK_DEVICE}" ]; then
@@ -41,7 +53,7 @@ unmount_all() {
 }
 
 # Parse command-line arguments
-while getopts "d:f:m:s:uUh" opt; do
+while getopts "d:f:m:s:euUh" opt; do
     case ${opt} in
         d )
             TARGET_DISK="${OPTARG}"
@@ -55,6 +67,9 @@ while getopts "d:f:m:s:uUh" opt; do
         s )
             CUSTOM_SHIM="${OPTARG}"
             ;;
+        e )
+            ENABLE_ENCRYPTION="true"
+            ;;
         u )
             UNMOUNT_ON_EXIT="true"
             ;;
@@ -62,11 +77,12 @@ while getopts "d:f:m:s:uUh" opt; do
             UNMOUNT_ONLY="true"
             ;;
         h )
-            echo "Usage: $0 [-d TARGET_DISK | -f TARGET_FILE | -U ] [-m TARGET_DIR] [-s CUSTOM_SHIM] [-u]"
+            echo "Usage: $0 [-d TARGET_DISK | -f TARGET_FILE | -U ] [-m TARGET_DIR] [-s CUSTOM_SHIM] [-e] [-u]"
             echo "  -d TARGET_DISK   Target disk device (default: /dev/sdc)"
             echo "  -f TARGET_FILE   Target file for loopback device (alternative to -d)"
             echo "  -m TARGET_DIR    Target mount directory (default: /mnt/dr-disk)"
             echo "  -s CUSTOM_SHIM   Path to custom shim file (shimx64.efi.signed)"
+            echo "  -e               Enable LUKS encryption for ROOT partition"
             echo "  -u               Unmount bind mounts and target disk on exit"
             echo "  -U               Unmount only - unmount and exit without creating image"
             echo "  -h               Show this help message"
@@ -115,7 +131,17 @@ fi
 ESP_START_MIB=1
 ESP_SIZE_MIB=127
 ESP_END_MIB=$((ESP_START_MIB + ESP_SIZE_MIB))
-ROOT_START_MIB=$((ESP_END_MIB + 1))
+
+# BOOT partition (only when encryption is enabled)
+if [ -n "${ENABLE_ENCRYPTION}" ]; then
+    BOOT_START_MIB=$((ESP_END_MIB + 1))
+    BOOT_SIZE_MIB=512
+    BOOT_END_MIB=$((BOOT_START_MIB + BOOT_SIZE_MIB))
+    ROOT_START_MIB=$((BOOT_END_MIB + 1))
+else
+    ROOT_START_MIB=$((ESP_END_MIB + 1))
+fi
+
 # Leave 1 MiB at the end for GPT backup table
 ROOT_END_MIB=$((DISK_SIZE_GIB * 1024 - 1))
 ROOT_SIZE_MIB=$((ROOT_END_MIB - ROOT_START_MIB))
@@ -133,24 +159,35 @@ if [ -n "${TARGET_FILE}" ]; then
     echo "Setting up loopback device..."
     LOOPBACK_DEVICE=$(losetup -f --show "${TARGET_FILE}")
     echo "Loopback device: ${LOOPBACK_DEVICE}"
-    
+    echo "Target file: ${TARGET_FILE}"
+
     # Use loopback device as target
     TARGET_DISK="${LOOPBACK_DEVICE}"
+else
+    echo "Target disk: ${TARGET_DISK}"
 fi
 
-if [ -n "${TARGET_FILE}" ]; then
-    echo "Target file: ${TARGET_FILE}"
-fi
-echo "Target disk: ${TARGET_DISK}"
 echo "Target directory: ${TARGET_DIR}"
 [ -n "${CUSTOM_SHIM}" ] && echo "Custom shim: ${CUSTOM_SHIM}"
+[ -n "${ENABLE_ENCRYPTION}" ] && echo "Encryption: ENABLED (LUKS)"
 echo ""
 
-parted --script "${TARGET_DISK}" \
-    mklabel gpt \
-    mkpart DR2404-ESP fat32 ${ESP_START_MIB}MiB ${ESP_END_MIB}MiB \
-    set 1 esp on \
-    mkpart DR2404-ROOT ext4 ${ROOT_START_MIB}MiB ${ROOT_END_MIB}MiB
+if [ -n "${ENABLE_ENCRYPTION}" ]; then
+    # Create partition table with BOOT partition for encrypted systems
+    parted --script "${TARGET_DISK}" \
+        mklabel gpt \
+        mkpart DR2404-ESP fat32 ${ESP_START_MIB}MiB ${ESP_END_MIB}MiB \
+        set 1 esp on \
+        mkpart DR2404-BOOT ext4 ${BOOT_START_MIB}MiB ${BOOT_END_MIB}MiB \
+        mkpart DR2404-ROOT ext4 ${ROOT_START_MIB}MiB ${ROOT_END_MIB}MiB
+else
+    # Create partition table without TPM partition for non-encrypted systems
+    parted --script "${TARGET_DISK}" \
+        mklabel gpt \
+        mkpart DR2404-ESP fat32 ${ESP_START_MIB}MiB ${ESP_END_MIB}MiB \
+        set 1 esp on \
+        mkpart DR2404-ROOT ext4 ${ROOT_START_MIB}MiB ${ROOT_END_MIB}MiB
+fi
 
 # Determine partition suffix (p for devices ending in a number, empty otherwise)
 if [[ "${TARGET_DISK}" =~ [0-9]$ ]]; then
@@ -160,15 +197,43 @@ else
 fi
 
 mkfs.fat -F32 -n "DR2404-ESP" "${TARGET_DISK}${PART_SUFFIX}1"
-mkfs.ext4 -F -L "DR2404-ROOT" "${TARGET_DISK}${PART_SUFFIX}2"
 
+# Ensure target directory exists
 mkdir -p ${TARGET_DIR}
-mount "${TARGET_DISK}${PART_SUFFIX}2" ${TARGET_DIR}
+
+# Create ROOT partition - encrypted or plain
+if [ -n "${ENABLE_ENCRYPTION}" ]; then
+    echo "Setting up /boot partition..."
+    mkfs.ext4 -F -L "DR2404-BOOT" "${TARGET_DISK}${PART_SUFFIX}2"
+
+    echo "Setting up LUKS encryption on ROOT partition..."
+    echo -n "${DISK_PASS}" | cryptsetup luksFormat --type luks2 "${TARGET_DISK}${PART_SUFFIX}3" --key-file=-       
+    echo -n "${DISK_PASS}" | cryptsetup luksOpen --allow-discards "${TARGET_DISK}${PART_SUFFIX}3" "${ENCRYPT_NAME}" --key-file=-
+    mkfs.btrfs -L "DR2404-ROOT" "/dev/mapper/${ENCRYPT_NAME}"
+    ROOT_DEVICE="/dev/mapper/${ENCRYPT_NAME}"
+
+    mount "${ROOT_DEVICE}" ${TARGET_DIR}
+    btrfs subvolume create ${TARGET_DIR}/@
+    umount ${TARGET_DIR}
+    mount -o subvol=@ "${ROOT_DEVICE}" ${TARGET_DIR}
+    
+    # Mount /boot partition
+    mkdir -p ${TARGET_DIR}/boot
+    mount "${TARGET_DISK}${PART_SUFFIX}2" ${TARGET_DIR}/boot
+else
+    mkfs.ext4 -F -L "DR2404-ROOT" "${TARGET_DISK}${PART_SUFFIX}2"
+    ROOT_DEVICE="${TARGET_DISK}${PART_SUFFIX}2"
+    mount "${ROOT_DEVICE}" ${TARGET_DIR}
+fi
+
+# Mount EFI partition
 mkdir -p ${TARGET_DIR}/boot/efi
 mount "${TARGET_DISK}${PART_SUFFIX}1" ${TARGET_DIR}/boot/efi
 
+# Bootstrap minimal Ubuntu system
 debootstrap --arch=amd64 noble ${TARGET_DIR} http://archive.ubuntu.com/ubuntu/
 
+# Set up bind mounts
 mount --bind /dev ${TARGET_DIR}/dev
 mount --bind /dev/pts ${TARGET_DIR}/dev/pts
 mount --bind /proc ${TARGET_DIR}/proc
@@ -184,13 +249,48 @@ if [ -n "${CUSTOM_SHIM}" ]; then
     echo "Custom shim copied as shimx64.efi.signed.custom"
 fi
 
-ROOT_UUID=$(blkid -s UUID -o value ${TARGET_DISK}${PART_SUFFIX}2)
+# Copy TPM2 scripts if encryption is enabled
+if [ -n "${ENABLE_ENCRYPTION}" ]; then
+    TPM2_SCRIPTS_DIR="${DIR}/build_scripts/files/dr"
+    
+    if [ -f "${TPM2_SCRIPTS_DIR}/tpm2-unseal-keyscript" ]; then
+        mkdir -p ${TARGET_DIR}/lib/cryptsetup/scripts
+        cp "${TPM2_SCRIPTS_DIR}/tpm2-unseal-keyscript" ${TARGET_DIR}/lib/cryptsetup/scripts/
+        chmod +x ${TARGET_DIR}/lib/cryptsetup/scripts/tpm2-unseal-keyscript
+        echo "TPM2 keyscript installed"
+    else
+        echo "Warning: tpm2-unseal-keyscript not found at ${TPM2_SCRIPTS_DIR}"
+    fi
+    
+    if [ -f "${TPM2_SCRIPTS_DIR}/tpm2-initramfs-hook" ]; then
+        mkdir -p ${TARGET_DIR}/etc/initramfs-tools/hooks
+        cp "${TPM2_SCRIPTS_DIR}/tpm2-initramfs-hook" ${TARGET_DIR}/etc/initramfs-tools/hooks/tpm2
+        chmod +x ${TARGET_DIR}/etc/initramfs-tools/hooks/tpm2
+        echo "TPM2 initramfs hook installed"
+    else
+        echo "Warning: tpm2-initramfs-hook not found at ${TPM2_SCRIPTS_DIR}"
+    fi
+fi
+
+if [ -n "${ENABLE_ENCRYPTION}" ]; then
+    ROOT_UUID=$(blkid -s UUID -o value ${TARGET_DISK}${PART_SUFFIX}3)
+    BOOT_UUID=$(blkid -s UUID -o value ${TARGET_DISK}${PART_SUFFIX}2)
+else
+    ROOT_UUID=$(blkid -s UUID -o value ${TARGET_DISK}${PART_SUFFIX}2)
+    BOOT_UUID=""
+fi
 EFI_UUID=$(blkid -s UUID -o value ${TARGET_DISK}${PART_SUFFIX}1)
 
 chroot ${TARGET_DIR} /bin/bash -c "
     set -uoe pipefail
 
-    echo \"UUID=${ROOT_UUID} / ext4 defaults 0 1\" > /etc/fstab
+    # Configure fstab based on encryption status
+    if [ -n \"${ENABLE_ENCRYPTION}\" ]; then
+        echo \"/dev/mapper/${ENCRYPT_NAME} / btrfs subvol=@,defaults 0 1\" > /etc/fstab
+        echo \"UUID=${BOOT_UUID} /boot ext4 defaults 0 2\" >> /etc/fstab
+    else
+        echo \"UUID=${ROOT_UUID} / ext4 defaults 0 1\" > /etc/fstab
+    fi
     echo \"UUID=${EFI_UUID} /boot/efi vfat umask=0077 0 1\" >> /etc/fstab
     echo 'deepracer' > /etc/hostname
     echo '127.0.0.1 localhost deepracer' > /etc/hosts
@@ -239,7 +339,20 @@ chroot ${TARGET_DIR} /bin/bash -c "
         zstd \
         nano
     
+    if [ -n \"${ENABLE_ENCRYPTION}\" ]; then
+        apt-get install -y --no-install-recommends cryptsetup cryptsetup-initramfs btrfs-progs tpm2-tools
+    fi
+    
     apt-mark hold linux-firmware
+
+    # Configure LUKS encryption if enabled
+    if [ -n \"${ENABLE_ENCRYPTION}\" ]; then
+        # Create /etc/crypttab for GRUB (needed for update-grub to configure cryptodisk)
+        echo \"${ENCRYPT_NAME} UUID=${ROOT_UUID} none luks,discard,initramfs,keyscript=/lib/cryptsetup/scripts/tpm2-unseal-keyscript\" > /etc/crypttab
+                
+        # Update initramfs to include cryptsetup and TPM2 tools
+        update-initramfs -u -k all
+    fi
 
     # Register custom shim as an alternative if provided
     if [ -f /usr/lib/shim/shimx64.efi.signed.custom ]; then
@@ -254,6 +367,11 @@ chroot ${TARGET_DIR} /bin/bash -c "
     sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=\"\"/' /etc/default/grub
     echo 'GRUB_DISABLE_OS_PROBER=true' >> /etc/default/grub
     
+    # Enable cryptodisk in GRUB if encryption is enabled
+    if [ -n \"${ENABLE_ENCRYPTION}\" ]; then
+        echo 'GRUB_ENABLE_CRYPTODISK=y' >> /etc/default/grub
+    fi
+    
     grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=deepracer --recheck --no-floppy
     update-grub
     
@@ -261,9 +379,13 @@ chroot ${TARGET_DIR} /bin/bash -c "
     sed -i \"/set root='hd/d\" /boot/grub/grub.cfg
     sed -i 's/--hint-bios=[^ ]* --hint-efi=[^ ]* --hint-baremetal=[^ ]* //' /boot/grub/grub.cfg
     
-    # Fix kernel command line - replace /dev/sdX with UUID (device name won't be same on target)
-    ROOT_UUID=\$(blkid -s UUID -o value /dev/disk/by-label/DR2404-ROOT)
-    sed -i \"s|root=/dev/[^ ]*|root=UUID=\${ROOT_UUID}|g\" /boot/grub/grub.cfg
+    # Fix kernel command line - replace root device specification
+    if [ -n \"${ENABLE_ENCRYPTION}\" ]; then
+        sed -i \"s|root=[^ ]*|root=/dev/mapper/${ENCRYPT_NAME}|g\" /boot/grub/grub.cfg
+    else
+        ROOT_UUID=\$(blkid -s UUID -o value /dev/disk/by-label/DR2404-ROOT)
+        sed -i \"s|root=/dev/[^ ]*|root=UUID=\${ROOT_UUID}|g\" /boot/grub/grub.cfg
+    fi
     
     # Fix EFI stub grub.cfg - remove disk hint from search command
     sed -i 's/ hd[0-9]*,gpt[0-9]*//' /boot/efi/EFI/deepracer/grub.cfg

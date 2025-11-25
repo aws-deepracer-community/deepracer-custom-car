@@ -1,0 +1,57 @@
+#!/bin/sh
+#
+# Keyscript to unseal LUKS key from TPM2 during initramfs boot
+# This script is called by cryptsetup when the crypttab has keyscript= option
+#
+# Compatible with the legacy seal_and_luksChangeKey.sh TPM sealing approach
+# The sealed object has adminwithpolicy attribute, requiring a policy session
+
+HANDLE_SEAL_DATA="0x81010011"
+PCR_LIST="sha1:0,1,2"
+TPM2="/bin/tpm2"
+
+# Debug output to console
+echo "TPM2 keyscript: Attempting to unseal key from TPM..." >&2
+
+# Check if tpm2 exists
+if [ ! -x "$TPM2" ]; then
+    echo "TPM2 keyscript: ERROR - $TPM2 not found" >&2
+    exit 1
+fi
+
+# The sealed object requires satisfying the PCR policy
+# Use -p with session:session.ctx after starting a policy session
+$TPM2 startauthsession --policy-session -S /tmp/session.ctx 2>>/tmp/tpm2_unseal.log
+if [ $? -ne 0 ]; then
+    echo "TPM2 keyscript: Failed to start policy session" >&2
+    exit 1
+fi
+
+# Apply the PCR policy to the session
+POLICY=$($TPM2 policypcr -S /tmp/session.ctx -l $PCR_LIST 2>>/tmp/tpm2_unseal.log)
+if [ $? -ne 0 ]; then
+    echo "TPM2 keyscript: PCR policy check failed - PCRs may have changed since sealing" >&2
+    echo "TPM2 keyscript: Current PCR values:" >&2
+    $TPM2 pcrread $PCR_LIST 2>&1 | tee -a /tmp/tpm2_unseal.log >&2
+    cat /tmp/tpm2_unseal.log >&2
+    $TPM2 flushcontext /tmp/session.ctx 2>/dev/null
+    exit 1
+fi
+
+# Now unseal using the policy session and capture the key
+KEY=$($TPM2 unseal -c $HANDLE_SEAL_DATA -p session:/tmp/session.ctx 2>>/tmp/tpm2_unseal.log)
+RESULT=$?
+
+# Clean up session
+$TPM2 flushcontext /tmp/session.ctx 2>/dev/null
+
+if [ $RESULT -eq 0 ] && [ -n "$KEY" ]; then
+    echo "TPM2 keyscript: Success!" >&2
+    # Output the key to stdout for cryptsetup
+    echo -n "$KEY"
+    exit 0
+fi
+
+# If we reach here, TPM unseal failed - cryptsetup will prompt for password
+echo "TPM2 keyscript: FAILED - falling back to password prompt" >&2
+exit 1

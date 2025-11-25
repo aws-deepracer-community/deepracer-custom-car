@@ -1,0 +1,49 @@
+#!/bin/sh
+#
+# Initramfs hook for TPM2 tools
+# This ensures tpm2_unseal and dependencies are available during early boot
+#
+
+PREREQ=""
+
+prereqs()
+{
+    echo "$PREREQ"
+}
+
+case $1 in
+    prereqs)
+        prereqs
+        exit 0
+        ;;
+esac
+
+. /usr/share/initramfs-tools/hook-functions
+
+echo "TPM2 hook: Installing TPM2 tools into initramfs..."
+
+# Copy tpm2_unseal binary (tpm2 is the actual binary, tpm2_unseal is a symlink)
+if [ -f /usr/bin/tpm2 ]; then
+    copy_exec /usr/bin/tpm2 /bin/tpm2
+    echo "TPM2 hook: Copied /usr/bin/tpm2"
+else
+    echo "TPM2 hook: ERROR - /usr/bin/tpm2 not found!"
+fi
+
+# Copy all tpm2-tss libraries to /lib in initramfs
+for lib in /usr/lib/x86_64-linux-gnu/libtss2-*.so*; do
+    if [ -f "$lib" ]; then
+        copy_exec "$lib" "/lib/x86_64-linux-gnu/$(basename $lib)"
+    fi
+done
+echo "TPM2 hook: Copied TPM2 libraries"
+
+# Note: Keyscript in /lib/cryptsetup/scripts/ is automatically included by cryptsetup hook
+echo "TPM2 hook: Keyscript will be included by cryptsetup hook from /lib/cryptsetup/scripts/"
+
+# Ensure TPM kernel modules are loaded
+manual_add_modules tpm_tis
+manual_add_modules tpm_crb
+echo "TPM2 hook: Added TPM kernel modules"
+
+exit 0
