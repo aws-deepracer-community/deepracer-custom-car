@@ -293,8 +293,8 @@ chroot ${TARGET_DIR} /bin/bash -c "
     fi
     echo \"UUID=${EFI_UUID} /boot/efi vfat umask=0077 0 1\" >> /etc/fstab
     echo 'deepracer' > /etc/hostname
-    echo '127.0.0.1 localhost deepracer' > /etc/hosts
-    echo '::1 localhost' >> /etc/hosts
+    echo '127.0.0.1 localhost' > /etc/hosts
+    echo '127.0.1.1 deepracer' >> /etc/hosts
 
     # Add user deepracer
     useradd -m -s /bin/bash -c 'AWS DeepRacer' deepracer
