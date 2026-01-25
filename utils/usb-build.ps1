@@ -2,11 +2,11 @@ Param (
     [string]$DiskId,
     [string]$SSID,
     [string]$SSIDPassword,
-    [string]$CreatePartition = $True ,
-    [string]$IgnoreLock = $False,
-    [string]$IgnoreFactoryReset = $False,
-    [string]$IgnoreBootDrive = $False,
-    [string]$SkipDownload = $False,
+    [switch]$CreatePartition,
+    [switch]$IgnoreLock,
+    [switch]$IgnoreFactoryReset,
+    [switch]$IgnoreBootDrive,
+    [switch]$SkipDownload,
     [string]$CustomResetUrl,
     [string]$CurrentDirectory  
 )
@@ -23,8 +23,23 @@ $LockFilePath = $CurrentDirectory + "\$($scriptName).lck"
 
 $TimerStartTime = $(get-date)
 
+# Partition size constants (in GB)
+$PartitionSizeBoot = 4GB
+$PartitionSizeDeepracer = 1GB
+$PartitionSizeFlash = 20GB
+$MinimumUSBSize = 20GB
+
+# Cache module availability check
+$script:BitTransferAvailable = ($null -ne (Get-Module -Name BitsTransfer -ListAvailable)) -and ($PSVersionTable.PSVersion.Major -le 5)
+
+# Helper function to extract filename from URL
+Function Get-FileNameFromUrl {
+    Param ([string]$Url)
+    return [System.IO.Path]::GetFileName([System.Uri]::UnescapeDataString($Url.Split('?')[0].Split('#')[0]))
+}
+
 $ISOFileUrl = 'https://s3.amazonaws.com/deepracer-public/factory-restore/Ubuntu20.04/BIOS-0.0.8/ubuntu-20.04.1-20.11.13_V1-desktop-amd64.iso'
-$ISOFileName = $ISOFileUrl.ToString().Substring($ISOFileUrl.ToString().LastIndexOf("/") + 1)
+$ISOFileName = Get-FileNameFromUrl -Url $ISOFileUrl
 
 # Use custom reset URL if provided, otherwise use default
 if ($CustomResetUrl) {
@@ -33,31 +48,31 @@ if ($CustomResetUrl) {
 } else {
     $FactoryResetUrl = 'https://s3.amazonaws.com/deepracer-public/factory-restore/Ubuntu20.04/BIOS-0.0.8/factory_reset.zip'
 }
-$FactoryResetUrlFileName = $FactoryResetUrl.ToString().Substring($FactoryResetUrl.ToString().LastIndexOf("/") + 1)
+$FactoryResetUrlFileName = Get-FileNameFromUrl -Url $FactoryResetUrl
 
 $FactoryResetUSBFlashScriptPath = 'usb_flash.sh'
-$FactoryResetFolder = [System.IO.Path]::GetFileNameWithoutExtension($FactoryResetUrl.ToString().Substring($FactoryResetUrl.ToString().LastIndexOf("/") + 1))
+$FactoryResetFolder = 'factory_reset'
 
 function Show-Usage {
     Write-Host ""
     Write-Host "Usage: "
     Write-Host ""
-    Write-Host "    .\$($scriptName) -DiskId <disk number> [ -SSID <WIFI_SSID> -SSIDPassword <WIFI_PASSWORD>] [-CustomResetUrl <URL>]"
+    Write-Host "    .\$($scriptName) -DiskId <disk number> [-CreatePartition] [-SSID <WIFI_SSID> -SSIDPassword <WIFI_PASSWORD>] [-CustomResetUrl <URL>]"
     Write-Host ""
     Write-Host " or if you want to start it in a separate window:"
     Write-Host ""
-    Write-Host "    start powershell {.\$($scriptName) -DiskId <disk number> [ -SSID <WIFI_SSID> -SSIDPassword <WIFI_PASSWORD>] [-CustomResetUrl <URL>]}"
+    Write-Host "    start powershell {.\$($scriptName) -DiskId <disk number> [-CreatePartition] [-SSID <WIFI_SSID> -SSIDPassword <WIFI_PASSWORD>] [-CustomResetUrl <URL>]}"
     Write-Host ""
     Write-Host "Parameters:"
-    Write-Host "    -DiskId <number>           : USB disk number (required)"
+    Write-Host "    -DiskId <number>          : USB disk number (required)"
     Write-Host "    -SSID <name>              : WiFi network name (optional)"
     Write-Host "    -SSIDPassword <password>  : WiFi password (optional, requires -SSID)"
     Write-Host "    -CustomResetUrl <url>     : Custom factory reset URL (optional)"
-    Write-Host "    -CreatePartition <bool>   : Create new partitions (default: True)"
-    Write-Host "    -IgnoreLock <bool>        : Ignore lock file (default: False)"
-    Write-Host "    -IgnoreFactoryReset <bool>: Skip factory reset setup (default: False)"
-    Write-Host "    -IgnoreBootDrive <bool>   : Skip boot drive creation (default: False)"
-    Write-Host "    -SkipDownload <bool>      : Skip file downloads (default: False)"
+    Write-Host "    -CreatePartition          : Create new partitions (default: off)"
+    Write-Host "    -IgnoreLock               : Ignore lock file (default: off)"
+    Write-Host "    -IgnoreFactoryReset       : Skip factory reset setup (default: off)"
+    Write-Host "    -IgnoreBootDrive          : Skip boot drive creation (default: off)"
+    Write-Host "    -SkipDownload             : Skip file downloads (default: off)"
 }
 function Show-Disk {
     Write-Host ""
@@ -82,7 +97,7 @@ Function New-File-Unzip {
     $TimerStartTimeUnzip = $(get-date)
 
     # Get the file name without extension as we will use it to check if the Zip was already extracted
-    $directory = [System.IO.Path]::GetFileNameWithoutExtension($FileName) 
+    $directory = 'factory_reset' # [System.IO.Path]::GetFileNameWithoutExtension([System.IO.Path]::GetFileName([System.Uri]::UnescapeDataString($FileName.Split('?')[0].Split('#')[0])))
 
     # Check if the destination directory exists so we don't need to download
     If ( -not ( Test-Path("$($directory)") ) ) { 
@@ -91,8 +106,8 @@ Function New-File-Unzip {
     } else {
         Write-Host "  Unzip-File - $FileName folder already extracted, not extracting..."
     }
-    $TimerEapsedTimeUnzip = $(get-date) - $TimerStartTimeUnzip
-    $TimerTotalTimeUnzip = "{0:HH:mm:ss}" -f ([datetime]$TimerEapsedTimeUnzip.Ticks)
+    $TimerElapsedTimeUnzip = $(get-date) - $TimerStartTimeUnzip
+    $TimerTotalTimeUnzip = "{0:HH:mm:ss}" -f ([datetime]$TimerElapsedTimeUnzip.Ticks)
     Write-Host "  Unzip-File - Elapsed time: $TimerTotalTimeUnzip"    
 }
 Function New-File-Download {
@@ -102,30 +117,34 @@ Function New-File-Download {
     $TimerStartTimeDownload = $(get-date)
 
     Write-Host "  Download-File - Processing url : $url"
-    $FilePath = "$($CurrentDirectory)\$($url.ToString().Substring($url.ToString().LastIndexOf("/") + 1))"
-
-    # Make sure the destination directory exists
-    # System.IO.FileInfo works even if the file/dir doesn't exist, which is better then get-item which requires the file to exist
-    # If (! ( Test-Path ([System.IO.FileInfo]$FilePath).DirectoryName ) ) { [void](New-Item ([System.IO.FileInfo]$FilePath).DirectoryName -force -type directory)}
+    $FilePath = "$($CurrentDirectory)\$(Get-FileNameFromUrl -Url $url.ToString())"
 
     #see if this file exists
     Write-Host "  Download-File - Checking if $FilePath already exists locally"
     if ( -not (Test-Path $FilePath) ) {
-        #use simple download
         Write-Host "  Download-File - File wasn't downloaded, downloading to $FilePath..."
-        # [void] (New-Object System.Net.WebClient).DownloadFile($url.ToString(), $FilePath)
-        $useBitTransfer = $null -ne (Get-Module -Name BitsTransfer -ListAvailable) -and ($PSVersionTable.PSVersion.Major -le 5)
-        if ($useBitTransfer) {
-            Write-Host "  Download-File - Using BitTransfer method"
-            Start-BitsTransfer -Source $url.ToString() -Destination $FilePath
-        } else {
-            Invoke-WebRequest -Uri $url.ToString() -OutFile $FilePath
+        # BITS doesn't handle pre-signed URLs (with query parameters) well, so disable it for those
+        $hasQueryString = -not [string]::IsNullOrEmpty($url.Query)
+        $useBitTransfer = $script:BitTransferAvailable -and (-not $hasQueryString)
+        
+        try {
+            if ($useBitTransfer) {
+                Write-Host "  Download-File - Using BitTransfer method"
+                Start-BitsTransfer -Source $url.AbsoluteUri -Destination $FilePath -DisplayName "Downloading $(Split-Path $FilePath -Leaf)"
+            } else {
+                Write-Host "  Download-File - Using Invoke-WebRequest method"
+                Invoke-WebRequest -Uri $url.AbsoluteUri -OutFile $FilePath
+            }
+        } catch {
+            Write-Host "  Download-File - Error downloading file: $_" -ForegroundColor Red
+            if (Test-Path $FilePath) { Remove-Item $FilePath -Force }
+            throw
         }
     } else {
-        Write-Host "  Download-File - File already downloaded, not donwloading $FilePath..."
+        Write-Host "  Download-File - File already downloaded, not downloading $FilePath..."
     }
-    $TimerEapsedTimeDownload = $(get-date) - $TimerStartTimeDownload
-    $TimerTotalTimeDownload = "{0:HH:mm:ss}" -f ([datetime]$TimerEapsedTimeDownload.Ticks)
+    $TimerElapsedTimeDownload = $(get-date) - $TimerStartTimeDownload
+    $TimerTotalTimeDownload = "{0:HH:mm:ss}" -f ([datetime]$TimerElapsedTimeDownload.Ticks)
     Write-Host "  Download-File - Elapsed time: $TimerTotalTimeDownload"
 }
 Function New-Partition-Path{
@@ -186,22 +205,18 @@ Function New-File-Transfer {
     #see if this file exists
     Write-Host "  Transfer-File - Checking if $path_dst/$file_src already exists"
     if ( -not (Test-Path "$path_dst/$file_src") ) {
-        #use simple download
         Write-Host "  Transfer-File - File doesn't exists..."
-        # [void] (New-Object System.Net.WebClient).DownloadFile($url.ToString(), $FilePath)
-        $useBitTransfer = $null -ne (Get-Module -Name BitsTransfer -ListAvailable) -and ($PSVersionTable.PSVersion.Major -le 5)
-        $useBitTransfer = $null
-        if ($useBitTransfer) {
-            Write-Host "  Transfer-File - Using BitTransfer method"
-            Start-BitsTransfer -Source "$path_src/$file_src" -Destination $path_dst
-        } else {
-            Copy-Item -Path "$path_src/$file_src" -Destination $path_dst -Recurse -Force
+        try {
+            Copy-Item -Path "$path_src/$file_src" -Destination $path_dst -Recurse -Force -ErrorAction Stop
+        } catch {
+            Write-Host "  Transfer-File - Error transferring file: $_" -ForegroundColor Red
+            throw
         }
     } else {
-        Write-Host "  Transfer-File - File already exists, not transfering..."
+        Write-Host "  Transfer-File - File already exists, not transferring..."
     }
-    $TimerEapsedTimeTransfer = $(get-date) - $TimerStartTimeTransfer
-    $TimerTotalTimeTransfer = "{0:HH:mm:ss}" -f ([datetime]$TimerEapsedTimeTransfer.Ticks)
+    $TimerElapsedTimeTransfer = $(get-date) - $TimerStartTimeTransfer
+    $TimerTotalTimeTransfer = "{0:HH:mm:ss}" -f ([datetime]$TimerElapsedTimeTransfer.Ticks)
     Write-Host "  Transfer-File - Elapsed time: $TimerTotalTimeTransfer"
 }
 Function New-Timer {
@@ -212,8 +227,8 @@ Function New-Timer {
 }
 Function Remove-Timer {
 	$TimerStopTime = $(get-date)
-    $TimerEapsedTime = $TimerStopTime - $TimerStartTime
-    $TimerTotalTime = "{0:HH:mm:ss}" -f ([datetime]$TimerEapsedTime.Ticks)
+    $TimerElapsedTime = $TimerStopTime - $TimerStartTime
+    $TimerTotalTime = "{0:HH:mm:ss}" -f ([datetime]$TimerElapsedTime.Ticks)
     Write-Host ""
     Write-Host "  -> Timer stopped: $TimerStopTime - Elapsed time: $TimerTotalTime"
     Write-Host ""
@@ -228,7 +243,7 @@ Function Set-Lock{
         Write-Host "  Set-Lock - Lock file doesn't exists, creating..."
         "$($DiskId)" | Out-File -FilePath $LockFilePath
     } else {
-        if ($IgnoreLock -eq $True) {
+        if ($IgnoreLock) {
             Write-Host "  Set-Lock - Disk is already in use as per lock file, ignoring lock as per command parameters..."
         } else {
             Write-Host "  Set-Lock - Disk is already in use as per lock file, exiting..."
@@ -253,6 +268,18 @@ Function Remove-Lock{
     }
 }
 
+# Setup error trap to cleanup lock file
+trap {
+    if ($DiskId) {
+        $LockFilePath = $CurrentDirectory + "\$($scriptName).lck.$($DiskId)"
+        if (Test-Path $LockFilePath) {
+            Write-Host "  Trap - Cleaning up lock file due to error..." -ForegroundColor Yellow
+            Remove-Item $LockFilePath -Force -ErrorAction SilentlyContinue
+        }
+    }
+    break
+}
+
 if(-not($DiskId)) { 
     Show-Usage
     Show-Disk
@@ -272,9 +299,9 @@ if(-not($DiskNumber)) {
     Show-Disk
     Show-Exit 1
 }
-if( $Disk.Size -lt 20 ) { 
+if( $Disk.Size -lt ($MinimumUSBSize / 1GB) ) { 
     Write-Host ""
-    Write-Host "USB Disk is too small. It must be at least 20GB"
+    Write-Host "USB Disk is too small. It must be at least $($MinimumUSBSize / 1GB)GB"
     Show-Exit 1
 }
 
@@ -286,15 +313,20 @@ if(($DiskNumber.PartitionStyle -eq "RAW")) {
     Initialize-Disk -Number $DiskNumber -PartitionStyle MBR -Confirm:$False  
 }
 
-if($SkipDownload -eq $False) {
+if(-not $SkipDownload) {
 	Write-Host ""
 	Write-Host "Downloading required files..."
 	Write-Host ""
 
 	New-Timer
 
-	New-File-Download -url $ISOFileUrl
-	New-File-Download -url $FactoryResetUrl
+	try {
+		New-File-Download -url $ISOFileUrl
+		New-File-Download -url $FactoryResetUrl
+	} catch {
+		Write-Host "Error during download: $_" -ForegroundColor Red
+		Show-Exit 1
+	}
 
 	Remove-Timer
 
@@ -307,14 +339,33 @@ if($SkipDownload -eq $False) {
 
 function Pass-Parameters {
     Param ([hashtable]$NamedParameters)
-    return ($NamedParameters.GetEnumerator()|%{"-$($_.Key) `"$($_.Value)`""}) -join " "
+    $params = @()
+    foreach ($param in $NamedParameters.GetEnumerator()) {
+        # Check if the parameter is a switch (boolean true/false)
+        if ($param.Value -is [System.Management.Automation.SwitchParameter]) {
+            if ($param.Value.IsPresent) {
+                $params += "-$($param.Key)"
+            }
+        } elseif ($param.Value -is [bool]) {
+            if ($param.Value) {
+                $params += "-$($param.Key)"
+            }
+        } else {
+            # Regular parameter with value
+            $params += "-$($param.Key) `"$($param.Value)`""
+        }
+    }
+    return $params -join " "
 }
 
 # Self-elevate the script if required
 if (-Not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] 'Administrator')) {
 	if ([int](Get-CimInstance -Class Win32_OperatingSystem | Select-Object -ExpandProperty BuildNumber) -ge 6000) {
+        Write-Host ""
+        Write-Host "Restarting script with elevated privileges..."
+        # Re-run the script with elevated privileges
 		$MyInvocation.BoundParameters["CurrentDirectory"] = $CurrentDirectory
-		$CommandLine = "-NoExit -File `"" + $MyInvocation.MyCommand.Path + "`" " + (Pass-Parameters $MyInvocation.BoundParameters) + " " + $MyInvocation.UnboundArguments + " -SkipDownload True "
+		$CommandLine = "-NoExit -File `"" + $MyInvocation.MyCommand.Path + "`" " + (Pass-Parameters $MyInvocation.BoundParameters) + " " + $MyInvocation.UnboundArguments + " -SkipDownload -IgnoreLock"
 		Start-Process -FilePath PowerShell.exe -Verb Runas -ArgumentList $CommandLine
 		Exit
 	}
@@ -333,28 +384,33 @@ $AccessPathDEEPRACER = $($CurrentDirectory) + "\AP_DEEPRACER-$($uuid)"
 $AccessPathFLASH     = $($CurrentDirectory) + "\AP_FLASH-$($uuid)"
 $AccessPathBOOT      = $($CurrentDirectory) + "\AP_BOOT-$($uuid)"
 
-if($CreatePartition -eq $True) {
+if($CreatePartition) {
     Write-Host ""
     Write-Host "Clearing the disk and creating new partitions (all data/partitions will be erased)"
     Write-Host ""
 
     New-Timer
 
-    Set-Disk   -Number $($DiskNumber) -IsOffline $False
-    Clear-Disk -Number $($DiskNumber) -RemoveData -RemoveOEM -Confirm:$False
-	
+    try {
+        Set-Disk   -Number $($DiskNumber) -IsOffline $False
+        Clear-Disk -Number $($DiskNumber) -RemoveData -RemoveOEM -Confirm:$False
+		
 ((@"
 select disk $DiskNumber
 clean
 "@
 )|diskpart)  2>$null >$null
 
-	Initialize-Disk -Number $DiskNumber -PartitionStyle "MBR" 2>$null
-	Get-Partition -DiskNumber $DiskNumber 2>$null | ForEach-Object {Remove-Partition -DiskNumber $DiskNumber -PartitionNumber $_.PartitionNumber -Confirm:$False 2>$null}
-	   
-    New-Partition -DiskNumber $DiskNumber -Size 4GB   -IsActive | Format-Volume -FileSystem FAT32 -NewFileSystemLabel "BOOT"      -Confirm:$False 
-    New-Partition -DiskNumber $DiskNumber -Size 1GB   -IsActive | Format-Volume -FileSystem FAT32 -NewFileSystemLabel "DEEPRACER" -Confirm:$False 
-    New-Partition -DiskNumber $DiskNumber -Size 20GB  -IsActive | Format-Volume -FileSystem EXFAT -NewFileSystemLabel "FLASH"     -Confirm:$False   
+		Initialize-Disk -Number $DiskNumber -PartitionStyle "MBR" 2>$null
+		Get-Partition -DiskNumber $DiskNumber 2>$null | ForEach-Object {Remove-Partition -DiskNumber $DiskNumber -PartitionNumber $_.PartitionNumber -Confirm:$False 2>$null}
+		   
+        New-Partition -DiskNumber $DiskNumber -Size $PartitionSizeBoot      -IsActive | Format-Volume -FileSystem FAT32 -NewFileSystemLabel "BOOT"      -Confirm:$False 
+        New-Partition -DiskNumber $DiskNumber -Size $PartitionSizeDeepracer -IsActive | Format-Volume -FileSystem FAT32 -NewFileSystemLabel "DEEPRACER" -Confirm:$False 
+        New-Partition -DiskNumber $DiskNumber -Size $PartitionSizeFlash     -IsActive | Format-Volume -FileSystem EXFAT -NewFileSystemLabel "FLASH"     -Confirm:$False
+    } catch {
+        Write-Host "Error creating partitions: $_" -ForegroundColor Red
+        Show-Exit 1
+    }
 
     Remove-Timer
 }
@@ -371,9 +427,9 @@ New-Partition-Path -DiskNumber $DiskNumber -PartitionNumber $PartitionNumberFLAS
 
 Remove-Timer
 
-if($IgnoreFactoryReset -eq $False) {
+if(-not $IgnoreFactoryReset) {
     Write-Host ""
-    Write-Host "Transfering Factory Reset folder to $AccessPathFLASH"
+    Write-Host "Transferring Factory Reset folder to $AccessPathFLASH"
     Write-Host ""
     
     New-Timer
@@ -415,7 +471,7 @@ if(($SSID) -and ($SSIDPassword) ) {
     Remove-Timer
 }
 
-if( $IgnoreBootDrive -eq $False) {
+if(-not $IgnoreBootDrive) {
     Write-Host ""
     Write-Host "Create Boot drive..."
     Write-Host ""
