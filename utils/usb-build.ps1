@@ -133,8 +133,7 @@ Function New-File-Download {
                 Start-BitsTransfer -Source $url.AbsoluteUri -Destination $FilePath -DisplayName "Downloading $(Split-Path $FilePath -Leaf)"
             } else {
                 Write-Host "  Download-File - Using Invoke-WebRequest method"
-                $ProgressPreference = 'SilentlyContinue'
-                Invoke-WebRequest -Uri $url.AbsoluteUri -OutFile $FilePath -UseBasicParsing
+                Invoke-WebRequest -Uri $url.AbsoluteUri -OutFile $FilePath
             }
         } catch {
             Write-Host "  Download-File - Error downloading file: $_" -ForegroundColor Red
