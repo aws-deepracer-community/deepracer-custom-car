@@ -374,7 +374,12 @@ chroot ${TARGET_DIR} /bin/bash -c "
     
     grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=deepracer --recheck --no-floppy
     update-grub
-    
+
+    # Get Ubuntu signing certificate from Grub EFI binary
+    mkdir -p /boot/efi/EFI/DEVELOPER/certs/
+    sbattach --detach /tmp/grubx64.efi.sig /boot/efi/EFI/deepracer/grubx64.efi
+    openssl pkcs7 -inform DER -in /tmp/grubx64.efi.sig -print_certs | openssl x509 -out /boot/efi/EFI/DEVELOPER/certs/ubuntu.der -outform DER
+
     # Remove hardcoded disk hints from grub.cfg files (hd2,gpt2 won't exist on target system)
     sed -i \"/set root='hd/d\" /boot/grub/grub.cfg
     sed -i 's/--hint-bios=[^ ]* --hint-efi=[^ ]* --hint-baremetal=[^ ]* //' /boot/grub/grub.cfg
