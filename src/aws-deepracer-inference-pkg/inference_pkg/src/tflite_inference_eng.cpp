@@ -191,7 +191,7 @@ namespace TFLiteInferenceEngine {
             // Set number of CPU threads for inference
             // Use the number of available CPU cores or a specific number (e.g., 4)
             int num_threads = std::thread::hardware_concurrency() - 2; // Get available CPU cores
-            if (num_threads == 0) num_threads = 2; // Fallback if detection fails
+            if (num_threads <= 0) num_threads = 2; // Fallback if detection fails
             interpreter_->SetNumThreads(num_threads);
             // Set OpenMP threads (for operations that use OpenMP)
             omp_set_num_threads(num_threads);
@@ -200,10 +200,16 @@ namespace TFLiteInferenceEngine {
 
             interpreter_->AllocateTensors();
 
+            // Cache input tensor pointers for performance (like OpenVINO)
+            inputTensorPtrs_.clear();
+            
             // Determine input and output dimensions
             for (auto i : interpreter_->inputs())
             {
                 auto const *input_tensor = interpreter_->tensor(i);
+                
+                // Cache the input tensor pointer
+                inputTensorPtrs_.push_back(interpreter_->typed_input_tensor<float>(i));
 
                 auto dims = std::vector<int>{}; 
                 std::copy(
@@ -235,6 +241,9 @@ namespace TFLiteInferenceEngine {
 
                 outputDimsArr_.push_back(dims);
             }
+            
+            // Cache output tensor pointer for performance
+            outputTensorPtr_ = interpreter_->typed_output_tensor<float>(0);
 
         }
         catch (const std::exception &ex) {
@@ -261,8 +270,9 @@ namespace TFLiteInferenceEngine {
             return;
         }
         try {
+            // Use cached tensor pointers for performance (like OpenVINO)
             for(size_t i = 0; i < inputNamesArr_.size(); ++i) {
-                float* inputLayer = interpreter_->typed_input_tensor<float>(i);
+                float* inputLayer = inputTensorPtrs_[i];
 
                 // Object that will hold the data sent to the inference engine post processed.
                 cv::Mat retData;
@@ -287,9 +297,9 @@ namespace TFLiteInferenceEngine {
             // Do inference
             interpreter_->Invoke();
 
+            // Use cached output tensor pointer
             // Last dimension of output is number of classes
             auto nClasses = outputDimsArr_[0].back();
-            auto * outputData = output_tensors_[0]->data.f;
 
             auto inferMsg = deepracer_interfaces_pkg::msg::InferResultsArray();
             for (size_t i = 0; i < msg->images.size(); ++i) {
@@ -300,7 +310,7 @@ namespace TFLiteInferenceEngine {
             for (size_t label = 0; label < nClasses; ++label) {
                 auto inferData = deepracer_interfaces_pkg::msg::InferResults();
                 inferData.class_label = label;
-                inferData.class_prob = outputData[label];
+                inferData.class_prob = outputTensorPtr_[label];
                 // Set bounding box data to -1 to indicate to subscribers that this model offers no
                 // localization information.
                 inferData.x_min = -1.0;

@@ -26,6 +26,8 @@ else
     echo "No OpenVINO found!"
 fi
 
+# Determine which ineference engine and device to use
+# Priority for MYRIAD > CPU (ROS2 Foxy x86_64 only) > TFLITE
 MYRIAD=$(lsusb | grep "Intel Movidius MyriadX")
 if [ -n "${MYRIAD}" ]; then
     INFERENCE_ENGINE='inference_engine:=OV'
@@ -37,14 +39,21 @@ else
     INFERENCE_ENGINE='inference_engine:=TFLITE'
 fi
 
+# No support for battery sensor on Raspberry Pi
 if [ -f /sys/firmware/devicetree/base/model ] && grep -q "Raspberry Pi" /sys/firmware/devicetree/base/model; then
     BATTERY_DUMMY='battery_dummy:=True'
-    CAMERA_MODE='camera_mode:=modern'
 else
     BATTERY_DUMMY=''
-    CAMERA_MODE=''
 fi
 
+# Determine camera mode
+if [ "$ROS_DISTRO" == "foxy" ]; then
+    CAMERA_MODE=''
+else
+    CAMERA_MODE='camera_mode:=modern'
+fi
+
+# Read in logging configuration
 if [ -f /opt/aws/deepracer/logging.conf ]; then
     LOGGING_MODE="logging_mode:=$(cat /opt/aws/deepracer/logging.conf | grep mode | cut -d'=' -f2 | tr -d '[:space:]')"
     LOGGING_PROVIDER="logging_provider:=$(cat /opt/aws/deepracer/logging.conf | grep provider | cut -d'=' -f2 | tr -d '[:space:]')"
@@ -53,6 +62,7 @@ else
     LOGGING_PROVIDER='logging_provider:=sqlite3'
 fi
 
+# Check if the LiDAR is connected via UART
 CP210X=$(lsusb | grep "CP210x UART Bridge")
 if [ -n "${CP210X}" ]; then
     echo "RPLIDAR / UART Bridge found!"

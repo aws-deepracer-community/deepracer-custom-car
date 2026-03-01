@@ -22,11 +22,12 @@ The repository is a merge of [deepracer-scripts](https://github.com/davidfsmith/
 ## Features
 
 The main features of the custom software stack is
-- Performance improvement through using compressed image transport for main processing pipeline
-- Modern user-interface from [Deepracer Custom Console](https://github.com/aws-deepracer-community/deepracer-custom-console).
-- Inference using OpenVINO with Intel GPU (original DeepRacer), OpenVino with Myriad Neural Compute Stick (NCS), or Tensorflow Lite
+- Performance improvement through using compressed image transport for the primary perception pipeline
+- Modern user-interface from [Deepracer Custom Console](https://github.com/aws-deepracer-community/deepracer-custom-console)
+- Inference using OpenVINO with Intel GPU (original DeepRacer), OpenVINO with Myriad Neural Compute Stick (NCS), or TensorFlow Lite across RPi and original hardware
+- Ubuntu 24.04 support for Raspberry Pi 5 and the original DeepRacer including an updated installer and flashing flow
 - Model Optimizer caching, speeding up switching of models
-- Capture in-car camera and inference results to a ROS Bag for logfile analysis
+- Capture in-car camera and inference results to a ROS Bag for logfile analysis (Python or high-performance C++ logging node)
 - Car health and latency analysis both in console and the ROS Bag
 - Reduced log output from chatty nodes
 
@@ -43,19 +44,24 @@ In the `utils/` folder there are utilities to create a USB flash stick for the o
 
 ### Installation scripts
 
-There are separate installation scripts for the original DeepRacer on Ubuntu 20.04/ROS2 Foxy, the Raspberry Pi4 based car on Ubuntu 22.04/ROS2 Humble and the Raspberry Pi5 based car on Ubuntu 24.04/ROS2 Humble. Basic installation depends on pre-packages apt/deb packages, and does not require any packages to be compiled on the car itself.
+There are separate installation scripts for the original DeepRacer on Ubuntu 20.04/ROS2 Foxy, the Raspberry Pi 4 based car on Ubuntu 22.04/ROS2 Humble, and the original car or Raspberry Pi 4/5 on Ubuntu 24.04/ROS2 Jazzy. Basic installation depends on pre-packaged apt/deb packages and does not require compiling on the car itself.
 
-For the original DeepRacer run:
+For the original DeepRacer on Ubuntu 20.04 (ROS 2 Foxy):
 
         sudo install_scripts/aws-20.04/install-prerequisites.sh
         sudo install_scripts/aws-20.04/install-deepracer.sh
 
-For the Raspberry Pi4 on Ubuntu 22.04:
+For the original DeepRacer on Ubuntu 24.04 (ROS 2 Jazzy):
+
+        sudo install_scripts/aws-24.04/install-prerequisites.sh
+        sudo install_scripts/aws-24.04/install-deepracer.sh
+
+For the Raspberry Pi4 on Ubuntu 22.04 (ROS2 Humble):
 
         sudo install_scripts/rpi4-22.04/install-prerequisites.sh
         sudo install_scripts/rpi4-22.04/install-deepracer.sh
 
-For the Raspberry Pi 4 or 5 on Ubuntu 24.04:
+For the Raspberry Pi 4 or 5 on Ubuntu 24.04 (ROS2 Jazzy):
 
         sudo install_scripts/rpi-24.04/install-prerequisites.sh
         sudo install_scripts/rpi-24.04/install-deepracer.sh
@@ -64,14 +70,21 @@ See also [building instructions](docs/raspberry_pi.md) for the Raspberry Pi4.
 
 ### Custom Flash image (Original Car)
 
-It is also possible to flash the Original Car using a custom flash image:
-* Enter the utils directory
-* Run `./usb-build.ubuntu.sh -d [drive] -r https://larsll-build-artifact-share.s3.eu-north-1.amazonaws.com/car-image/custom_factory_reset.zip`
-* Drive is `sdb`, `sdc` or similar. Use `lsblk` to look for the available drives.
+You can flash the original DeepRacer directly from a pre-built image (20.04 or 24.04). Pick the script that matches your workstation:
 
-This builds on the original flashing procedure, but is including the steps in both `install-prerequisites.sh` and `install-deepracer.sh` giving you a much
-leaner DR install which already has already been upgraded to Ubuntu 20.04.6 LTS, and with most packages up-to-date. (The original image is providing 20.04.1 LTS, 
-and requires a long time to bring up to the latest version.)
+| Script | Host OS | Notes |
+| --- | --- | --- |
+| `usb-build.ubuntu.sh` | Ubuntu / other Linux | Preferred on Debian-based hosts; accepts `-d <drive> -r <image_url>` |
+| `usb-build.sh` | macOS / Linux | Compatible with BSD utilities; same arguments as above |
+| `usb-build.ps1` | Windows (PowerShell) | Use from an elevated PowerShell prompt; drive letter replaces `/dev/sdX` |
+
+Typical flow on Linux:
+
+1. Enter the `utils/` directory
+2. Run `./usb-build.ubuntu.sh -d <drive> -r <image_url>`
+3. `drive` is the USB device (`sdb`, `sdc`, ...). Validate with `lsblk` before running the script.
+
+The Ubuntu 24.04 image includes the refreshed installer and OpenVINO CPU pipeline; use the URL published alongside each release announcement.
 
 ## Usage
 
@@ -96,23 +109,26 @@ The custom stack exposes the following arguments which can be changed through ch
 
 The different combinations of `inference_engine` and `inference_device` are not all compatible with the RPi4, and each option comes with pros and cons. The original car software only supports OpenVINO CPU.
 
-| Feature                   | Original (Ubuntu 20.04, ROS2 Foxy)  | RPi4 (Ubuntu 22.04, ROS2 Humble)  | RPi4/RPi5 (Ubuntu 24.04, ROS2 Jazzy)  | Notes                                                                 |
-|---------------------------|-------------------------------------|-----------------------------------|---------------------------------------|-----------------------------------------------------------------------|
-| Camera                    | Original USB (incl. Stereo)         | RPi Camera Module 2 + USB         | RPi Camera Module 2 & 3 + USB         |                                                                       |
-| TensorFlow Lite (CPU)     | Yes                                 | Yes                               | Yes                                   | Default for RPi                                                       |
-| OpenVINO (CPU)            | Yes                                 | No                                | No                                    | Default for Original                                                  |
-| OpenVINO (GPU)            | Yes                                 | No                                | No                                    | Reduces CPU load, but model takes longer to load                      |
-| OpenVINO (NCS2/Myriad X)  | Yes                                 | Yes                               | No                                    | Reduces CPU load, requires NCS2 stick, model takes longer to load     |
+| Feature                   | Original (Ubuntu 20.04, ROS2 Foxy)  | Original (Ubuntu 24.04, ROS2 Jazzy)  | RPi4 (Ubuntu 22.04, ROS2 Humble)  | RPi4/RPi5 (Ubuntu 24.04, ROS2 Jazzy)  | Notes                                                                 |
+|---------------------------|-------------------------------------|--------------------------------------|-----------------------------------|---------------------------------------|-----------------------------------------------------------------------|
+| Camera                    | Original USB (incl. Stereo)         | Original USB (incl. Stereo)          | RPi Camera Module 2 + USB         | RPi Camera Module 2 & 3 + USB         |                                                                       |
+| TensorFlow Lite (CPU)     | Yes                                 | Yes                                  | Yes                               | Yes                                   | Default for RPi                                                       |
+| OpenVINO (CPU)            | Yes                                 | Yes                                  | No                                | No                                    | Default for Original                                                  |
+| OpenVINO (GPU)            | Yes                                 | No                                   | No                                | No                                    | Reduces CPU load, but model takes longer to load                      |
+| OpenVINO (NCS2/Myriad X)  | Yes                                 | No                                   | Yes                               | No                                    | Reduces CPU load, requires NCS2 stick, model takes longer to load     |
 
 The different modes have been tested for equivalency, and it is verified that they provide the same results (identical picture in -> identical action taken). Less than 1 per 1000 frames are differing, mainly due to the model not having a clear action, and several actions are having very similar probabilities.
 
 ### Logging
 
-If you insert a USB stick or SD card with a folder called `logs/` then this will be automatically mounted, and when you start the car in autonomous mode then a ROS Bag file is created storing the inference results, which also contains the ROS messages.
+If you insert a USB stick or SD card with a folder called `logs/` then this will be automatically mounted, and when you start the car in autonomous mode a ROS 2 bag is created capturing inference results, camera images, and health metrics. The community logging package now ships in-tree (`src/aws-deepracer-community-logging-pkg`) with two implementations:
+
+- **Python node:** Used on Foxy/Humble deployments
+- **C++ node:** Default on Jazzy (e.g., Ubuntu 24.04) with ~80–90% lower CPU and 40–60% lower memory usage
 
 Images are only captured if the autonomous mode is running ("Start Vehicle"). If stopped no images are stored. If the same model is restarted within 15 seconds the new images are appended to the same bag. After 15 seconds the bag is closed, and if restarted a new bag is created. If the selected model changes, the current bag is immediately closed, and a new one created once the car is started.
 
-[larsll-deepracer-logging](https://github.com/larsll/larsll-deepracer-logging.git) is providing a script to convert the bag into a video, combining it with a grad-cam analysis to visualize what happens inside of the car.
+[larsll-deepracer-logging](https://github.com/larsll/larsll-deepracer-logging.git) still hosts supplementary scripts (e.g., bag-to-video with grad-cam overlays) for offline analysis.
 
 ## Building a car with Raspberry Pi
 

@@ -67,6 +67,9 @@ apt -y --no-install-recommends install curl network-manager wireless-tools net-t
 cp $DIR/build_scripts/files/pi/10-manage-wifi.conf /etc/NetworkManager/conf.d/
 systemctl disable systemd-networkd-wait-online
 
+# Remove option for sleep, suspend, hibernate, and hybrid-sleep
+systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
+
 sed -i 's/wifi.powersave = 3/wifi.powersave = 2/' /etc/NetworkManager/conf.d/default-wifi-powersave-on.conf
 # Replace the existing sed line with this more robust approach
 if grep -q "wlan0:" /etc/netplan/50-cloud-init.yaml; then

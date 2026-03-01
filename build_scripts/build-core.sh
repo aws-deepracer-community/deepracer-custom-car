@@ -6,7 +6,7 @@ export DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/.. >/dev/null 2>&1 && pwd)"
 CACHE="false"
 export HW_PLATFORM="${HW_PLATFORM:-DR}"  # Default to DR if not set
 
-while getopts "cp:" opt; do
+while getopts "cp:s" opt; do
     case ${opt} in
     c)
         CACHE="true"
@@ -14,10 +14,14 @@ while getopts "cp:" opt; do
     p)
         HW_PLATFORM="${OPTARG}"
         ;;
+    s)
+        SINGLE_PACKAGE="true"
+        ;;
     \?)
-        echo "Usage: cmd [-c] [-p platform]"
+        echo "Usage: cmd [-c] [-p platform] [-s]"
         echo "  -c: Use cache"
         echo "  -p: Hardware platform (DR, RPI)"
+        echo "  -s: Single package build and only two cores for compilation"
         exit 1
         ;;
     esac
@@ -55,9 +59,24 @@ else
     echo "No OpenVINO in the environment."
 fi
 
+# Check single package build
+if [ "$SINGLE_PACKAGE" == "true" ]; then
+    echo "Limiting build to sequential execution and two cores"
+    COLCON_BUILD_ARGS="--executor sequential"
+    CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Release"
+    export MAKEFLAGS="-j2"
+else
+    COLCON_BUILD_ARGS="--parallel-workers 4"
+    CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Release"
+fi
+
 # Change to build directory
 cd src
 
+# Remove warnings
+export PYTHONWARNINGS="ignore::DeprecationWarning,ignore:::setuptools.command.install"
+
+# Clean up and pull the latest code if not using cache
 if [ "$CACHE" != "true" ]; then
 
     # Remove previous builds (gives clean build)
@@ -76,7 +95,6 @@ if [ "$CACHE" != "true" ]; then
     fi
 
     if [ $ROS_DISTRO == "jazzy" ]; then
-        export PYTHONWARNINGS=ignore::DeprecationWarning
         vcs import --input .rosinstall .
         vcs import --input .rosinstall-jazzy .
     else
@@ -98,11 +116,10 @@ rosdep install -i --from-path . --ignore-src --rosdistro $ROS_DISTRO -y
 cd $DIR
 
 # Build the core
-export PYTHONWARNINGS=ignore:::setuptools.command.install
 if [ "$ROS_DISTRO" == "humble" ] || [ "$ROS_DISTRO" == "jazzy" ]; then
-    colcon build --packages-up-to deepracer_launcher logging_pkg camera_ros --cmake-args -DCMAKE_BUILD_TYPE=Release
+    colcon build --packages-up-to deepracer_launcher logging_pkg camera_ros $COLCON_BUILD_ARGS --cmake-args $CMAKE_ARGS
 else
-    colcon build --packages-up-to deepracer_launcher rplidar_ros logging_pkg --cmake-args -DCMAKE_BUILD_TYPE=Release
+    colcon build --packages-up-to deepracer_launcher rplidar_ros logging_pkg $COLCON_BUILD_ARGS --cmake-args $CMAKE_ARGS
 fi
 
 set +e

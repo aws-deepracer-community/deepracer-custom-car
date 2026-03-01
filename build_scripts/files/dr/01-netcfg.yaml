@@ -1,0 +1,5 @@
+# Network configuration for DeepRacer
+# This file configures the network interfaces using NetworkManager as the renderer
+network:
+  version: 2
+  renderer: NetworkManager

@@ -77,6 +77,14 @@ if [ ! -d "$DIR/deps/geocam-bin-armhf" ]; then
     git clone https://github.com/doitaljosh/geocam-bin-armhf
 fi
 
+# Get Marvell firmware
+if [ $ROS_DISTRO == "jazzy" ] && [ ! -d "$DIR/deps/marvell-firmware" ]; then
+    mkdir -p $DIR/deps/marvell-firmware
+    wget https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/tree/LICENCE.Marvell -O $DIR/deps/marvell-firmware/LICENCE.Marvell
+    wget https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/mrvl/pcieusb8997_combo_v4.bin?id=bd72387b8e49b1b7268ee60c97a131419284fb39 -O $DIR/deps/marvell-firmware/pcieusb8997_combo_v4.bin
+    zstd $DIR/deps/marvell-firmware/pcieusb8997_combo_v4.bin -o $DIR/deps/marvell-firmware/pcieusb8997_combo_v4.bin.zst
+fi
+
 rm -rf $DIR/pkg-build/aws*
 mkdir -p $DIR/pkg-build $DIR/pkg-build/src $DIR/dist
 cd $DIR/pkg-build
@@ -130,9 +138,20 @@ for pkg in $PACKAGES; do
             cp $DIR/build_scripts/files/pi/isc-dhcp-server opt/aws/deepracer/util/isc-dhcp-server
             cp $DIR/build_scripts/files/pi/deepracer_dhcp.conf opt/aws/deepracer/util/deepracer_dhcp.conf
         else
-            cp $DIR/install_scripts/aws-20.04/aws_deepracer-community.list etc/apt/sources.list.d/aws_deepracer-community.list
+            if [ $ROS_DISTRO == "jazzy" ]; then
+                cp $DIR/install_scripts/aws-24.04/aws_deepracer-community.list etc/apt/sources.list.d/aws_deepracer-community.list
+                rm etc/apt/sources.list.d/aws_deepracer.list
+                cp $DIR/build_scripts/files/dr/otg_eth.sh opt/aws/deepracer/util/otg_eth.sh
+                mkdir -p opt/aws/deepracer/firmware/mrvl 
+                cp $DIR/deps/marvell-firmware/LICENCE* opt/aws/deepracer/firmware/
+                cp $DIR/deps/marvell-firmware/pcieusb8997_combo_v4.bin.zst opt/aws/deepracer/firmware/mrvl/
+                echo -e "\ncp /opt/aws/deepracer/firmware/mrvl/pcieusb8997_combo_v4.bin.zst /lib/firmware/mrvl/pcieusb8997_combo_v4.bin.zst" | tee -a DEBIAN/postinst >/dev/null
+            else
+                cp $DIR/install_scripts/aws-20.04/aws_deepracer-community.list etc/apt/sources.list.d/aws_deepracer-community.list
+            fi
         fi
         cp $DIR/build_scripts/files/common/aws-deepracer-util-conffiles DEBIAN/conffiles
+        cp $DIR/build_scripts/files/common/setup.py opt/aws/deepracer/util/setup.py
         cp $DIR/build_scripts/files/common/nginx_install_certs.sh opt/aws/deepracer/nginx/nginx_install_certs.sh
         cp $DIR/build_scripts/files/common/nginx_configure.sh opt/aws/deepracer/nginx/nginx_configure.sh
         cp $DIR/build_scripts/files/common/nginx.default opt/aws/deepracer/nginx/data/nginx.default
@@ -185,7 +204,12 @@ for pkg in $PACKAGES; do
                             ros-$ROS_DISTRO-rosbag2-storage-mcap"
         fi
         if [ "$ROS_DISTRO" == "jazzy" ]; then
-            PACKAGE_DEPS="$PACKAGE_DEPS, ros-$ROS_DISTRO-image-view, ros-$ROS_DISTRO-libcamera (>= 1:0.5.0+drpi)"
+            PACKAGE_DEPS="$PACKAGE_DEPS, ros-$ROS_DISTRO-image-view"
+            if [ $TARGET_ARCH == "arm64" ]; then
+                PACKAGE_DEPS="$PACKAGE_DEPS, ros-$ROS_DISTRO-libcamera (>= 1:0.5.0+drpi)"
+            else
+                PACKAGE_DEPS="$PACKAGE_DEPS, ros-$ROS_DISTRO-libcamera"
+            fi
         fi
         # Clean PACKAGE_DEPS variable for additional white space
         PACKAGE_DEPS=$(echo "$PACKAGE_DEPS" | tr -s ' ' | sed 's/^ *//;s/ *$//')

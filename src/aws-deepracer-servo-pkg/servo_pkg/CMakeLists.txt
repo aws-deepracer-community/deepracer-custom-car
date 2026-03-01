@@ -35,6 +35,18 @@ if(DEFINED HW_PLATFORM)
   endif()
 endif()
 
+# Detect Ubuntu version
+execute_process(
+  COMMAND lsb_release -cs
+  OUTPUT_VARIABLE UBUNTU_VERSION
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+if(UBUNTU_VERSION STREQUAL "noble")
+  add_definitions(-DUBUNTU_NOBLE)
+  message(STATUS "Building for Ubuntu Noble (24.04)")
+endif()
+
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)

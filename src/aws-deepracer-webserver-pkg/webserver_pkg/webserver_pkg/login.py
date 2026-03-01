@@ -74,7 +74,12 @@ def login():
         flask.Response: Response object with login page or home page details.
     """
     COOKIE_DURATION = 12
-    webserver_node = webserver_publisher_node.get_webserver_node()
+
+    try:
+        webserver_node = webserver_publisher_node.get_webserver_node()
+    except RuntimeError as e:
+        return make_response('', 500)
+
     webserver_node.get_logger().info(f"Called /login with {request.method}")
     if request.method == "POST":
         response = make_response(jsonify({"redirect": "/home"}), 200)
@@ -143,7 +148,12 @@ def auth():
         resp = jsonify("")
     else:
         resp = make_response("")
-    status, cookie_val, max_age = check_authentication()
+    
+    try:
+        status, cookie_val, max_age = check_authentication()
+    except RuntimeError as e:
+        return resp, 500
+
     if not status:
         return resp, 401
 

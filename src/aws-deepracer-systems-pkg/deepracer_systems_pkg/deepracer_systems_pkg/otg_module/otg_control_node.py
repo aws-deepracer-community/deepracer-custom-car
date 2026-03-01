@@ -36,6 +36,7 @@ import threading
 import subprocess
 import rclpy
 from rclpy.node import Node
+from rclpy.executors import MultiThreadedExecutor
 
 from deepracer_systems_pkg import (file_system_utils,
                                    scheduler,
@@ -81,17 +82,7 @@ class OTGControlNode(Node):
                                 otg_config.GET_OTG_LINK_STATE_SERVICE_NAME,
                                 self.get_otg_link_state)
 
-        # Heartbeat timer.
-        self.timer_count = 0
-        self.timer = self.create_timer(5.0, self.timer_callback)
-
         self.get_logger().info("OTG Control node successfully created")
-
-    def timer_callback(self):
-        """Heartbeat function to keep the node alive.
-        """
-        self.get_logger().debug(f"Timer heartbeat {self.timer_count}")
-        self.timer_count += 1
 
     def get_otg_link_state(self, req, res):
         """Callback for the get_otg_link_state service. Returns the host connection details.
@@ -124,7 +115,6 @@ class OTGControlNode(Node):
     def __exit__(self, exc_type, exc_value, traceback):
         """Called when the object is destroyed.
         """
-        self.destroy_timer(self.timer)
         self.scheduler.schedule_exit()
 
         if otg_config.ENABLE_OTG_PERIODIC_CHECK:
@@ -236,9 +226,14 @@ class OTGControlNode(Node):
 def main(args=None):
     try:
         rclpy.init(args=args)
+        executor = MultiThreadedExecutor()
         with OTGControlNode() as otg_control_node:
-            rclpy.spin(otg_control_node)
-            otg_control_node.destroy_node()
+            executor.add_node(otg_control_node)
+            try:
+                executor.spin()
+            finally:
+                executor.remove_node(otg_control_node)
+                otg_control_node.destroy_node()
 
     except KeyboardInterrupt:
         pass

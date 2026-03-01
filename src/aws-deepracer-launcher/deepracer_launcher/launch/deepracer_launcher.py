@@ -14,10 +14,9 @@
 #   limitations under the License.                                              #
 #################################################################################
 
-from calendar import c
 import math
+import os
 
-from numpy import e
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch.substitutions import LaunchConfiguration
@@ -54,7 +53,7 @@ def launch_setup(context, *args, **kwargs):
         camera_params = {'width': resolution[0],
                          'height': resolution[1],
                          'FrameDurationLimits': [math.floor(1e6 / fps), math.ceil(1e6 / fps)],
-                         'timestamp_source': 'node'}
+                         'use_node_time': True}
 
         # Camera detection
         try:
@@ -62,7 +61,7 @@ def launch_setup(context, *args, **kwargs):
             camera_manager = CameraManager.singleton()
 
             camera_model = None
-            
+
             # If camera_index is specified, use it to select the camera
             if camera_index >= 0 and camera_index < len(camera_manager.cameras):
                 camera = camera_manager.cameras[camera_index]
@@ -75,17 +74,18 @@ def launch_setup(context, *args, **kwargs):
 
                 # Select the sensor mode based on the camera model
                 # RPi Cameras need specific sensor modes to avoid cropping
+                # Enable auto-focus for IMX708 camera
                 if camera_model == 'imx708':
                     camera_params['sensor_mode'] = '2304:1296'
                     camera_params['format'] = 'BGR888'
+                    camera_params['AfMode'] = 2
+                    camera_params['AfPause'] = 2
                 elif camera_model == 'imx219':
                     camera_params['sensor_mode'] = '1640:1232'
                     camera_params['format'] = 'BGR888'
 
         except ImportError as e:
-            print("libcamera is not available, using imx219 camera settings.")
-            camera_params['sensor_mode'] = '1640:1232'
-            camera_params['format'] = 'BGR888'
+            print("libcamera is not available, using automatic camera settings.")
 
         camera_node = Node(
             package='camera_ros',
@@ -96,14 +96,7 @@ def launch_setup(context, *args, **kwargs):
                 # Topic remappings
                 ('/camera_pkg/camera/camera_info', '/camera_pkg/camera_info'),
                 ('/camera_pkg/camera/image_raw', '/camera_pkg/display_mjpeg'),
-                ('/camera_pkg/camera/image_raw/compressed', '/camera_pkg/display_mjpeg/compressed'),
-                # Service remappings
-                ('/camera_pkg/camera/describe_parameters', '/camera_pkg/describe_parameters'),
-                ('/camera_pkg/camera/get_parameter_types', '/camera_pkg/get_parameter_types'),
-                ('/camera_pkg/camera/get_parameters', '/camera_pkg/get_parameters'),
-                ('/camera_pkg/camera/list_parameters', '/camera_pkg/list_parameters'),
-                ('/camera_pkg/camera/set_parameters', '/camera_pkg/set_parameters'),
-                ('/camera_pkg/camera/set_parameters_atomically', '/camera_pkg/set_parameters_atomically')
+                ('/camera_pkg/camera/image_raw/compressed', '/camera_pkg/display_mjpeg/compressed')
             ]
         )
 
@@ -257,10 +250,14 @@ def launch_setup(context, *args, **kwargs):
                 'default_transport': 'compressed'
         }]
     )
+
+    # Use C++ version for Jazzy, Python version for other distributions
+    bag_log_executable = 'bag_log_node_cpp' if os.environ.get('ROS_DISTRO') == 'jazzy' else 'bag_log_node'
+
     bag_log_node = Node(
         package='logging_pkg',
         namespace='logging_pkg',
-        executable='bag_log_node',
+        executable=bag_log_executable,
         name='bag_log_node',
         parameters=[{
                 'logging_mode': LaunchConfiguration(
@@ -340,7 +337,7 @@ def generate_launch_description():
             DeclareLaunchArgument(
                 name="camera_index",
                 default_value="0",
-                description="Index of the camera to use, applicable to modern camera_mode only"),                
+                description="Index of the camera to use, applicable to modern camera_mode only"),
             DeclareLaunchArgument(
                 name="rplidar",
                 default_value="True",

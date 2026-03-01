@@ -67,6 +67,10 @@ namespace TFLiteInferenceEngine {
         std::string outputName_;      
         std::vector<std::vector<int>> outputDimsArr_;
         std::vector<TfLiteTensor const *> output_tensors_;
+        /// Cached input tensor pointers for performance (like OpenVINO implementation)
+        std::vector<float*> inputTensorPtrs_;
+        /// Cached output tensor pointer for performance
+        float* outputTensorPtr_;
 
     };
 }

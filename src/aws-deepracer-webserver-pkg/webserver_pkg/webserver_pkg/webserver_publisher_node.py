@@ -365,8 +365,11 @@ def get_webserver_node():
         Node: Global webserver node object.
     """
     global webserver_node
-    if 'db' not in g:
+    if 'webserver_node' not in g:
         g.webserver_node = webserver_node
+
+    if g.webserver_node is None:
+        raise RuntimeError("Webserver node is not started yet.")
 
     return g.webserver_node
 
