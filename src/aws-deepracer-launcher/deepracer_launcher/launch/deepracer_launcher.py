@@ -85,9 +85,7 @@ def launch_setup(context, *args, **kwargs):
                     camera_params['format'] = 'BGR888'
 
         except ImportError as e:
-            print("libcamera is not available, using imx219 camera settings.")
-            camera_params['sensor_mode'] = '1640:1232'
-            camera_params['format'] = 'BGR888'
+            print("libcamera is not available, using automatic camera settings.")
 
         camera_node = Node(
             package='camera_ros',
