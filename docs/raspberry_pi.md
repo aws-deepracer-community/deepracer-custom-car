@@ -1,4 +1,4 @@
-# Building a DeepRacer for Raspberry Pi 4
+# Building a DeepRacer for Raspberry Pi 4 / 5
 
 ## Features
 
@@ -19,11 +19,11 @@ The following parts are needed:
 * 4-pin Servo, e.g. Surpass Hobby S0017M - original DeepRacer already includes this item
 * 3D-print of the parts in `/drawing`
 * WLToys Body Posts (part# A969-05)
-* Raspberry Pi 4, recommended 2GB or more of RAM
+* Raspberry Pi 4 or Raspberry Pi 5, recommended 2GB or more of RAM
     * Stand-off set (2.5mm)
 * [Waveshare Servo Driver Hat](https://www.waveshare.com/product/raspberry-pi/hats/motors-relays/servo-driver-hat.htm) or compatible PCA9865 servo boards. 
     * Stackable header 40pin (to get higher servo driver hat higher than the fan)
-* Raspberry Pi Camera 2
+* Raspberry Pi Camera Module 2 or Module 3
     * Longer cable (20-25cm)
     * Screws M2x15mm + nuts
 * Recommended cooling fan: [GeeekPi Raspberry Pi 4 Armor Lite](https://www.amazon.de/gp/product/B091L1XKL6/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&psc=1)
@@ -41,26 +41,26 @@ The following parts are needed:
 
 Installation of software is reasonably straight forward, as pre-built packages are provided:
 
-- Flash an SD card with Ubuntu 22.04 Server for ARM64 using the Raspberry Pi Imager.
+- Flash an SD card with **Ubuntu 24.04 Server for ARM64** using the Raspberry Pi Imager.
 - Boot the SD card, and let it upgrade (this takes some time...)
 - Run `git clone https://github.com/aws-deepracer-community/deepracer-custom-car`
-- Run `sudo ./install_scripts/rpi4-22.04/install-prerequisites.sh`
+- Run `sudo ./install_scripts/rpi-24.04/install-prerequisites.sh`
 - Reboot
-- Run `sudo ./install_scripts/rpi4-22.04/install-deepracer.sh`
+- Run `sudo ./install_scripts/rpi-24.04/install-deepracer.sh`
+
+This installs ROS 2 Jazzy and the community DeepRacer packages.
 
 Once installed you can start the stack with `sudo /opt/aws/deepracer/start_ros.sh`. To ensure a smooth start a camera needs to be plugged in.
 The launch log will now display in the console.
 
 To automatically start at boot do `sudo systemctl enable deepracer-core` and to start the service in the background `sudo systemctl start deepracer-core`.
 
+> **Note:** Ubuntu 22.04 (ROS 2 Humble) is deprecated. Scripts are still available under `install_scripts/rpi4-22.04/` for existing installations, but new builds should use Ubuntu 24.04.
+
 ### Changes
 
 Some changes have been made to the code to enable access to GPIO as sysfs layout is different on the Raspberry Pi than on the custom Intel board.
 
-### Improvements
-
-- Stripped down OS
-- Runs the custom deepracer stack also seen in [deepracer-scripts](https://github.com/davidfsmith/deepracer-scripts).
 
 ### Details
 
@@ -92,8 +92,19 @@ LiPo can power both the board and car, 3 pin (balance lead) gets wired to VIN (b
 
 **GPIO layout:**
 
-- `gpio1` - enables PWM (does not do anything, PWM is always on for the Waveshare board)
-- `gpio495`-`gpio504` - maps to PWM7 to PWM15 on the Hat, to control three RGB leds (those originally on the side of the board)
+GPIO is accessed via the `libgpiod` library (not the legacy sysfs `/sys/class/gpio/` interface).
+The GPIO chip and line numbers differ by board:
+
+| Board       | GPIO chip          | LED lines (R, G, B per LED × 3 LEDs) |
+| ----------- | ------------------ | ------------------------------------- |
+| Raspberry Pi 4 | `/dev/gpiochip0` | Lines 9–17                          |
+| Raspberry Pi 5 | `/dev/gpiochip4` | Lines 9–17                          |
+
+The three RGB LEDs (those originally on the side of the DeepRacer board) map to lines 9–17:
+LED 0 → lines 9, 10, 11 (R, G, B); LED 1 → lines 12, 13, 14; LED 2 → lines 15, 16, 17.
+
+> **Note:** The legacy sysfs GPIO numbers (`gpio1`, `gpio495`–`gpio504`) applied only to
+> Raspberry Pi 4 on Ubuntu 22.04 and are no longer used.
 
 **USB host mode:**
 To connect the USB-C port on the Raspberry Pi 4 to a USB on your computer, then you need to perform two changes:
