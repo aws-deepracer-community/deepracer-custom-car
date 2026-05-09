@@ -198,6 +198,7 @@ for pkg in $PACKAGES; do
                             ros-$ROS_DISTRO-rplidar-ros, \
                             ros-$ROS_DISTRO-camera-info-manager, \
                             ros-$ROS_DISTRO-libcamera, \
+                            ros-$ROS_DISTRO-camera-ros, \
                             ros-$ROS_DISTRO-web-video-server, \
                             ros-$ROS_DISTRO-rosbag2, \
                             ros-$ROS_DISTRO-rosbag2-py, \
