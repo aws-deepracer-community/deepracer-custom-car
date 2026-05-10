@@ -207,7 +207,7 @@ for pkg in $PACKAGES; do
         if [ "$ROS_DISTRO" == "jazzy" ]; then
             PACKAGE_DEPS="$PACKAGE_DEPS, ros-$ROS_DISTRO-image-view"
             if [ $TARGET_ARCH == "arm64" ]; then
-                PACKAGE_DEPS="$PACKAGE_DEPS, ros-$ROS_DISTRO-libcamera (>= 1:0.5.0+drpi)"
+                PACKAGE_DEPS="$PACKAGE_DEPS, ros-$ROS_DISTRO-libcamera (>= 1:0.7.1+drpi)"
             else
                 PACKAGE_DEPS="$PACKAGE_DEPS, ros-$ROS_DISTRO-libcamera"
             fi

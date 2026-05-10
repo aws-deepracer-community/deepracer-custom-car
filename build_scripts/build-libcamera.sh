@@ -39,11 +39,11 @@ VERSION=1:${VERSION_BASE}-$(lsb_release -cs)
 
 cd $DIR/deps/
 if [ ! -d "$DIR/deps/libcamera" ]; then
-    git clone --branch v0.5.2+rpt20250903 https://github.com/raspberrypi/libcamera.git
+    git clone --branch v0.7.1+rpt20260429 https://github.com/raspberrypi/libcamera.git
 else
     cd $DIR/deps/libcamera
     git fetch origin
-    git checkout v0.5.2+rpt20250903
+    git checkout v0.7.1+rpt20260429
 fi
 cd $DIR/deps/libcamera
 
