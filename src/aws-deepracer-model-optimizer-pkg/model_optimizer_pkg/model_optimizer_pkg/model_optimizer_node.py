@@ -37,6 +37,7 @@ import os
 import subprocess
 import shlex
 import re
+import xml.etree.ElementTree as ET
 import rclpy
 from rclpy.parameter import ParameterType
 from rclpy.node import Node, ParameterDescriptor
@@ -234,6 +235,35 @@ class ModelOptimizerNode(Node):
         common_params[constants.ParamKeys.MODEL_NAME] = model_name
         return common_params
 
+    def get_xml_ir_version(self, xml_path):
+        """Parse a model.xml file to extract the OpenVINO IR version.
+
+        Args:
+            xml_path (str): Path to the model.xml file.
+
+        Returns:
+            int: IR version number from the <net> element's 'version' attribute,
+                 or -1 if the file cannot be parsed.
+        """
+        try:
+            tree = ET.parse(xml_path)
+            root = tree.getroot()
+            return int(root.get('version', '-1'))
+        except Exception as ex:
+            self.get_logger().warning(f"Could not parse IR version from {xml_path}: {ex}")
+            return -1
+
+    def get_expected_ir_version(self):
+        """Return the IR version expected for the current OpenVINO optimizer.
+
+        OpenVINO 2021 (mo_tf.py) produces IR v10.
+        OpenVINO 2022 and later (mo / ovc) produce IR v11.
+
+        Returns:
+            int: Expected IR version (10 for 2021, 11 for 2022+).
+        """
+        return 10 if constants.MODEL_OPTIMIZER_VERSION == 2021 else 11
+
     def run_optimizer_mo(self, mo_path, common_params, platform_parms):
         """Helper method that combines the common commands with the platform specific
            commands.
@@ -257,12 +287,20 @@ class ModelOptimizerNode(Node):
                 f"Model file {common_params[constants.ParamKeys.MODEL_PATH]} not found")
 
         # Check if model exists
-        if os.path.isfile(os.path.join(common_params[constants.ParamKeys.OUT_DIR],
-                                       f"{common_params[constants.ParamKeys.MODEL_NAME]}.xml")):
-            self.get_logger().info(
-                f"Cached model: {common_params[constants.ParamKeys.MODEL_NAME]}.xml")
-            return 0, os.path.join(common_params[constants.ParamKeys.OUT_DIR],
-                                   f"{common_params[constants.ParamKeys.MODEL_NAME]}.xml")
+        xml_path = os.path.join(common_params[constants.ParamKeys.OUT_DIR],
+                                f"{common_params[constants.ParamKeys.MODEL_NAME]}.xml")
+        if os.path.isfile(xml_path):
+            cached_ir_version = self.get_xml_ir_version(xml_path)
+            expected_ir_version = self.get_expected_ir_version()
+            if cached_ir_version == expected_ir_version:
+                self.get_logger().info(
+                    f"Cached model: {common_params[constants.ParamKeys.MODEL_NAME]}.xml "
+                    f"(IR v{cached_ir_version})")
+                return 0, xml_path
+            else:
+                self.get_logger().info(
+                    f"IR version mismatch: cached model has IR v{cached_ir_version}, "
+                    f"expected IR v{expected_ir_version}. Re-optimizing...")
 
         cmd = f"{mo_path}"
         # Construct the cli command
@@ -395,12 +433,20 @@ class ModelOptimizerNode(Node):
                 f"Model file {common_params[constants.ParamKeys.MODEL_PATH]} not found")
 
         # Check if model exists
-        if os.path.isfile(os.path.join(common_params[constants.ParamKeys.OUT_DIR],
-                                       f"{common_params[constants.ParamKeys.MODEL_NAME]}.xml")):
-            self.get_logger().info(
-                f"Cached model: {common_params[constants.ParamKeys.MODEL_NAME]}.xml")
-            return 0, os.path.join(common_params[constants.ParamKeys.OUT_DIR],
-                                   f"{common_params[constants.ParamKeys.MODEL_NAME]}.xml")
+        xml_path = os.path.join(common_params[constants.ParamKeys.OUT_DIR],
+                                f"{common_params[constants.ParamKeys.MODEL_NAME]}.xml")
+        if os.path.isfile(xml_path):
+            cached_ir_version = self.get_xml_ir_version(xml_path)
+            expected_ir_version = self.get_expected_ir_version()
+            if cached_ir_version == expected_ir_version:
+                self.get_logger().info(
+                    f"Cached model: {common_params[constants.ParamKeys.MODEL_NAME]}.xml "
+                    f"(IR v{cached_ir_version})")
+                return 0, xml_path
+            else:
+                self.get_logger().info(
+                    f"IR version mismatch: cached model has IR v{cached_ir_version}, "
+                    f"expected IR v{expected_ir_version}. Re-optimizing...")
 
         try:
             # Parse input names and shapes - exactly like TFLite does it
