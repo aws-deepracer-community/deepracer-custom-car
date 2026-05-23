@@ -301,10 +301,12 @@ ResizePartition(){
     sudo mlabel -i ${EMMC_OTG_PATH} ::$OTG_LABEL_NAME
   
   else
-    #Resize root partition 
-    sudo partprobe ${EMMC_PATH}
+    #Resize root partition
     sudo parted ${EMMC_PATH} resizepart ${ROOT_PARTITION_NUMBER} ${MMC_TOTLE_SIZE}
-    sudo e2fsck -fy ${EMMC_ROOT_PATH}
+    sudo partprobe ${EMMC_PATH}        # notify kernel AFTER resize
+    sudo udevadm settle                # wait for kernel/udev to finish
+    sudo e2fsck -fy ${EMMC_ROOT_PATH}  # pass 1: replay journal, fix state (may exit 1)
+    sudo e2fsck -fy ${EMMC_ROOT_PATH}  # pass 2: confirm clean before resize2fs
     sudo resize2fs ${EMMC_ROOT_PATH}
 
   fi   
