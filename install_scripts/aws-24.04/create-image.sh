@@ -16,6 +16,8 @@ DISK_SIZE_GIB=8
 ENABLE_ENCRYPTION=""
 DISK_PASS="pega#1234"
 ENCRYPT_NAME="encrypt_blk"
+PART_SUFFIX=""
+FSCK_ON_UNMOUNT=""
 
 # Function to unmount all mounts
 unmount_all() {
@@ -36,7 +38,19 @@ unmount_all() {
     
     # Unmount root partition
     mountpoint -q "${TARGET_DIR}" && umount "${TARGET_DIR}" || true
-    
+
+    # Filesystem integrity checks (partitions are now unmounted)
+    if [ -n "${FSCK_ON_UNMOUNT}" ]; then
+        echo "Running filesystem checks..."
+        fsck.fat -n "${TARGET_DISK}${PART_SUFFIX}1" || true
+        if [ -n "${ENABLE_ENCRYPTION}" ]; then
+            e2fsck -f -n "${TARGET_DISK}${PART_SUFFIX}2" || true
+            [ -e "/dev/mapper/${ENCRYPT_NAME}" ] && btrfsck "/dev/mapper/${ENCRYPT_NAME}" || true
+        else
+            e2fsck -f -n "${TARGET_DISK}${PART_SUFFIX}2" || true
+        fi
+    fi
+
     # Close LUKS device if encryption is enabled
     if [ -n "${ENABLE_ENCRYPTION}" ] && [ -e "/dev/mapper/${ENCRYPT_NAME}" ]; then
         echo "Closing LUKS encrypted device..."
@@ -330,6 +344,7 @@ chroot ${TARGET_DIR} /bin/bash -c "
         wireless-tools \
         net-tools \
         i2c-tools \
+        usbutils \
         v4l-utils \
         wpasupplicant \
         rfkill \
@@ -488,6 +503,8 @@ chroot ${TARGET_DIR} /bin/bash -c "
     rm -f /etc/ssh/ssh_host_*
 
 "
+
+FSCK_ON_UNMOUNT="true"
 
 if [ -n "${UNMOUNT_ON_EXIT}" ]; then
     unmount_all
