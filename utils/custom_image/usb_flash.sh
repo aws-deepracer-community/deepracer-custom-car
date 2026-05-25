@@ -1,7 +1,7 @@
 #!/bin/bash
 VER="V1.1"
-IMAGE="dlrc_image_noble_20251123.1_tpm.img"
-IMAGE_MD5="dlrc_image_noble_20251123.1_tpm.md5"
+IMAGE="dlrc_image_noble_20260524.1.img"
+IMAGE_MD5="dlrc_image_noble_20260524.1.md5"
 
 #Default encrypt setting
 Disk_PASS="pega#1234"
@@ -10,7 +10,7 @@ OTG_LABEL_NAME="DEEPRACER"
 #OTG_LABEL_NAME="DEEPLENS"
 
 CHECK_MD5=1
-SEAL_TPM=1
+SEAL_TPM=0
 FSCK_MMCBLK=1
 OTG_ENABLE=0
 RESIZE=1
@@ -522,7 +522,7 @@ for mtabline in `cat /etc/mtab`; do
                   
                   echo $(date -u) "Reboot system now..."
                   sleep 2
-                  #reboot
+                  reboot
                 else
                     echo $(date -u) "Seal and luksChangeKey FAIL!"		
                 fi 
@@ -530,7 +530,7 @@ for mtabline in `cat /etc/mtab`; do
                 echo $(date -u) "Reboot system now..."
                 sleep 2
                 sync
-                #reboot
+                reboot
               fi       
             fi
             exit 1;
