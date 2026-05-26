@@ -26,17 +26,49 @@ else
     echo "No OpenVINO found!"
 fi
 
-# Determine which ineference engine and device to use
-# Priority for MYRIAD > CPU (ROS2 Foxy x86_64 only) > TFLITE
-MYRIAD=$(lsusb | grep "Intel Movidius MyriadX")
-if [ -n "${MYRIAD}" ]; then
-    INFERENCE_ENGINE='inference_engine:=OV'
-    INFERENCE_DEVICE='inference_device:=MYRIAD'
-elif [ "$(uname -m)" == "x86_64" ]; then
-    INFERENCE_ENGINE='inference_engine:=OV'
-    INFERENCE_DEVICE='inference_device:=CPU'
+# Require jq for config.json parsing
+if ! command -v jq &>/dev/null; then
+    echo "ERROR: jq is not installed. Install it with: sudo apt-get install -y jq" >&2
+    exit 1
+fi
+
+# Read configuration overrides from config.json
+CONFIG_FILE='/opt/aws/deepracer/config.json'
+if [ -f "${CONFIG_FILE}" ]; then
+    CFG_LOGGING_MODE=$(jq -r '.logging.mode // empty' "${CONFIG_FILE}" 2>/dev/null)
+    CFG_LOGGING_PROVIDER=$(jq -r '.logging.provider // empty' "${CONFIG_FILE}" 2>/dev/null)
+    CFG_CAMERA_MODE=$(jq -r '.camera.mode // empty' "${CONFIG_FILE}" 2>/dev/null)
+    CFG_INFERENCE_ENGINE=$(jq -r '.inference.engine // empty' "${CONFIG_FILE}" 2>/dev/null)
+    CFG_INFERENCE_DEVICE=$(jq -r '.inference.device // empty' "${CONFIG_FILE}" 2>/dev/null)
 else
-    INFERENCE_ENGINE='inference_engine:=TFLITE'
+    CFG_LOGGING_MODE=''
+    CFG_LOGGING_PROVIDER=''
+    CFG_CAMERA_MODE=''
+    CFG_INFERENCE_ENGINE=''
+    CFG_INFERENCE_DEVICE=''
+fi
+
+# Determine inference engine and device
+# Config overrides auto-detection; auto-detection priority: MYRIAD > OV/CPU (x86_64) > TFLITE
+if [ -n "${CFG_INFERENCE_ENGINE}" ] && [ "${CFG_INFERENCE_ENGINE}" != "auto" ]; then
+    INFERENCE_ENGINE="inference_engine:=${CFG_INFERENCE_ENGINE}"
+    if [ -n "${CFG_INFERENCE_DEVICE}" ] && [ "${CFG_INFERENCE_DEVICE}" != "auto" ]; then
+        INFERENCE_DEVICE="inference_device:=${CFG_INFERENCE_DEVICE}"
+    else
+        INFERENCE_DEVICE=''
+    fi
+else
+    MYRIAD=$(lsusb | grep "Intel Movidius MyriadX")
+    if [ -n "${MYRIAD}" ]; then
+        INFERENCE_ENGINE='inference_engine:=OV'
+        INFERENCE_DEVICE='inference_device:=MYRIAD'
+    elif [ "$(uname -m)" == "x86_64" ]; then
+        INFERENCE_ENGINE='inference_engine:=OV'
+        INFERENCE_DEVICE='inference_device:=CPU'
+    else
+        INFERENCE_ENGINE='inference_engine:=TFLITE'
+        INFERENCE_DEVICE=''
+    fi
 fi
 
 # No support for battery sensor on Raspberry Pi
@@ -47,20 +79,18 @@ else
 fi
 
 # Determine camera mode
-if [ "$ROS_DISTRO" == "foxy" ]; then
+# Config overrides auto-detection; auto-detection: foxy -> legacy, others -> modern
+if [ -n "${CFG_CAMERA_MODE}" ] && [ "${CFG_CAMERA_MODE}" != "auto" ]; then
+    CAMERA_MODE="camera_mode:=${CFG_CAMERA_MODE}"
+elif [ "$ROS_DISTRO" == "foxy" ]; then
     CAMERA_MODE=''
 else
     CAMERA_MODE='camera_mode:=modern'
 fi
 
-# Read in logging configuration
-if [ -f /opt/aws/deepracer/logging.conf ]; then
-    LOGGING_MODE="logging_mode:=$(cat /opt/aws/deepracer/logging.conf | grep mode | cut -d'=' -f2 | tr -d '[:space:]')"
-    LOGGING_PROVIDER="logging_provider:=$(cat /opt/aws/deepracer/logging.conf | grep provider | cut -d'=' -f2 | tr -d '[:space:]')"
-else
-    LOGGING_MODE='logging_mode:=usbonly'
-    LOGGING_PROVIDER='logging_provider:=sqlite3'
-fi
+# Determine logging configuration
+LOGGING_MODE="logging_mode:=${CFG_LOGGING_MODE:-usbonly}"
+LOGGING_PROVIDER="logging_provider:=${CFG_LOGGING_PROVIDER:-sqlite3}"
 
 # Check if the LiDAR is connected via UART
 CP210X=$(lsusb | grep "CP210x UART Bridge")
@@ -72,4 +102,9 @@ else
     echo "RPLIDAR / UART Bridge not found!"
 fi
 
-ros2 launch deepracer_launcher deepracer_launcher.py ${INFERENCE_ENGINE} ${INFERENCE_DEVICE} ${BATTERY_DUMMY} ${LOGGING_MODE} ${LOGGING_PROVIDER} ${CAMERA_MODE} ${RPLIDAR}
+CMD="ros2 launch deepracer_launcher deepracer_launcher.py"
+for ARG in "${INFERENCE_ENGINE}" "${INFERENCE_DEVICE}" "${BATTERY_DUMMY}" "${LOGGING_MODE}" "${LOGGING_PROVIDER}" "${CAMERA_MODE}" "${RPLIDAR}"; do
+    [ -n "${ARG}" ] && CMD="${CMD} ${ARG}"
+done
+echo "==> ${CMD}"
+exec ${CMD}
