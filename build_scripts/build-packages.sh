@@ -189,7 +189,7 @@ for pkg in $PACKAGES; do
 
     if [ "$pkg" == "aws-deepracer-core" ]; then
         VERSION=$(jq -r ".[\"aws-deepracer-core\"]" $DIR/versions.json)-$(lsb_release -cs)
-        PACKAGE_DEPS="gnupg, python3-apt, python3-psutil, libomp5, ros-$ROS_DISTRO-ros-core, \
+        PACKAGE_DEPS="jq, gnupg, python3-apt, python3-psutil, libomp5, ros-$ROS_DISTRO-ros-core, \
                         ros-$ROS_DISTRO-image-transport, ros-$ROS_DISTRO-compressed-image-transport, \
                         ros-$ROS_DISTRO-pybind11-vendor, ros-$ROS_DISTRO-cv-bridge"
         if [ "$ROS_DISTRO" == "humble" ] || [ "$ROS_DISTRO" == "jazzy" ]; then
@@ -225,7 +225,7 @@ for pkg in $PACKAGES; do
         sed -i 's/ExecStop=\/opt\/aws\/deepracer\/util\/otg_eth.sh stop/KillSignal=2/' etc/systemd/system/deepracer-core.service
         rm -rf opt/aws/deepracer/lib/*
         cp $DIR/build_scripts/files/common/start_ros.sh opt/aws/deepracer/
-        cp $DIR/build_scripts/files/common/logging.conf opt/aws/deepracer/
+        cp $DIR/build_scripts/files/common/config.json opt/aws/deepracer/
         cp $DIR/build_scripts/files/common/aws-deepracer-core-prerm DEBIAN/prerm
         cp $DIR/build_scripts/files/common/aws-deepracer-core-conffiles DEBIAN/conffiles
         cp -r $DIR/install/* opt/aws/deepracer/lib/
