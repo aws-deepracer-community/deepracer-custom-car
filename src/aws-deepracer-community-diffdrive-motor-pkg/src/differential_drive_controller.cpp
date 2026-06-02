@@ -53,6 +53,10 @@ MotorSpeeds DifferentialDriveController::convertServoToMotorSpeeds(float angle, 
   left_speed = throttle * max_speed * (1.0f + config_.center_offset) *
     (1.0f - max_differential * angle / 2.0f);
 
+  // Clamp motor speeds to normalized range [-1.0, 1.0]
+  left_speed = clamp(left_speed, -1.0f, 1.0f);
+  right_speed = clamp(right_speed, -1.0f, 1.0f);
+
   // Apply motor inversion and return
   MotorSpeeds speeds{left_speed, right_speed};
   return applyMotorInversion(speeds);

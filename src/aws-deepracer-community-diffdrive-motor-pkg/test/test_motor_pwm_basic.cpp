@@ -2,6 +2,8 @@
 #include "diffdrive_motor_pkg/motor_manager.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include <memory>
+#include <algorithm>
+#include <cmath>
 
 using namespace aws_deepracer_community_diffdrive_motor_pkg;
 
@@ -117,10 +119,4 @@ TEST_F(MotorPWMBasicTest, DirectionLogicValidation)
 
   // This validates our understanding of the Linux PWM nanosecond system
   EXPECT_TRUE(true);
-}
-
-int main(int argc, char **argv)
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
 }

@@ -88,7 +88,8 @@ ros2 launch diffdrive_motor_pkg diffdrive_motor_pkg_launch.py
 **Launch with custom parameters**:
 ```bash
 ros2 launch diffdrive_motor_pkg diffdrive_motor_pkg_launch.py \
-  max_turn_differential:=0.3 \
+  max_left_differential:=0.3 \
+  max_right_differential:=0.3 \
   motor_polarity:=-1
 ```
 
@@ -108,14 +109,16 @@ ros2 launch diffdrive_motor_pkg diffdrive_motor_pkg_launch.py \
 **Raspberry Pi Example**:
 ```bash
 ros2 launch diffdrive_motor_pkg diffdrive_motor_pkg_launch.py \
-  max_turn_differential:=0.6 \
+  max_left_differential:=0.6 \
+  max_right_differential:=0.6 \
   max_forward_speed:=0.8
 ```
 
 **DeepRacer Hardware Example**:
 ```bash
 ros2 launch diffdrive_motor_pkg diffdrive_motor_pkg_launch.py \
-  max_turn_differential:=0.4 \
+  max_left_differential:=0.4 \
+  max_right_differential:=0.4 \
   center_offset:=0.1
 ```
 
@@ -132,17 +135,17 @@ ros2 launch diffdrive_motor_pkg diffdrive_motor_pkg_launch.py \
 
 | Topic | Message Type | Description |
 |-------|--------------|-------------|
-| `/diffdrive_motor_pkg/latency` | `deepracer_interfaces_pkg/msg/LatencyMeasureMsg` | Control loop latency measurements |
+| `/servo_pkg/latency` | `deepracer_interfaces_pkg/msg/LatencyMeasureMsg` | Control loop latency measurements |
 
 ### Services
 
 | Service | Type | Description |
 |---------|------|-------------|
-| `/get_calibration` | `deepracer_interfaces_pkg/srv/GetCalibrationSrv` | Retrieve current calibration values |
-| `/set_calibration` | `deepracer_interfaces_pkg/srv/SetCalibrationSrv` | Update calibration parameters |
-| `/servo_gpio` | `deepracer_interfaces_pkg/srv/ServoGPIOSrv` | GPIO control (compatibility) |
-| `/get_led_ctrl` | `deepracer_interfaces_pkg/srv/GetLedCtrlSrv` | Get LED state (silent implementation) |
-| `/set_led_ctrl` | `deepracer_interfaces_pkg/srv/SetLedCtrlSrv` | Set LED state (silent implementation) |
+| `/servo_pkg/get_calibration` | `deepracer_interfaces_pkg/srv/GetCalibrationSrv` | Retrieve current calibration values |
+| `/servo_pkg/set_calibration` | `deepracer_interfaces_pkg/srv/SetCalibrationSrv` | Update calibration parameters |
+| `/servo_pkg/servo_gpio` | `deepracer_interfaces_pkg/srv/ServoGPIOSrv` | GPIO control (compatibility) |
+| `/servo_pkg/get_led_state` | `deepracer_interfaces_pkg/srv/GetLedCtrlSrv` | Get LED state (silent implementation) |
+| `/servo_pkg/set_led_state` | `deepracer_interfaces_pkg/srv/SetLedCtrlSrv` | Set LED state (silent implementation) |
 
 ### Message Examples
 
@@ -156,10 +159,10 @@ throttle: 0.5       # -1.0 (reverse) to 1.0 (forward)
 **Calibration Service Call**:
 ```bash
 # Get current motor calibration
-ros2 service call /get_calibration deepracer_interfaces_pkg/srv/GetCalibrationSrv "{cal_type: 1}"
+ros2 service call /servo_pkg/get_calibration deepracer_interfaces_pkg/srv/GetCalibrationSrv "{cal_type: 1}"
 
 # Set steering calibration
-ros2 service call /set_calibration deepracer_interfaces_pkg/srv/SetCalibrationSrv \
+ros2 service call /servo_pkg/set_calibration deepracer_interfaces_pkg/srv/SetCalibrationSrv \
   "{cal_type: 0, min: -30, mid: 0, max: 40, polarity: 1}"
 ```
 
@@ -171,7 +174,8 @@ ros2 service call /set_calibration deepracer_interfaces_pkg/srv/SetCalibrationSr
 ```bash
 ros2 launch diffdrive_motor_pkg diffdrive_motor_pkg_launch.py \
   max_forward_speed:=0.8 \
-  max_turn_differential:=0.4
+  max_left_differential:=0.4 \
+  max_right_differential:=0.4
 ```
 
 **2. ROS2 Parameter Server** (runtime updates):
@@ -183,17 +187,17 @@ ros2 param set /diffdrive_motor_node max_left_differential 0.3
 **3. Calibration Services** (persistent storage):
 ```bash
 # Motor calibration (cal_type: 1)
-ros2 service call /set_calibration deepracer_interfaces_pkg/srv/SetCalibrationSrv \
+ros2 service call /servo_pkg/set_calibration deepracer_interfaces_pkg/srv/SetCalibrationSrv \
   "{cal_type: 1, min: -80, mid: 0, max: 90, polarity: 1}"
 
 # Steering calibration (cal_type: 0)  
-ros2 service call /set_calibration deepracer_interfaces_pkg/srv/SetCalibrationSrv \
+ros2 service call /servo_pkg/set_calibration deepracer_interfaces_pkg/srv/SetCalibrationSrv \
   "{cal_type: 0, min: -50, mid: 5, max: 45, polarity: 1}"
 ```
 
 ### Calibration Data Persistence
 
-- **File Location**: `~/.deepracer/calibration.json`
+- **File Location**: `/opt/aws/deepracer/calibration.json`
 - **Format**: JSON with differential drive parameters
 - **Backward Compatibility**: Converts to/from traditional servo calibration format
 - **Auto-loading**: Calibration restored on node startup
@@ -205,7 +209,7 @@ ros2 service call /set_calibration deepracer_interfaces_pkg/srv/SetCalibrationSr
 | **Speed Control** | `max_forward_speed`, `max_backward_speed` | Limits maximum motor speeds |
 | **Turning Control** | `max_left_differential`, `max_right_differential` | Controls turning responsiveness |
 | **Alignment** | `center_offset` | Compensates for mechanical misalignment |
-| **Motor Setup** | `motor_polarity`, `invert_left_motor`, `invert_right_motor` | Handles wiring variations |
+| **Motor Setup** | `motor_polarity` | Handles wiring variations |
 
 ## Calibration Workflow
 
@@ -242,7 +246,7 @@ ros2 param set /diffdrive_motor_node center_offset 0.05
 **Step 3: Save Calibration**
 ```bash
 # Save current parameters to persistent storage
-ros2 service call /set_calibration deepracer_interfaces_pkg/srv/SetCalibrationSrv \
+ros2 service call /servo_pkg/set_calibration deepracer_interfaces_pkg/srv/SetCalibrationSrv \
   "{cal_type: 1, min: -100, mid: 0, max: 100, polarity: 1}"
 ```
 
@@ -296,7 +300,7 @@ ros2 topic pub /ctrl_pkg/servo_msg deepracer_interfaces_pkg/msg/ServoCtrlMsg \
   "{angle: 0.0, throttle: 0.2}" --rate 10
 
 # Monitor system state
-ros2 topic echo /diffdrive_motor_pkg/latency
+ros2 topic echo /servo_pkg/latency
 ```
 
 ### Performance Monitoring
@@ -304,7 +308,7 @@ ros2 topic echo /diffdrive_motor_pkg/latency
 **Real-time diagnostics**:
 ```bash
 # Monitor control latency
-ros2 topic echo /diffdrive_motor_pkg/latency
+ros2 topic echo /servo_pkg/latency
 
 # Check parameter values
 ros2 param dump /diffdrive_motor_node
@@ -344,10 +348,6 @@ ls /sys/class/pwm/
 ```bash
 # Solution: Invert motor polarity
 ros2 param set /diffdrive_motor_node motor_polarity -1
-
-# Or invert individual motors
-ros2 param set /diffdrive_motor_node invert_left_motor true
-ros2 param set /diffdrive_motor_node invert_right_motor true
 ```
 
 #### Vehicle Pulls to One Side
@@ -370,7 +370,7 @@ ros2 param set /diffdrive_motor_node max_right_differential 0.3
 **Symptoms**: Calibration calls return error codes
 ```bash
 # Solution: Reset to defaults and verify service availability
-ros2 service call /set_calibration deepracer_interfaces_pkg/srv/SetCalibrationSrv \
+ros2 service call /servo_pkg/set_calibration deepracer_interfaces_pkg/srv/SetCalibrationSrv \
   "{cal_type: 1, min: -100, mid: 0, max: 100, polarity: 1}"
 
 # Check service is running
@@ -391,7 +391,7 @@ watch -n 1 'ros2 param dump /diffdrive_motor_node'
 
 # Monitor topics
 ros2 topic hz /ctrl_pkg/servo_msg
-ros2 topic hz /diffdrive_motor_pkg/latency
+ros2 topic hz /servo_pkg/latency
 ```
 
 #### Hardware Diagnostics

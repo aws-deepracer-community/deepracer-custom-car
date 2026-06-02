@@ -139,9 +139,3 @@ TEST_F(CalibrationManagerTest, CalibrationServiceHandlers)
     invalid_response));
   EXPECT_EQ(invalid_response->error, 1);
 }
-
-int main(int argc, char **argv)
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}

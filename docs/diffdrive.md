@@ -51,7 +51,8 @@ sudo systemctl restart deepracer-core
 **Option C — Direct launch** (testing only, bypasses config):
 ```bash
 ros2 launch diffdrive_motor_pkg diffdrive_motor_pkg_launch.py \
-  max_turn_differential:=0.4 \
+  max_left_differential:=0.3 \
+  max_right_differential:=0.3 \
   motor_polarity:=-1
 ```
 
@@ -65,9 +66,9 @@ Inside `diffdrive_motor_pkg`, incoming `ServoCtrlMsg` messages carry a normalise
 
 - Both wheels start at the commanded throttle speed.
 - The inner wheel (the one on the turning side) is slowed by a fraction proportional to `angle` and bounded by `max_left_differential` / `max_right_differential`.
-- The outer wheel maintains the full commanded speed.
+- The outer wheel speed is increased by the same fraction, so it can exceed the commanded base speed.
 - `center_offset` shifts the zero-angle point to compensate for mechanical misalignment.
-- `motor_polarity` (or per-motor inversion flags) flip direction for both wheels when wiring requires it.
+- `motor_polarity` flips direction for both wheels when wiring requires it.
 
 ## Configuration Parameters
 
@@ -81,8 +82,6 @@ These can be set as launch arguments or via the ROS2 parameter server at runtime
 | `max_right_differential` | 0.5 | Maximum speed reduction on the right wheel during a right turn (0.0–1.0) |
 | `center_offset` | 0.0 | Steering zero-point offset (−1.0–1.0) |
 | `motor_polarity` | 1 | Reverses both motors when set to −1 |
-| `invert_left_motor` | false | Reverses left motor only |
-| `invert_right_motor` | false | Reverses right motor only |
 
 Update at runtime without restarting:
 ```bash
@@ -109,15 +108,15 @@ The `SetCalibrationSrv` request has fields `cal_type`, `min`, `mid`, `max`, and 
 
 ### Calibration file
 
-Calibration is stored in `~/.deepracer/calibration.json` (same location as servo calibration). The file format is JSON with the differential drive parameters. On node startup, `CalibrationManager` loads this file and applies the values. If the file is absent or malformed, defaults from `motor_constants.hpp` are used.
+Calibration is stored in `/opt/aws/deepracer/calibration.json` (same location as servo calibration). The file format is JSON with the differential drive parameters. On node startup, `CalibrationManager` loads this file and applies the values. If the file is absent or malformed, defaults from `motor_constants.hpp` are used.
 
 Inspect or reset the file:
 ```bash
 # View current calibration
-cat ~/.deepracer/calibration.json
+cat /opt/aws/deepracer/calibration.json
 
 # Reset to defaults by deleting the file (node will recreate it)
-rm ~/.deepracer/calibration.json && sudo systemctl restart deepracer-core
+sudo rm /opt/aws/deepracer/calibration.json && sudo systemctl restart deepracer-core
 ```
 
 ### Recommended calibration procedure
@@ -136,7 +135,7 @@ rm ~/.deepracer/calibration.json && sudo systemctl restart deepracer-core
    ```
    If turns are too sharp, reduce `max_right_differential` (or `max_left_differential`).
 
-3. **Fix inverted direction** — if the vehicle moves backwards when commanded forward, set `motor_polarity` to `-1`. If only one wheel is reversed, use `invert_left_motor` or `invert_right_motor`.
+3. **Fix inverted direction** — if the vehicle moves backwards when commanded forward, set `motor_polarity` to `-1`.
 
 4. **Persist** the final values via the calibration service:
    ```bash
@@ -183,7 +182,7 @@ Adjust `center_offset` incrementally (±0.05 steps) until straight-line motion i
 Decrease or increase `max_left_differential` and `max_right_differential`. Values above 0.6 result in very tight turns.
 
 **One or both motors run in the wrong direction**  
-Set `motor_polarity: -1` to invert both motors, or use `invert_left_motor` / `invert_right_motor` for individual correction.
+Set `motor_polarity: -1` to invert both motors.
 
 **I2C permission denied**  
 ```bash
@@ -206,3 +205,8 @@ Verify the node is running and the service is advertised:
 ros2 service list | grep calibration
 ```
 If absent, the node failed to start — check `ros2 topic echo /rosout` for error messages.
+
+## Known Limitations
+
+**No RGB LED support**  
+The diff-drive HAT (Adafruit Motor HAT / compatible) has no RGB LED. The `/servo_pkg/get_led_state` and `/servo_pkg/set_led_state` services are present for drop-in compatibility, but LED commands are silently ignored. The status LED indicator in the DeepRacer web console will not reflect the vehicle's actual state when using diff-drive mode.

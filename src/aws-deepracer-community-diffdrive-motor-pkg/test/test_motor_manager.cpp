@@ -61,9 +61,3 @@ TEST_F(MotorManagerTest, MotorStateManagement)
   EXPECT_FLOAT_EQ(state.left_speed, 0.0f);
   EXPECT_FLOAT_EQ(state.right_speed, 0.0f);
 }
-
-int main(int argc, char **argv)
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}

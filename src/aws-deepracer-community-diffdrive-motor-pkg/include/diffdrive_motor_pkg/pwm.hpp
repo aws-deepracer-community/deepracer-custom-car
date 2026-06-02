@@ -34,7 +34,7 @@ public:
   Servo(int channel, rclcpp::Logger logger_);
   ~Servo() = default;
         /// Setter for the PWM period.
-        /// @param period Desired period in ms.
+        /// @param period Desired period in nanoseconds.
   void setPeriod(int period);
         /// Setter for the duty cycle, this is what determines how much the servo actuates.
         /// @param Desired duty cycle.
@@ -47,7 +47,7 @@ public:
 private:
         /// Channel that the pwm is being written to.
   int channel_;
-        /// Current value of the period in ms.
+        /// Current value of the period in nanoseconds.
   int period_;
         /// Current value of the duty cycle.
   int duty_;

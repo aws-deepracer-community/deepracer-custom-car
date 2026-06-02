@@ -209,9 +209,3 @@ TEST_F(DifferentialDriveControllerTest, BackwardMotionDifferentSpeeds)
   auto backward_speeds = custom_controller->convertServoToMotorSpeeds(0.0f, -0.8f);
   EXPECT_FLOAT_EQ(backward_speeds.left_speed, -0.56f);  // -0.8 * 0.7
 }
-
-int main(int argc, char **argv)
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}

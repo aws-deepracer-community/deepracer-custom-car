@@ -5,7 +5,7 @@ namespace aws_deepracer_community_diffdrive_motor_pkg
 {
 
 SilentLEDHandler::SilentLEDHandler()
-: logging_enabled_(true)
+: logging_enabled_(false)
 {
   // Initialize with LED off state
   current_state_.red = 0;
