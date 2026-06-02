@@ -40,12 +40,14 @@ if [ -f "${CONFIG_FILE}" ]; then
     CFG_CAMERA_MODE=$(jq -r '.camera.mode // empty' "${CONFIG_FILE}" 2>/dev/null)
     CFG_INFERENCE_ENGINE=$(jq -r '.inference.engine // empty' "${CONFIG_FILE}" 2>/dev/null)
     CFG_INFERENCE_DEVICE=$(jq -r '.inference.device // empty' "${CONFIG_FILE}" 2>/dev/null)
+    CFG_STEERING_MODE=$(jq -r '.steering.mode // empty' "${CONFIG_FILE}" 2>/dev/null)
 else
     CFG_LOGGING_MODE=''
     CFG_LOGGING_PROVIDER=''
     CFG_CAMERA_MODE=''
     CFG_INFERENCE_ENGINE=''
     CFG_INFERENCE_DEVICE=''
+    CFG_STEERING_MODE=''
 fi
 
 # Determine inference engine and device
@@ -92,6 +94,9 @@ fi
 LOGGING_MODE="logging_mode:=${CFG_LOGGING_MODE:-usbonly}"
 LOGGING_PROVIDER="logging_provider:=${CFG_LOGGING_PROVIDER:-sqlite3}"
 
+# Determine steering mode (no auto-detection; defaults to servo)
+STEERING_MODE="steering_mode:=${CFG_STEERING_MODE:-servo}"
+
 # Check if the LiDAR is connected via UART
 CP210X=$(lsusb | grep "CP210x UART Bridge")
 if [ -n "${CP210X}" ]; then
@@ -103,7 +108,7 @@ else
 fi
 
 CMD="ros2 launch deepracer_launcher deepracer_launcher.py"
-for ARG in "${INFERENCE_ENGINE}" "${INFERENCE_DEVICE}" "${BATTERY_DUMMY}" "${LOGGING_MODE}" "${LOGGING_PROVIDER}" "${CAMERA_MODE}" "${RPLIDAR}"; do
+for ARG in "${INFERENCE_ENGINE}" "${INFERENCE_DEVICE}" "${BATTERY_DUMMY}" "${LOGGING_MODE}" "${LOGGING_PROVIDER}" "${CAMERA_MODE}" "${STEERING_MODE}" "${RPLIDAR}"; do
     [ -n "${ARG}" ] && CMD="${CMD} ${ARG}"
 done
 echo "==> ${CMD}"

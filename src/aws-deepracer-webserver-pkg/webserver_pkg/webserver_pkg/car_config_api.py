@@ -44,6 +44,7 @@ VALID_INFERENCE_DEVICES = {
 }
 VALID_CAMERA_MODES = ["legacy", "modern"]
 VALID_LOGGING_PROVIDERS = ["sqlite3", "mcap"]
+VALID_STEERING_MODES = ["servo", "diffdrive"]
 
 DEFAULT_CONFIG = {
     "logging": {
@@ -56,6 +57,9 @@ DEFAULT_CONFIG = {
     "inference": {
         "engine": "auto",
         "device": "auto"
+    },
+    "steering": {
+        "mode": "servo"
     }
 }
 
@@ -104,7 +108,8 @@ def _get_capabilities():
         "logging_modes": ["Never", "USBOnly", "Always"],
         "logging_providers": ["sqlite3"] if is_foxy else ["sqlite3", "mcap"],
         "inference_engines": inference_engines,
-        "inference_devices": inference_devices
+        "inference_devices": inference_devices,
+        "steering_modes": VALID_STEERING_MODES
     }
 
 
@@ -173,6 +178,7 @@ def _validate_config(data, capabilities):
     logging_data = data.get("logging", {})
     camera_data = data.get("camera", {})
     inference_data = data.get("inference", {})
+    steering_data = data.get("steering", {})
 
     if "mode" in logging_data:
         mode = logging_data["mode"]
@@ -217,6 +223,14 @@ def _validate_config(data, capabilities):
             all_devices = [d for devices in VALID_INFERENCE_DEVICES.values() for d in devices]
             if device not in all_devices:
                 return False, f"Invalid inference.device '{device}'"
+
+    if "mode" in steering_data:
+        mode = steering_data["mode"]
+        if mode not in VALID_STEERING_MODES:
+            return False, (
+                f"Invalid steering.mode '{mode}'. "
+                f"Valid values: {VALID_STEERING_MODES}"
+            )
 
     return True, None
 
