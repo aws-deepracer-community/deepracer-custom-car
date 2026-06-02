@@ -95,7 +95,11 @@ LOGGING_MODE="logging_mode:=${CFG_LOGGING_MODE:-usbonly}"
 LOGGING_PROVIDER="logging_provider:=${CFG_LOGGING_PROVIDER:-sqlite3}"
 
 # Determine steering mode (no auto-detection; defaults to servo)
-STEERING_MODE="steering_mode:=${CFG_STEERING_MODE:-servo}"
+# Validate value; fall back to servo for unknown/corrupt config entries
+case "${CFG_STEERING_MODE}" in
+    servo|diffdrive) STEERING_MODE="steering_mode:=${CFG_STEERING_MODE}" ;;
+    *) STEERING_MODE="steering_mode:=servo" ;;
+esac
 
 # Check if the LiDAR is connected via UART
 CP210X=$(lsusb | grep "CP210x UART Bridge")

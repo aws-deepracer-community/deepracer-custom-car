@@ -26,7 +26,7 @@ constexpr int DEFAULT_MOTOR_B_IN1 = 3;     // Direction control 1
 constexpr int DEFAULT_MOTOR_B_IN2 = 4;     // Direction control 2
 
     // PWM timing configuration (nanoseconds)
-constexpr int PWM_PERIOD_NS = 655360;         // 16 kHz period in nanoseconds
+constexpr int PWM_PERIOD_NS = 655360;         // ~1.5 kHz period in nanoseconds (655.36 µs)
 constexpr int PWM_HIGH_SIGNAL_NS = PWM_PERIOD_NS;      // 100% duty cycle for HIGH
 constexpr int PWM_LOW_SIGNAL_NS = 0;         // 0% duty cycle for LOW
 

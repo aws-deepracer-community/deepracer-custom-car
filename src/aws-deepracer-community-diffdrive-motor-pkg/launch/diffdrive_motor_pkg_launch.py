@@ -16,29 +16,29 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
     """Generate launch description for differential drive motor package."""
-    # Launch arguments
-    max_turn_differential_arg = DeclareLaunchArgument(
-        'max_turn_differential',
+    # Launch arguments — must match parameters declared in DifferentialDriveNode
+    max_left_differential_arg = DeclareLaunchArgument(
+        'max_left_differential',
         default_value='0.5',
-        description='Maximum speed difference between wheels (0.0-1.0)'
+        description='Maximum speed reduction on the left wheel during a left turn (0.0-1.0)'
     )
 
-    pwm_device_arg = DeclareLaunchArgument(
-        'pwm_device',
-        default_value='i2c-1',
-        description='PWM device identifier for chip discovery'
+    max_right_differential_arg = DeclareLaunchArgument(
+        'max_right_differential',
+        default_value='0.5',
+        description='Maximum speed reduction on the right wheel during a right turn (0.0-1.0)'
     )
 
-    invert_left_motor_arg = DeclareLaunchArgument(
-        'invert_left_motor',
-        default_value='false',
-        description='Invert left motor direction'
+    center_offset_arg = DeclareLaunchArgument(
+        'center_offset',
+        default_value='0.0',
+        description='Steering zero-point offset to compensate for mechanical misalignment (-1.0 to 1.0)'
     )
 
-    invert_right_motor_arg = DeclareLaunchArgument(
-        'invert_right_motor',
-        default_value='false',
-        description='Invert right motor direction'
+    motor_polarity_arg = DeclareLaunchArgument(
+        'motor_polarity',
+        default_value='1',
+        description='Reverses both motors when set to -1 (use to fix inverted direction)'
     )
 
     # Differential drive motor node
@@ -47,18 +47,18 @@ def generate_launch_description():
         executable='diffdrive_motor_node',
         name='diffdrive_motor_node',
         parameters=[{
-            'max_turn_differential': LaunchConfiguration('max_turn_differential'),
-            'pwm_device': LaunchConfiguration('pwm_device'),
-            'invert_left_motor': LaunchConfiguration('invert_left_motor'),
-            'invert_right_motor': LaunchConfiguration('invert_right_motor'),
+            'max_left_differential': LaunchConfiguration('max_left_differential'),
+            'max_right_differential': LaunchConfiguration('max_right_differential'),
+            'center_offset': LaunchConfiguration('center_offset'),
+            'motor_polarity': LaunchConfiguration('motor_polarity'),
         }],
         output='screen'
     )
 
     return LaunchDescription([
-        max_turn_differential_arg,
-        pwm_device_arg,
-        invert_left_motor_arg,
-        invert_right_motor_arg,
+        max_left_differential_arg,
+        max_right_differential_arg,
+        center_offset_arg,
+        motor_polarity_arg,
         diffdrive_motor_node
     ])

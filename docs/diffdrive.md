@@ -92,7 +92,7 @@ ros2 param set /diffdrive_motor_node center_offset 0.05
 
 ## Calibration Particularities
 
-The DeepRacer calibration system was designed for a servo (steering) and ESC (throttle). `diffdrive_motor_pkg` exposes the same `/get_calibration` and `/set_calibration` ROS2 services for compatibility, but the mapping is different.
+The DeepRacer calibration system was designed for a servo (steering) and ESC (throttle). `diffdrive_motor_pkg` exposes the same `/servo_pkg/get_calibration` and `/servo_pkg/set_calibration` ROS2 services for drop-in compatibility, but the mapping is different.
 
 ### What the calibration values mean in diffdrive
 
@@ -141,11 +141,11 @@ rm ~/.deepracer/calibration.json && sudo systemctl restart deepracer-core
 4. **Persist** the final values via the calibration service:
    ```bash
    # Save throttle limits
-   ros2 service call /set_calibration deepracer_interfaces_pkg/srv/SetCalibrationSrv \
+   ros2 service call /servo_pkg/set_calibration deepracer_interfaces_pkg/srv/SetCalibrationSrv \
      "{cal_type: 1, min: -80, mid: 0, max: 80, polarity: 1}"
 
    # Save steering limits and center
-   ros2 service call /set_calibration deepracer_interfaces_pkg/srv/SetCalibrationSrv \
+   ros2 service call /servo_pkg/set_calibration deepracer_interfaces_pkg/srv/SetCalibrationSrv \
      "{cal_type: 0, min: -40, mid: 5, max: 40, polarity: 1}"
    ```
 
@@ -158,15 +158,21 @@ rm ~/.deepracer/calibration.json && sudo systemctl restart deepracer-core
 | `/ctrl_pkg/servo_msg` | `ServoCtrlMsg` | Normalised angle + throttle commands |
 | `/ctrl_pkg/raw_pwm` | `ServoCtrlMsg` | Direct PWM commands (bypass controller) |
 
+### Published Topics
+
+| Topic | Type | Description |
+|-------|------|-------------|
+| `/servo_pkg/latency` | `LatencyMeasureMsg` | Control loop latency measurements (same topic as servo package) |
+
 ### Services
 
 | Service | Type | Description |
 |---------|------|-------------|
-| `/get_calibration` | `GetCalibrationSrv` | Read current calibration values |
-| `/set_calibration` | `SetCalibrationSrv` | Write calibration values (persisted to file) |
-| `/servo_gpio` | `ServoGPIOSrv` | GPIO compatibility stub |
-| `/get_led_ctrl` | `GetLedCtrlSrv` | LED state (silent — HAT has no RGB LED) |
-| `/set_led_ctrl` | `SetLedCtrlSrv` | LED state (silent — commands accepted, ignored) |
+| `/servo_pkg/get_calibration` | `GetCalibrationSrv` | Read current calibration values |
+| `/servo_pkg/set_calibration` | `SetCalibrationSrv` | Write calibration values (persisted to file) |
+| `/servo_pkg/servo_gpio` | `ServoGPIOSrv` | GPIO compatibility stub |
+| `/servo_pkg/get_led_state` | `GetLedCtrlSrv` | LED state (silent — HAT has no RGB LED) |
+| `/servo_pkg/set_led_state` | `SetLedCtrlSrv` | LED state (silent — commands accepted, ignored) |
 
 ## Troubleshooting
 

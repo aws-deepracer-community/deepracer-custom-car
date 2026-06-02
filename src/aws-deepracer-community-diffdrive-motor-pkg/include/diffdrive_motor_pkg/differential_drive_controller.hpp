@@ -58,7 +58,7 @@ public:
 
     /**
      * @brief Convert servo commands to motor speeds
-     * @param angle Steering angle [-1.0, 1.0] (negative = left, positive = right)
+     * @param angle Steering angle [-1.0, 1.0] (negative = right, positive = left)
      * @param throttle Throttle value [-1.0, 1.0] (negative = reverse, positive = forward)
      * @return Motor speeds for left and right wheels
      */

@@ -111,7 +111,7 @@ bool CalibrationManager::handleSetCalibrationService(
 {
     // Validate input ranges for the new ±100 scaling system
     // Allow reasonable range for ±100 scaling: roughly -200 to +200 to accommodate edge cases
-  if (request->min < -200 || request->max > 200 || request->mid < -200 || request->mid > 200) {
+  if (request->min < -200 || request->min > 200 || request->max < -200 || request->max > 200 || request->mid < -200 || request->mid > 200) {
     response->error = 1;   // Invalid range
     return false;
   }

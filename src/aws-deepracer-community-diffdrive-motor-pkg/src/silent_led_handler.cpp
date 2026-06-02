@@ -1,4 +1,5 @@
 #include "diffdrive_motor_pkg/silent_led_handler.hpp"
+#include <cstdio>
 
 namespace aws_deepracer_community_diffdrive_motor_pkg
 {
@@ -46,21 +47,21 @@ bool SilentLEDHandler::handleSetLedCtrlService(
 deepracer_interfaces_pkg::srv::GetLedCtrlSrv::Response SilentLEDHandler::getLedState(
   const deepracer_interfaces_pkg::srv::GetLedCtrlSrv::Request & request)
 {
-  deepracer_interfaces_pkg::srv::GetLedCtrlSrv::Response response;
+  auto response = std::make_shared<deepracer_interfaces_pkg::srv::GetLedCtrlSrv::Response>();
   handleGetLedCtrlService(
     std::make_shared<deepracer_interfaces_pkg::srv::GetLedCtrlSrv::Request>(request),
-    std::make_shared<deepracer_interfaces_pkg::srv::GetLedCtrlSrv::Response>(response));
-  return response;
+    response);
+  return *response;
 }
 
 deepracer_interfaces_pkg::srv::SetLedCtrlSrv::Response SilentLEDHandler::setLedState(
   const deepracer_interfaces_pkg::srv::SetLedCtrlSrv::Request & request)
 {
-  deepracer_interfaces_pkg::srv::SetLedCtrlSrv::Response response;
+  auto response = std::make_shared<deepracer_interfaces_pkg::srv::SetLedCtrlSrv::Response>();
   handleSetLedCtrlService(
     std::make_shared<deepracer_interfaces_pkg::srv::SetLedCtrlSrv::Request>(request),
-    std::make_shared<deepracer_interfaces_pkg::srv::SetLedCtrlSrv::Response>(response));
-  return response;
+    response);
+  return *response;
 }
 
 void SilentLEDHandler::setLEDState(int red, int green, int blue)
