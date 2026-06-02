@@ -32,7 +32,7 @@ def generate_launch_description():
     center_offset_arg = DeclareLaunchArgument(
         'center_offset',
         default_value='0.0',
-        description='Steering zero-point offset to compensate for mechanical misalignment (-1.0 to 1.0)'
+        description='Steering zero-point offset (-1.0 to 1.0) to compensate for misalignment'
     )
 
     motor_polarity_arg = DeclareLaunchArgument(

@@ -112,7 +112,7 @@ public:
    * @return Current motor state
    */
   MotorState getMotorState() const;
-  
+
   /**
    * @brief Update motor configuration
    * @param config New configuration
