@@ -1,0 +1,13 @@
+{
+  "logging": {
+    "mode": "always",
+    "provider": "sqlite3"
+  },
+  "camera": {
+    "mode": "auto"
+  },
+  "inference": {
+    "engine": "auto",
+    "device": "auto"
+  }
+}
