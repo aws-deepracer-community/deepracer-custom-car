@@ -109,7 +109,7 @@ def _get_capabilities():
         "logging_providers": ["sqlite3"] if is_foxy else ["sqlite3", "mcap"],
         "inference_engines": inference_engines,
         "inference_devices": inference_devices,
-        "steering_modes": VALID_STEERING_MODES
+        "steering_modes": ["servo"] if is_x86 else VALID_STEERING_MODES
     }
 
 
