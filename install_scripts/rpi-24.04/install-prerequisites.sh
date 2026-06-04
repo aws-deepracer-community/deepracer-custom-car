@@ -42,6 +42,19 @@ apt update -y && apt remove -y --autoremove unattended-upgrades needrestart
 
 # First ensure that the Ubuntu Universe repository is enabled.
 add-apt-repository -y universe
+
+# Ensure noble-updates pocket is available (required on ubuntu-ports systems where library
+# rebuilds ship there and strict '=' deps in main packages must match installed versions).
+if ! grep -rq 'noble-updates' /etc/apt/sources.list /etc/apt/sources.list.d/ 2>/dev/null; then
+    cat > /etc/apt/sources.list.d/noble-updates.sources << 'EOF'
+Types: deb
+URIs: http://ports.ubuntu.com/ubuntu-ports/
+Suites: noble-updates
+Components: main restricted universe multiverse
+Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+EOF
+fi
+
 apt update -y && apt upgrade -y
 
 # Ensure we have UTF-8
