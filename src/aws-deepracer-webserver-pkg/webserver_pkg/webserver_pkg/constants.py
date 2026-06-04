@@ -25,6 +25,12 @@ from enum import Enum
 
 BASE_PATH = "/opt/aws/deepracer/"
 
+# Steering mode enum
+class SteeringMode(Enum):
+    """Enum representing different steering modes for the DeepRacer."""
+    SERVO = "servo"
+    DIFFDRIVE = "diffdrive"
+
 # Service and topic names.
 
 # webserver_pkg
@@ -147,6 +153,8 @@ PWM_ANGLE_CONVERSION = 10000
 PWM_THROTTLE_CONVERSION = 4500
 PWM_OFFSET = 1500000
 CALIBRATION_MODE = 2
+DIFFDRIVE_THROTTLE_CONVERSION = 2
+DIFFDRIVE_ANGLE_CONVERSION = 1
 
 # Default values for action space mapped to on the vehicle for speed values of 0.8 and 0.4
 DEFAULT_SPEED_SCALES = [1.0, 0.8]

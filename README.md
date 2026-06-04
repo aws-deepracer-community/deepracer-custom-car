@@ -25,6 +25,7 @@ The main features of the custom software stack is
 - Performance improvement through using compressed image transport for the primary perception pipeline
 - Modern user-interface from [Deepracer Custom Console](https://github.com/aws-deepracer-community/deepracer-custom-console)
 - Inference using OpenVINO with Intel GPU (original DeepRacer), OpenVINO with Myriad Neural Compute Stick (NCS), or TensorFlow Lite across RPi and original hardware
+- Differential drive motor support ([diffdrive](docs/diffdrive.md)) as an alternative to the standard servo drivetrain, selectable from the web console
 - Ubuntu 24.04 support for Raspberry Pi 5 and the original DeepRacer including an updated installer and flashing flow
 - Model Optimizer caching, speeding up switching of models
 - Capture in-car camera and inference results to a ROS Bag for logfile analysis (Python or high-performance C++ logging node)
@@ -102,6 +103,7 @@ The custom stack exposes the following arguments which can be changed through ch
 | `logging_mode` | `usbonly` | Enable the logging of results to ROS Bag on USB stick. |
 | `logging_provider` | `sqlite3` | Database provider to use for logging. |
 | `battery_dummy` | `False` | Use static dummy for battery measurements. |
+| `steering_mode` | `servo` | Drivetrain type (`servo` for standard servo/ESC, `diffdrive` for differential drive). See [docs/diffdrive.md](docs/diffdrive.md). |
 | `rplidar` | `True` | Enable RPLIDAR node for LiDAR sensor integration. |
 
 

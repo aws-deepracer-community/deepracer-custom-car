@@ -25,6 +25,7 @@
   <depend>rplidar_ros</depend>
   <depend>sensor_fusion_pkg</depend>
   <depend>servo_pkg</depend>
+  <depend>diffdrive_motor_pkg</depend>
   <depend>status_led_pkg</depend>
   <depend>usb_monitor_pkg</depend>
   <depend>webserver_pkg</depend>
