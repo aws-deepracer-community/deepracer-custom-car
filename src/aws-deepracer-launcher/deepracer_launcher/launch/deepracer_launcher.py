@@ -205,6 +205,7 @@ def launch_setup(context, *args, **kwargs):
             }]
         )
 
+    enable_gray_overlay = str2bool(LaunchConfiguration('enable_gray_overlay').perform(context))
     sensor_fusion_node = Node(
         package='sensor_fusion_pkg',
         namespace='sensor_fusion_pkg',
@@ -213,7 +214,8 @@ def launch_setup(context, *args, **kwargs):
         parameters=[{
                 'camera_mode': camera_mode,
                 'image_transport': 'compressed',
-                'enable_overlay': rplidar
+                'enable_overlay': rplidar,
+                'enable_gray_overlay': enable_gray_overlay
         }]
     )
 
@@ -357,6 +359,10 @@ def generate_launch_description():
                 name="rplidar",
                 default_value="True",
                 description="Enable RPLIDAR node"),
+            DeclareLaunchArgument(
+                name="enable_gray_overlay",
+                default_value="False",
+                description="Apply gray fade overlay on camera images to reduce sky influence"),
             DeclareLaunchArgument(
                 name="steering_mode",
                 default_value="servo",
