@@ -85,7 +85,8 @@ from webserver_pkg.constants import (DEVICE_STATUS_TOPIC, VEHICLE_STATE_SERVICE,
                                      GET_OTG_LINK_STATE_SERVICE,
                                      CAL_DRIVE_TOPIC,
                                      MANUAL_DRIVE_TOPIC,
-                                     SOFTWARE_UPDATE_PCT_TOPIC)
+                                     SOFTWARE_UPDATE_PCT_TOPIC,
+                                     SteeringMode)
 
 
 class WebServerNode(Node):
@@ -98,6 +99,18 @@ class WebServerNode(Node):
         """
         super().__init__("webserver_publisher_node")
         self.get_logger().info("webserver_publisher_node started")
+        
+        # Declare and get steering mode parameter
+        self.declare_parameter("steering_mode", SteeringMode.SERVO.value)
+        steering_mode_value = self.get_parameter("steering_mode").value
+        try:
+            self.steering_mode = SteeringMode(steering_mode_value)
+        except ValueError:
+            self.get_logger().warn(f"Invalid steering mode '{steering_mode_value}', using default SERVO mode")
+            self.steering_mode = SteeringMode.SERVO
+        
+        self.get_logger().info(f"Steering mode set to: {self.steering_mode.value}")
+        
         HOST_DEFAULT = "0.0.0.0"
         PORT_DEFAULT = "5001"
         self.get_logger().info(f"Running the flask server on {HOST_DEFAULT}:{PORT_DEFAULT}")
@@ -329,6 +342,14 @@ class WebServerNode(Node):
         """
         self.get_logger().debug(f"Timer heartbeat {self.timer_count}")
         self.timer_count += 1
+
+    def get_steering_mode(self):
+        """Get the current steering mode.
+        
+        Returns:
+            SteeringMode: The current steering mode (SERVO or DIFFDRIVE)
+        """
+        return self.steering_mode
 
     def sw_update_pct_sub_cb(self, pct_dict):
         """Callback for the software_update_pct topic.

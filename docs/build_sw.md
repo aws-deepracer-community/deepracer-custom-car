@@ -68,6 +68,7 @@ The repository contains a set of external packages that are forked into the `src
 | [aws-deepracer-webserver-pkg](https://github.com/aws-deepracer/aws-deepracer-webserver-pkg.git) | Webserver package for AWS DeepRacer |
 | [aws-deepracer-launcher](https://github.com/aws-deepracer/aws-deepracer-launcher.git) | Launcher package for AWS DeepRacer |
 | [aws-deepracer-community-logging-pkg](../src/aws-deepracer-community-logging-pkg/README.md) | In-tree Python & C++ bag logging nodes |
+| [aws-deepracer-community-diffdrive-motor-pkg](../src/aws-deepracer-community-diffdrive-motor-pkg/README.md) | Differential drive motor control — replaces the servo package for two-motor drivetrains. See [docs/diffdrive.md](../docs/diffdrive.md) |
 
 ### Additional vcstool manifests
 
