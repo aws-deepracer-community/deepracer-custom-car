@@ -9,5 +9,8 @@
   "inference": {
     "engine": "auto",
     "device": "auto"
+  },
+  "steering": {
+    "mode": "servo"
   }
 }
