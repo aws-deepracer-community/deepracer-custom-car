@@ -38,6 +38,7 @@ if [ -f "${CONFIG_FILE}" ]; then
     CFG_LOGGING_MODE=$(jq -r '.logging.mode // empty' "${CONFIG_FILE}" 2>/dev/null)
     CFG_LOGGING_PROVIDER=$(jq -r '.logging.provider // empty' "${CONFIG_FILE}" 2>/dev/null)
     CFG_CAMERA_MODE=$(jq -r '.camera.mode // empty' "${CONFIG_FILE}" 2>/dev/null)
+    CFG_GRAY_OVERLAY=$(jq -r '.camera.enable_gray_overlay // false' "${CONFIG_FILE}" 2>/dev/null)
     CFG_INFERENCE_ENGINE=$(jq -r '.inference.engine // empty' "${CONFIG_FILE}" 2>/dev/null)
     CFG_INFERENCE_DEVICE=$(jq -r '.inference.device // empty' "${CONFIG_FILE}" 2>/dev/null)
     CFG_STEERING_MODE=$(jq -r '.steering.mode // empty' "${CONFIG_FILE}" 2>/dev/null)
@@ -45,6 +46,7 @@ else
     CFG_LOGGING_MODE=''
     CFG_LOGGING_PROVIDER=''
     CFG_CAMERA_MODE=''
+    CFG_GRAY_OVERLAY='false'
     CFG_INFERENCE_ENGINE=''
     CFG_INFERENCE_DEVICE=''
     CFG_STEERING_MODE=''
@@ -101,6 +103,12 @@ case "${CFG_STEERING_MODE}" in
     *) STEERING_MODE="steering_mode:=servo" ;;
 esac
 
+# Determine gray overlay setting
+case "${CFG_GRAY_OVERLAY}" in
+    true|True) GRAY_OVERLAY="enable_gray_overlay:=True" ;;
+    *) GRAY_OVERLAY="enable_gray_overlay:=False" ;;
+esac
+
 # Check if the LiDAR is connected via UART
 CP210X=$(lsusb | grep "CP210x UART Bridge")
 if [ -n "${CP210X}" ]; then
@@ -112,7 +120,7 @@ else
 fi
 
 CMD="ros2 launch deepracer_launcher deepracer_launcher.py"
-for ARG in "${INFERENCE_ENGINE}" "${INFERENCE_DEVICE}" "${BATTERY_DUMMY}" "${LOGGING_MODE}" "${LOGGING_PROVIDER}" "${CAMERA_MODE}" "${STEERING_MODE}" "${RPLIDAR}"; do
+for ARG in "${INFERENCE_ENGINE}" "${INFERENCE_DEVICE}" "${BATTERY_DUMMY}" "${LOGGING_MODE}" "${LOGGING_PROVIDER}" "${CAMERA_MODE}" "${STEERING_MODE}" "${RPLIDAR}" "${GRAY_OVERLAY}"; do
     [ -n "${ARG}" ] && CMD="${CMD} ${ARG}"
 done
 echo "==> ${CMD}"

@@ -58,6 +58,7 @@ find_package(rclcpp REQUIRED)
 find_package(image_transport REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(deepracer_interfaces_pkg REQUIRED)
+find_package(ament_index_cpp REQUIRED)
 # Find the json parser/writer
 find_package(jsoncpp REQUIRED)
 
@@ -79,6 +80,7 @@ ament_target_dependencies(
   "image_transport"
   "sensor_msgs"
   "deepracer_interfaces_pkg"
+  "ament_index_cpp"
 )
 
 install(TARGETS sensor_fusion_node
@@ -87,6 +89,12 @@ install(TARGETS sensor_fusion_node
 # Install launch files.
 install(DIRECTORY
   launch
+  DESTINATION share/${PROJECT_NAME}/
+)
+
+# Install image assets.
+install(DIRECTORY
+  images
   DESTINATION share/${PROJECT_NAME}/
 )
 
