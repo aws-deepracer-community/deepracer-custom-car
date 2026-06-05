@@ -52,7 +52,8 @@ DEFAULT_CONFIG = {
         "provider": "sqlite3"
     },
     "camera": {
-        "mode": "auto"
+        "mode": "auto",
+        "enable_gray_overlay": False
     },
     "inference": {
         "engine": "auto",
@@ -109,7 +110,8 @@ def _get_capabilities():
         "logging_providers": ["sqlite3"] if is_foxy else ["sqlite3", "mcap"],
         "inference_engines": inference_engines,
         "inference_devices": inference_devices,
-        "steering_modes": ["servo"] if is_x86 else VALID_STEERING_MODES
+        "steering_modes": ["servo"] if is_x86 else VALID_STEERING_MODES,
+        "gray_overlay": True
     }
 
 
@@ -231,6 +233,11 @@ def _validate_config(data, capabilities):
                 f"Invalid steering.mode '{mode}'. "
                 f"Valid values: {VALID_STEERING_MODES}"
             )
+
+    if "enable_gray_overlay" in camera_data:
+        value = camera_data["enable_gray_overlay"]
+        if not isinstance(value, bool):
+            return False, "camera.enable_gray_overlay must be a boolean (true or false)"
 
     return True, None
 
