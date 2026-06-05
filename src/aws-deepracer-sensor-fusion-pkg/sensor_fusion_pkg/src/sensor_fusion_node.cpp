@@ -455,7 +455,7 @@ namespace SensorFusion {
         /// The overlay PNG's alpha channel controls the blend weight at each pixel.
         /// Has no effect if enable_gray_overlay is false or the overlay image is not loaded.
         /// Precomputes the two cached float32 blend mats from grayOverlayResized_.
-        /// Must be called whenever grayOverlayResized_ changes.
+        /// Must be called whenever grayOverlayResized_ changes, with overlayCacheMutex_ held.
         void prepareOverlayCache() {
             std::vector<cv::Mat> channels;
             cv::split(grayOverlayResized_, channels);
@@ -463,10 +463,17 @@ namespace SensorFusion {
             cv::Mat overlayBGR;
             cv::Mat alphaNorm;
             if (channels.size() == 4) {
+                // BGRA
                 std::vector<cv::Mat> bgrChannels = {channels[0], channels[1], channels[2]};
                 cv::merge(bgrChannels, overlayBGR);
                 channels[3].convertTo(alphaNorm, CV_32F, 1.0 / 255.0);
+            } else if (channels.size() == 2) {
+                // Grayscale + Alpha
+                std::vector<cv::Mat> bgrChannels = {channels[0], channels[0], channels[0]};
+                cv::merge(bgrChannels, overlayBGR);
+                channels[1].convertTo(alphaNorm, CV_32F, 1.0 / 255.0);
             } else {
+                // BGR (no alpha)
                 overlayBGR = grayOverlayResized_;
                 alphaNorm = cv::Mat(grayOverlayResized_.size(), CV_32F, cv::Scalar(1.0));
             }
@@ -487,6 +494,7 @@ namespace SensorFusion {
             if (!enableGrayOverlay_ || grayOverlay_.empty() || image.empty()) {
                 return;
             }
+            std::lock_guard<std::mutex> guard(overlayCacheMutex_);
             // Resize overlay and rebuild cache when image dimensions change.
             if (grayOverlayResized_.size() != image.size()) {
                 cv::resize(grayOverlay_, grayOverlayResized_, image.size(), 0, 0, cv::INTER_LINEAR);
@@ -706,6 +714,8 @@ namespace SensorFusion {
         cv::Mat overlayBGRPremul_;
         /// Cached inverse-alpha broadcast to 3 channels (1 - alpha), float32 BGR.
         cv::Mat oneMinusAlpha3_;
+        /// Mutex protecting grayOverlayResized_, overlayBGRPremul_, and oneMinusAlpha3_.
+        std::mutex overlayCacheMutex_;
         std::chrono::steady_clock::time_point lastLidarMsgRecievedTime;
         std::chrono::steady_clock::time_point lastCameraMsgRecievedTime;
         size_t cameraImageCount_;
