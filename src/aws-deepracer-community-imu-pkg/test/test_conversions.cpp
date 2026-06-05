@@ -362,3 +362,45 @@ TEST_F(RegisterAddressTest, IntLowHigh2Address) {
 TEST_F(RegisterAddressTest, IntLowHigh3Address) {
                                                      EXPECT_EQ(Bmi160Reg::INT_LOWHIGH_3, 0x5Fu);
 }
+
+// =========================================================================
+// EMA filter
+// =========================================================================
+
+class EmaFilterTest : public ::testing::Test {};
+
+/// alpha=1.0 is pass-through
+TEST_F(EmaFilterTest, AlphaOneIsPassThrough)
+{
+  EXPECT_FLOAT_EQ(conversions::ema(5.0f, 100.0f, 1.0f), 5.0f);
+}
+
+/// alpha=0.0 holds previous value
+TEST_F(EmaFilterTest, AlphaZeroHoldsPrevious)
+{
+  EXPECT_FLOAT_EQ(conversions::ema(5.0f, 100.0f, 0.0f), 100.0f);
+}
+
+/// alpha=0.5: output is midpoint of current and previous
+TEST_F(EmaFilterTest, AlphaHalfIsMidpoint)
+{
+  EXPECT_FLOAT_EQ(conversions::ema(0.0f, 10.0f, 0.5f), 5.0f);
+}
+
+/// Starting from 0, a constant input of 1.0 converges toward 1.0
+TEST_F(EmaFilterTest, ConvergesOverTime)
+{
+  float val = 0.0f;
+  for (int i = 0; i < 100; ++i) {
+    val = conversions::ema(1.0f, val, 0.3f);
+  }
+  EXPECT_NEAR(val, 1.0f, 0.001f);
+}
+
+/// Filter output is always bounded by current and previous values
+TEST_F(EmaFilterTest, OutputBoundedByInputs)
+{
+  const float result = conversions::ema(3.0f, 7.0f, 0.4f);
+  EXPECT_GE(result, 3.0f);
+  EXPECT_LE(result, 7.0f);
+}

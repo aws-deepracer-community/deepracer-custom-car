@@ -57,6 +57,7 @@ ImuNode::ImuNode()
   declare_parameter<bool>("stop_on_crash", false);
   declare_parameter<double>("crash_accel_threshold_g", 3.0);
   declare_parameter<double>("pickup_threshold_g", 0.5);
+  declare_parameter<double>("filter_alpha", 0.5);  // EMA: 1.0=off, lower=smoother
 
   // --- Cache parameters ---
   bus_id_ = get_parameter("bus_id").as_int();
@@ -69,15 +70,17 @@ ImuNode::ImuNode()
   stop_on_crash_ = get_parameter("stop_on_crash").as_bool();
   crash_accel_threshold_g_ = get_parameter("crash_accel_threshold_g").as_double();
   pickup_threshold_g_ = get_parameter("pickup_threshold_g").as_double();
+  filter_alpha_ = std::clamp(get_parameter("filter_alpha").as_double(), 0.0, 1.0);
 
   RCLCPP_INFO(
     get_logger(),
     "Parameters: bus=%d addr=0x%02X rate=%dHz accel=±%dG gyro=±%ddps "
-    "z_target=%+d stop_on_pickup=%s stop_on_crash=%s",
+    "z_target=%+d stop_on_pickup=%s stop_on_crash=%s filter_alpha=%.2f",
     bus_id_, address_, publish_rate_, accel_range_g_, gyro_range_dps_,
     accel_z_gravity_target_,
     stop_on_pickup_ ? "true" : "false",
-    stop_on_crash_ ? "true" : "false");
+    stop_on_crash_ ? "true" : "false",
+    filter_alpha_);
 
   // --- Publisher ---
   auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).best_effort();
@@ -144,16 +147,27 @@ void ImuNode::timerCallback()
     return;
   }
 
-  const auto data = conversions::applyAxisMapping(
+  const auto raw = conversions::applyAxisMapping(
     raw_gx, raw_gy, raw_gz, raw_ax, raw_ay, raw_az,
     imu_->accel_scale(), imu_->gyro_scale());
 
-  const float gyro_x = data.gyro_x;
-  const float gyro_y = data.gyro_y;
-  const float gyro_z = data.gyro_z;
-  const float accel_x = data.accel_x;
-  const float accel_y = data.accel_y;
-  const float accel_z = data.accel_z;
+  // Apply software EMA filter (alpha=1.0 means pass-through)
+  float gyro_x, gyro_y, gyro_z, accel_x, accel_y, accel_z;
+  if (!filter_initialized_ || filter_alpha_ >= 1.0) {
+    gyro_x = raw.gyro_x; gyro_y = raw.gyro_y; gyro_z = raw.gyro_z;
+    accel_x = raw.accel_x; accel_y = raw.accel_y; accel_z = raw.accel_z;
+    filter_initialized_ = true;
+  } else {
+    const float a = static_cast<float>(filter_alpha_);
+    gyro_x = conversions::ema(raw.gyro_x, prev_gyro_x_, a);
+    gyro_y = conversions::ema(raw.gyro_y, prev_gyro_y_, a);
+    gyro_z = conversions::ema(raw.gyro_z, prev_gyro_z_, a);
+    accel_x = conversions::ema(raw.accel_x, prev_accel_x_, a);
+    accel_y = conversions::ema(raw.accel_y, prev_accel_y_, a);
+    accel_z = conversions::ema(raw.accel_z, prev_accel_z_, a);
+  }
+  prev_gyro_x_ = gyro_x; prev_gyro_y_ = gyro_y; prev_gyro_z_ = gyro_z;
+  prev_accel_x_ = accel_x; prev_accel_y_ = accel_y; prev_accel_z_ = accel_z;
 
   // --- Safety checks (before publishing) ---
   if (stop_on_crash_ && imu_->isHighGTriggered()) {

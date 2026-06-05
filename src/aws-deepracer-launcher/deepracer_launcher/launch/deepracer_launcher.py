@@ -207,6 +207,8 @@ def launch_setup(context, *args, **kwargs):
                     LaunchConfiguration('imu_crash_accel_threshold_g').perform(context)),
                 'accel_z_gravity_target': int(
                     LaunchConfiguration('imu_accel_z_gravity_target').perform(context)),
+                'filter_alpha': float(
+                    LaunchConfiguration('imu_filter_alpha').perform(context)),
             }]
         )
 
@@ -415,5 +417,9 @@ def generate_launch_description():
                 name="imu_accel_z_gravity_target",
                 default_value="-1",
                 description="Expected Z gravity direction: -1 normal, +1 upside-down"),
+            DeclareLaunchArgument(
+                name="imu_filter_alpha",
+                default_value="0.5",
+                description="IMU EMA smoothing factor (0, 1]: 1.0 = no filtering"),
             OpaqueFunction(function=launch_setup)
         ])

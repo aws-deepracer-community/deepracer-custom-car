@@ -140,6 +140,23 @@ inline bool isPickupDetected(
   return std::abs(accel_z_ms2 - expected_z) > std::abs(expected_z) + threshold_ms2;
 }
 
+// -------------------------------------------------------------------------
+// Software exponential moving average (EMA) filter
+// -------------------------------------------------------------------------
+
+/// Apply one step of an exponential moving average filter.
+///
+/// filtered = alpha * current + (1 - alpha) * previous
+///
+/// @param current   New raw sample.
+/// @param previous  Previous filtered value.
+/// @param alpha     Smoothing factor in (0, 1]. 1.0 = no filtering (pass-through);
+///                  lower values give heavier smoothing but more lag.
+inline float ema(float current, float previous, float alpha)
+{
+  return alpha * current + (1.0f - alpha) * previous;
+}
+
 }  // namespace conversions
 }  // namespace imu_pkg
 

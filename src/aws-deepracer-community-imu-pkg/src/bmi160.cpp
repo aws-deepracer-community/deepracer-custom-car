@@ -176,8 +176,9 @@ void BMI160::configure(int accel_range_g, int gyro_range_dps)
       break;
     }
   }
-  // ACC_CONF: ODR 100 Hz (0x08) + normal bandwidth filter (0x20)
-  writeRegister(fd, Bmi160Reg::ACC_CONF, 0x28);   // odr=100Hz, bwp=normal
+  // ACC_CONF: ODR 100 Hz, bwp=OSR4 (oversampling ×4, halves noise floor)
+  // 0x08 = bwp[6:4]=0b000 (OSR4) | odr[3:0]=0b1000 (100Hz)
+  writeRegister(fd, Bmi160Reg::ACC_CONF, 0x08);
   writeRegister(fd, Bmi160Reg::ACC_RANGE, accel_range_reg);
   accel_scale_ = conversions::computeAccelScale(accel_range_g);
 
@@ -189,8 +190,9 @@ void BMI160::configure(int accel_range_g, int gyro_range_dps)
       break;
     }
   }
-  // GYR_CONF: ODR 100 Hz + normal bandwidth
-  writeRegister(fd, Bmi160Reg::GYR_CONF, 0x28);
+  // GYR_CONF: ODR 100 Hz, bwp=OSR4 (oversampling ×4, halves noise floor)
+  // 0x08 = bwp[5:4]=0b00 (OSR4) | odr[3:0]=0b1000 (100Hz)
+  writeRegister(fd, Bmi160Reg::GYR_CONF, 0x08);
   writeRegister(fd, Bmi160Reg::GYR_RANGE, gyro_range_reg);
   gyro_scale_ = conversions::computeGyroScale(gyro_range_dps);
 

@@ -64,6 +64,10 @@ def generate_launch_description():
             default_value='0.5',
             description='How much the Z-axis acceleration must deviate from the expected '
                         'gravity value (in G) to be considered a pickup event'),
+        DeclareLaunchArgument(
+            name='filter_alpha',
+            default_value='0.5',
+            description='EMA smoothing factor (0, 1]: 1.0 = no filtering, lower = more smoothing'),
         Node(
             package='imu_pkg',
             namespace='imu_pkg',
@@ -80,6 +84,7 @@ def generate_launch_description():
                 'stop_on_crash':          LaunchConfiguration('stop_on_crash'),
                 'crash_accel_threshold_g': LaunchConfiguration('crash_accel_threshold_g'),
                 'pickup_threshold_g':     LaunchConfiguration('pickup_threshold_g'),
+                'filter_alpha':           LaunchConfiguration('filter_alpha'),
             }]
         ),
     ])

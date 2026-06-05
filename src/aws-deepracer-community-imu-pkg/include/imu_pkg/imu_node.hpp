@@ -76,6 +76,16 @@ private:
   bool   stop_on_crash_;
   double crash_accel_threshold_g_;
   double pickup_threshold_g_;
+  double filter_alpha_{1.0};  ///< EMA smoothing factor; 1.0 = off
+
+  // ---------- EMA filter state ----------
+  float prev_gyro_x_{0.0f};
+  float prev_gyro_y_{0.0f};
+  float prev_gyro_z_{0.0f};
+  float prev_accel_x_{0.0f};
+  float prev_accel_y_{0.0f};
+  float prev_accel_z_{0.0f};
+  bool  filter_initialized_{false};
 };
 
 }  // namespace imu_pkg
