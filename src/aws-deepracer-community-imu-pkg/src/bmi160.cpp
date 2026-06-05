@@ -207,19 +207,23 @@ void BMI160::calibrate(int z_gravity_target)
   if (fd < 0) {return;}
 
   // FOC_CONF register layout (datasheet section 2.12.3):
-  //   bits [7:6] foc_acc_z  : 0b01 = calibrate to +1g, 0b10 = calibrate to -1g
-  //   bits [5:4] foc_acc_y  : 0b00 = disabled (offset to 0g)
-  //   bits [3:2] foc_acc_x  : 0b00 = disabled (offset to 0g)
+  //   bits [7:6] foc_acc_z  : 0b01 = sensor target +1g, 0b10 = sensor target -1g, 0b11 = 0g
+  //   bits [5:4] foc_acc_y  : same encoding
+  //   bits [3:2] foc_acc_x  : same encoding
   //   bit  [1]   foc_gyr_en : 1 = enable gyro FOC
   //
-  // For X and Y: 0b01 = +0g target (same encoding), for Z: 0b01=+1g, 0b10=-1g
-  // X offset to 0g = 0b01, Y offset to 0g = 0b01
-  // Encoding for z: target=+1 → 0b01, target=-1 → 0b10
+  // The z_gravity_target parameter represents the EXPECTED PUBLISHED accel_z direction.
+  // Since the axis mapping inverts Z (published_z = -raw_z), the raw sensor target
+  // is the OPPOSITE of the published target:
+  //   z_gravity_target = +1 (upside-down, published z ≈ +g) → sensor reads -1g → target 0b10
+  //   z_gravity_target = -1 (normal mount, published z ≈ -g) → sensor reads +1g → target 0b01
+  //
+  // X and Y: 0g target = 0b11 (0x03). NOT 0b01 (which is +1g).
 
-  uint8_t foc_acc_z = (z_gravity_target >= 0) ? 0x01 : 0x02;
-  // foc_acc_x = 0b01 (0g), foc_acc_y = 0b01 (0g), foc_gyr_en = 1
+  uint8_t foc_acc_z = (z_gravity_target >= 0) ? 0x02 : 0x01;
+  // foc_acc_x = 0b11 (0g), foc_acc_y = 0b11 (0g), foc_gyr_en = 1
   uint8_t foc_conf = static_cast<uint8_t>(
-    (foc_acc_z << 6) | (0x01 << 4) | (0x01 << 2) | 0x02);
+    (foc_acc_z << 6) | (0x03 << 4) | (0x03 << 2) | 0x02);
 
   writeRegister(fd, Bmi160Reg::FOC_CONF, foc_conf);
   // Trigger FOC

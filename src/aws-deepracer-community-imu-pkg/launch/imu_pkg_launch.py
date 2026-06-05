@@ -44,9 +44,9 @@ def generate_launch_description():
             description='Gyroscope full-scale range in dps (125, 250, 500, 1000, or 2000)'),
         DeclareLaunchArgument(
             name='accel_z_gravity_target',
-            default_value='-1',
-            description='Expected Z-axis gravity direction: -1 for normal mounting, '
-                        '+1 for upside-down mounting'),
+            default_value='1',
+            description='Expected published accel_z direction when flat: +1 for upside-down '
+                        'mounting (DeepRacer default), -1 for normal mounting'),
         DeclareLaunchArgument(
             name='stop_on_pickup',
             default_value='False',
