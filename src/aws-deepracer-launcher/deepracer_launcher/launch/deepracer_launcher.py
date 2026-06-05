@@ -191,6 +191,25 @@ def launch_setup(context, *args, **kwargs):
         }]
     )
 
+    enable_imu = str2bool(LaunchConfiguration('enable_imu').perform(context))
+    if enable_imu:
+        imu_node = Node(
+            package='imu_pkg',
+            namespace='imu_pkg',
+            executable='imu_node',
+            name='imu_node',
+            parameters=[{
+                'stop_on_pickup': str2bool(
+                    LaunchConfiguration('imu_stop_on_pickup').perform(context)),
+                'stop_on_crash': str2bool(
+                    LaunchConfiguration('imu_stop_on_crash').perform(context)),
+                'crash_accel_threshold_g': float(
+                    LaunchConfiguration('imu_crash_accel_threshold_g').perform(context)),
+                'accel_z_gravity_target': int(
+                    LaunchConfiguration('imu_accel_z_gravity_target').perform(context)),
+            }]
+        )
+
     rplidar = str2bool(LaunchConfiguration('rplidar').perform(context))
     if rplidar:
         rplidar_node = Node(
@@ -315,6 +334,9 @@ def launch_setup(context, *args, **kwargs):
     if rplidar:
         ld.append(rplidar_node)
 
+    if enable_imu:
+        ld.append(imu_node)
+
     return ld
 
 
@@ -373,5 +395,25 @@ def generate_launch_description():
                 name="steering_mode",
                 default_value="servo",
                 description="Steering mode: servo or diffdrive"),
+            DeclareLaunchArgument(
+                name="enable_imu",
+                default_value="False",
+                description="Enable the IMU (BMI160) node"),
+            DeclareLaunchArgument(
+                name="imu_stop_on_pickup",
+                default_value="False",
+                description="Stop vehicle when IMU detects pickup"),
+            DeclareLaunchArgument(
+                name="imu_stop_on_crash",
+                default_value="False",
+                description="Stop vehicle when IMU detects high-G crash"),
+            DeclareLaunchArgument(
+                name="imu_crash_accel_threshold_g",
+                default_value="3.0",
+                description="Crash detection threshold in G"),
+            DeclareLaunchArgument(
+                name="imu_accel_z_gravity_target",
+                default_value="-1",
+                description="Expected Z gravity direction: -1 normal, +1 upside-down"),
             OpaqueFunction(function=launch_setup)
         ])
