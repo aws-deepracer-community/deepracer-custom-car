@@ -50,8 +50,8 @@ ImuNode::ImuNode()
   declare_parameter<int>("bus_id", DEFAULT_BUS_ID);
   declare_parameter<int>("address", 0x68);
   declare_parameter<int>("publish_rate", 30);
-  declare_parameter<int>("accel_range_g", 4);
-  declare_parameter<int>("gyro_range_dps", 250);
+  declare_parameter<int>("accel_range_g", 8);
+  declare_parameter<int>("gyro_range_dps", 1000);
   declare_parameter<int>("accel_z_gravity_target", 1);  // +1 for upside-down (DeepRacer default), -1 for normal mount
   declare_parameter<bool>("stop_on_pickup", false);
   declare_parameter<bool>("stop_on_crash", false);

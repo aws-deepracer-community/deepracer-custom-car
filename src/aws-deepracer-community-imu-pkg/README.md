@@ -97,8 +97,8 @@ Diagonal covariances for angular velocity and linear acceleration are set to
 | `bus_id` | int | `7` (DR) / `1` (RPI) | I2C bus number |
 | `address` | int | `0x68` (104) | BMI160 I2C slave address |
 | `publish_rate` | int | `30` | Publish rate in Hz (matches camera frame rate). Also determines crash-detection polling latency (e.g. 30 Hz → up to 33 ms) |
-| `accel_range_g` | int | `4` | Accelerometer full-scale range: `2`, `4`, `8`, or `16` G |
-| `gyro_range_dps` | int | `250` | Gyroscope full-scale range: `125`, `250`, `500`, `1000`, or `2000` dps |
+| `accel_range_g` | int | `8` | Accelerometer full-scale range: `2`, `4`, `8`, or `16` G. `8` G covers ~4 G lateral at racing speeds |
+| `gyro_range_dps` | int | `1000` | Gyroscope full-scale range: `125`, `250`, `500`, `1000`, or `2000` dps. `1000` dps = 17.5 rad/s, covers tight turns at racing speed without saturation |
 | `accel_z_gravity_target` | int | `+1` | Expected sign of `accel_z` when car is flat. `+1` = upside-down mount (DeepRacer default), `-1` = normal mount |
 | `stop_on_pickup` | bool | `false` | Enable pickup detection |
 | `stop_on_crash` | bool | `false` | Enable crash detection |

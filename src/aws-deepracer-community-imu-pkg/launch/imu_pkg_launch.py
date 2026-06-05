@@ -36,12 +36,12 @@ def generate_launch_description():
             description='IMU publish rate in Hz'),  # matches camera frame rate
         DeclareLaunchArgument(
             name='accel_range_g',
-            default_value='4',
-            description='Accelerometer full-scale range in G (2, 4, 8, or 16)'),
+            default_value='8',
+            description='Accelerometer full-scale range in G (2, 4, 8, or 16)'),  # 8G covers ~4G lateral at racing speeds
         DeclareLaunchArgument(
             name='gyro_range_dps',
-            default_value='250',
-            description='Gyroscope full-scale range in dps (125, 250, 500, 1000, or 2000)'),
+            default_value='1000',
+            description='Gyroscope full-scale range in dps (125, 250, 500, 1000, or 2000)'),  # 1000dps = 17.5 rad/s, covers tight turns at racing speed
         DeclareLaunchArgument(
             name='accel_z_gravity_target',
             default_value='1',
