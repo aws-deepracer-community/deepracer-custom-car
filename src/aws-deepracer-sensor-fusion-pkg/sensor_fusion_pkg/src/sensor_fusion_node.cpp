@@ -295,7 +295,7 @@ namespace SensorFusion {
                 cameraImageCount_ = msg->images.size();
                 auto sensorMsg = deepracer_interfaces_pkg::msg::EvoSensorMsg();
                 sensorMsg.images = msg->images;
-                if (enableGrayOverlay_) {
+                if (enableGrayOverlay_ && !grayOverlay_.empty()) {
                     for (auto & compImg : sensorMsg.images) {
                         cv::Mat img = cv::imdecode(cv::Mat(compImg.data), cv::IMREAD_COLOR);
                         if (!img.empty()) {
@@ -451,7 +451,7 @@ namespace SensorFusion {
             }
         }
 
-        /// Blends the gray fade overlay onto an BGR image in-place using per-pixel alpha compositing.
+        /// Blends the gray fade overlay onto a BGR image in-place using per-pixel alpha compositing.
         /// The overlay PNG's alpha channel controls the blend weight at each pixel.
         /// Has no effect if enable_gray_overlay is false or the overlay image is not loaded.
         /// Precomputes the two cached float32 blend mats from grayOverlayResized_.
@@ -494,16 +494,23 @@ namespace SensorFusion {
             if (!enableGrayOverlay_ || grayOverlay_.empty() || image.empty()) {
                 return;
             }
-            std::lock_guard<std::mutex> guard(overlayCacheMutex_);
-            // Resize overlay and rebuild cache when image dimensions change.
-            if (grayOverlayResized_.size() != image.size()) {
-                cv::resize(grayOverlay_, grayOverlayResized_, image.size(), 0, 0, cv::INTER_LINEAR);
-                prepareOverlayCache();
+            // Hold the mutex only long enough to check/rebuild the cache and copy out the
+            // blend mats. The expensive float conversion and blend happen after the lock is
+            // released so that cameraCB and displayCB don't serialise each other.
+            cv::Mat localPremul, localOneMinusAlpha;
+            {
+                std::lock_guard<std::mutex> guard(overlayCacheMutex_);
+                if (grayOverlayResized_.size() != image.size()) {
+                    cv::resize(grayOverlay_, grayOverlayResized_, image.size(), 0, 0, cv::INTER_LINEAR);
+                    prepareOverlayCache();
+                }
+                localPremul        = overlayBGRPremul_;   // shallow copy (shared data, read-only use)
+                localOneMinusAlpha = oneMinusAlpha3_;
             }
             // Hot path: result = src * (1-alpha) + overlay_premul
             cv::Mat src32;
             image.convertTo(src32, CV_32FC3);
-            cv::Mat result32 = src32.mul(oneMinusAlpha3_) + overlayBGRPremul_;
+            cv::Mat result32 = src32.mul(localOneMinusAlpha) + localPremul;
             result32.convertTo(image, CV_8UC3);
         }
 
