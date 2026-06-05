@@ -53,6 +53,7 @@ DEFAULT_CONFIG = {
     },
     "camera": {
         "mode": "auto",
+        "orientation": 0,
         "enable_gray_overlay": False
     },
     "inference": {
@@ -106,6 +107,7 @@ def _get_capabilities():
 
     return {
         "camera_modes": ["legacy"] if is_foxy else ["legacy", "modern"],
+        "camera_orientations": [0] if is_foxy else [0, 180],
         "logging_modes": ["Never", "USBOnly", "Always"],
         "logging_providers": ["sqlite3"] if is_foxy else ["sqlite3", "mcap"],
         "inference_engines": inference_engines,
@@ -204,6 +206,15 @@ def _validate_config(data, capabilities):
                 f"camera.mode '{mode}' is not supported on this system. "
                 f"Available: {capabilities['camera_modes']} or 'auto'"
             )
+
+    if "orientation" in camera_data:
+        orientation = camera_data["orientation"]
+        if not isinstance(orientation, int):
+            return False, "camera.orientation must be an integer"
+        if orientation not in [0, 180]:
+            return False, "camera.orientation must be one of: 0, 180"
+        if not capabilities.get("camera_orientations"):
+            return False, "camera.orientation is not supported on this system"
 
     if "engine" in inference_data:
         engine = inference_data["engine"]

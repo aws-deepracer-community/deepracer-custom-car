@@ -33,6 +33,7 @@ def launch_setup(context, *args, **kwargs):
 
     camera_mode = LaunchConfiguration('camera_mode').perform(context)
     camera_index = int(LaunchConfiguration('camera_index').perform(context))
+    camera_orientation = int(LaunchConfiguration('camera_orientation').perform(context))
     fps = int(LaunchConfiguration('camera_fps').perform(context))
     resize_images = str2bool(LaunchConfiguration('camera_resize').perform(context))
     resolution = resize_images and [160, 120] or [640, 480]
@@ -52,6 +53,7 @@ def launch_setup(context, *args, **kwargs):
         # Camera configuration
         camera_params = {'width': resolution[0],
                          'height': resolution[1],
+                         'orientation': camera_orientation,
                          'FrameDurationLimits': [math.floor(1e6 / fps), math.ceil(1e6 / fps)],
                          'use_node_time': True}
 
@@ -355,6 +357,10 @@ def generate_launch_description():
                 name="camera_index",
                 default_value="0",
                 description="Index of the camera to use, applicable to modern camera_mode only"),
+            DeclareLaunchArgument(
+                name="camera_orientation",
+                default_value="0",
+                description="Camera orientation in degrees, applicable to modern camera_mode only"),
             DeclareLaunchArgument(
                 name="rplidar",
                 default_value="True",

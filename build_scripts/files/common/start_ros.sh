@@ -38,6 +38,7 @@ if [ -f "${CONFIG_FILE}" ]; then
     CFG_LOGGING_MODE=$(jq -r '.logging.mode // empty' "${CONFIG_FILE}" 2>/dev/null)
     CFG_LOGGING_PROVIDER=$(jq -r '.logging.provider // empty' "${CONFIG_FILE}" 2>/dev/null)
     CFG_CAMERA_MODE=$(jq -r '.camera.mode // empty' "${CONFIG_FILE}" 2>/dev/null)
+    CFG_CAMERA_ORIENTATION=$(jq -r '.camera.orientation // 0' "${CONFIG_FILE}" 2>/dev/null)
     CFG_GRAY_OVERLAY=$(jq -r '.camera.enable_gray_overlay // false' "${CONFIG_FILE}" 2>/dev/null)
     CFG_INFERENCE_ENGINE=$(jq -r '.inference.engine // empty' "${CONFIG_FILE}" 2>/dev/null)
     CFG_INFERENCE_DEVICE=$(jq -r '.inference.device // empty' "${CONFIG_FILE}" 2>/dev/null)
@@ -46,6 +47,7 @@ else
     CFG_LOGGING_MODE=''
     CFG_LOGGING_PROVIDER=''
     CFG_CAMERA_MODE=''
+    CFG_CAMERA_ORIENTATION='0'
     CFG_GRAY_OVERLAY='false'
     CFG_INFERENCE_ENGINE=''
     CFG_INFERENCE_DEVICE=''
@@ -92,6 +94,16 @@ else
     CAMERA_MODE='camera_mode:=modern'
 fi
 
+# Determine camera orientation for modern/libcamera mode only.
+# In auto mode we keep orientation hidden in UI, so only explicit modern mode enables this.
+case "${CFG_CAMERA_ORIENTATION}" in
+    180) CAMERA_ORIENTATION="camera_orientation:=180" ;;
+    *) CAMERA_ORIENTATION="camera_orientation:=0" ;;
+esac
+if [ "${CFG_CAMERA_MODE}" != "modern" ]; then
+    CAMERA_ORIENTATION=''
+fi
+
 # Determine logging configuration
 LOGGING_MODE="logging_mode:=${CFG_LOGGING_MODE:-usbonly}"
 LOGGING_PROVIDER="logging_provider:=${CFG_LOGGING_PROVIDER:-sqlite3}"
@@ -120,7 +132,7 @@ else
 fi
 
 CMD="ros2 launch deepracer_launcher deepracer_launcher.py"
-for ARG in "${INFERENCE_ENGINE}" "${INFERENCE_DEVICE}" "${BATTERY_DUMMY}" "${LOGGING_MODE}" "${LOGGING_PROVIDER}" "${CAMERA_MODE}" "${STEERING_MODE}" "${RPLIDAR}" "${GRAY_OVERLAY}"; do
+for ARG in "${INFERENCE_ENGINE}" "${INFERENCE_DEVICE}" "${BATTERY_DUMMY}" "${LOGGING_MODE}" "${LOGGING_PROVIDER}" "${CAMERA_MODE}" "${CAMERA_ORIENTATION}" "${STEERING_MODE}" "${RPLIDAR}" "${GRAY_OVERLAY}"; do
     [ -n "${ARG}" ] && CMD="${CMD} ${ARG}"
 done
 echo "==> ${CMD}"
