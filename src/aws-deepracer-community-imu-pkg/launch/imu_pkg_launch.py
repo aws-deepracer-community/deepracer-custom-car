@@ -32,8 +32,8 @@ def generate_launch_description():
             description='BMI160 I2C slave address (default: 0x68 = 104)'),
         DeclareLaunchArgument(
             name='publish_rate',
-            default_value='25',
-            description='IMU publish rate in Hz'),
+            default_value='30',
+            description='IMU publish rate in Hz'),  # matches camera frame rate
         DeclareLaunchArgument(
             name='accel_range_g',
             default_value='4',
