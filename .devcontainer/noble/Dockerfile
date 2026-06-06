@@ -44,6 +44,7 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
     ros-jazzy-image-transport \
     ros-jazzy-pybind11-vendor \
     ruby \
+    rsync \
     sudo \
     unzip \
     v4l-utils \
