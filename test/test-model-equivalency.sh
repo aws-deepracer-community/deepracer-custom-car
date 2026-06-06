@@ -20,20 +20,19 @@ if [ -z "$IMG_DIR" ] || [ -z "$MODEL_DIR" ]; then
     exit 1
 fi
 
-source /opt/intel/openvino/setupvars.sh
-source /opt/ros/humble/setup.bash
+source /opt/ros/jazzy/setup.bash
 
-if [ -f $DIR/bundle_ws/install/setup.bash ]; then
-    echo "Using DeepRacer bundle from $DIR/bundle_ws/install/setup.bash"
-    source $DIR/bundle_ws/install/setup.bash
+if [ -f $DIR/../install/setup.bash ]; then
+    echo "Using DeepRacer bundle from $DIR/../install/setup.bash"
+    source $DIR/../install/setup.bash
 elif [ -f /opt/aws/deepracer/lib/setup.bash ]; then
     echo "Using DeepRacer bundle from /opt/aws/deepracer/lib/setup.bash"
     source /opt/aws/deepracer/lib/setup.bash
 fi
 
-cd $DIR/test 
-rosdep update --rosdistro=humble -q
+cd $DIR
+rosdep update --rosdistro=jazzy -q
 colcon build
 
-source $DIR/test/install/setup.bash
-ros2 launch $DIR/test/launch/inference_comparison_test.launch image_dir:=$IMG_DIR model_dir:=$MODEL_DIR
+source $DIR/install/setup.bash
+ros2 launch $DIR/launch/inference_comparison_test.launch image_dir:=$IMG_DIR model_dir:=$MODEL_DIR fps:=1 

@@ -74,7 +74,7 @@ class InferenceComparisonNode(Node):
             type=ParameterType.PARAMETER_STRING))
         self.declare_parameter('model_dir', "", ParameterDescriptor(
             type=ParameterType.PARAMETER_STRING))
-        self.declare_parameter('output_dir', None, ParameterDescriptor(
+        self.declare_parameter('output_dir', "", ParameterDescriptor(
             type=ParameterType.PARAMETER_STRING))
         self.declare_parameter('autostart', True, ParameterDescriptor(
             type=ParameterType.PARAMETER_BOOL))
@@ -377,7 +377,7 @@ class InferenceComparisonNode(Node):
 
         # Writing to disk
         filename = f"results-{int(datetime.datetime.utcnow().timestamp() * 1000)}.json"
-        if self._output_dir is not None:
+        if self._output_dir:
             filename = os.path.join(self._output_dir, filename)
         with open(filename, "w", encoding="utf-8") as f:
             self.get_logger().info(f"Writing {filename} to disk.")
