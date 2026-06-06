@@ -205,8 +205,8 @@ def launch_setup(context, *args, **kwargs):
                     LaunchConfiguration('imu_stop_on_crash').perform(context)),
                 'crash_accel_threshold_g': float(
                     LaunchConfiguration('imu_crash_accel_threshold_g').perform(context)),
-                'accel_z_gravity_target': int(
-                    LaunchConfiguration('imu_accel_z_gravity_target').perform(context)),
+                'pickup_threshold_g': float(
+                    LaunchConfiguration('imu_pickup_threshold_g').perform(context)),
                 'filter_alpha': float(
                     LaunchConfiguration('imu_filter_alpha').perform(context)),
             }]
@@ -414,9 +414,9 @@ def generate_launch_description():
                 default_value="3.0",
                 description="Crash detection threshold in G"),
             DeclareLaunchArgument(
-                name="imu_accel_z_gravity_target",
-                default_value="-1",
-                description="Expected Z gravity direction: -1 normal, +1 upside-down"),
+                name="imu_pickup_threshold_g",
+                default_value="0.5",
+                description="Pickup detection threshold in G"),
             DeclareLaunchArgument(
                 name="imu_filter_alpha",
                 default_value="0.5",

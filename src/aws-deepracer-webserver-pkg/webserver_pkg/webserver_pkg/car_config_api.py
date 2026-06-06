@@ -45,6 +45,9 @@ VALID_INFERENCE_DEVICES = {
 VALID_CAMERA_MODES = ["legacy", "modern"]
 VALID_LOGGING_PROVIDERS = ["sqlite3", "mcap"]
 VALID_STEERING_MODES = ["servo", "diffdrive"]
+# 0.0 = off; any other value enables the feature with that threshold
+VALID_IMU_CRASH_THRESHOLDS = [0.0, 1.5, 2.0, 2.5, 3.0]
+VALID_IMU_PICKUP_THRESHOLDS = [0.0, 0.5, 0.75, 0.95]
 
 DEFAULT_CONFIG = {
     "logging": {
@@ -62,6 +65,13 @@ DEFAULT_CONFIG = {
     },
     "steering": {
         "mode": "servo"
+    },
+    "imu": {
+        "enabled": False,
+        "crash_threshold_g": 0.0,
+        "crash_enabled": False,
+        "pickup_threshold_g": 0.0,
+        "pickup_enabled": False
     }
 }
 
@@ -113,7 +123,10 @@ def _get_capabilities():
         "inference_engines": inference_engines,
         "inference_devices": inference_devices,
         "steering_modes": ["servo"] if is_x86 else VALID_STEERING_MODES,
-        "gray_overlay": True
+        "gray_overlay": True,
+        "imu": is_x86,
+        "imu_crash_thresholds": VALID_IMU_CRASH_THRESHOLDS if is_x86 else [],
+        "imu_pickup_thresholds": VALID_IMU_PICKUP_THRESHOLDS if is_x86 else [],
     }
 
 
@@ -161,9 +174,18 @@ def _read_config():
 def _write_config(config):
     """Persist the config dict to config.json.
 
+    Derives imu.crash_enabled / imu.pickup_enabled from the threshold values
+    before writing: a threshold of 0.0 means the feature is disabled.
+
     Args:
         config (dict): Configuration to write.
     """
+    import copy
+    config = copy.deepcopy(config)
+    imu = config.get("imu", {})
+    imu["crash_enabled"] = imu.get("enabled", False) and imu.get("crash_threshold_g", 0.0) != 0.0
+    imu["pickup_enabled"] = imu.get("enabled", False) and imu.get("pickup_threshold_g", 0.0) != 0.0
+    config["imu"] = imu
     os.makedirs(os.path.dirname(CONFIG_FILE_PATH), exist_ok=True)
     with open(CONFIG_FILE_PATH, "w") as f:
         json.dump(config, f, indent=2)
@@ -249,6 +271,28 @@ def _validate_config(data, capabilities):
         value = camera_data["enable_gray_overlay"]
         if not isinstance(value, bool):
             return False, "camera.enable_gray_overlay must be a boolean (true or false)"
+
+    imu_data = data.get("imu", {})
+    if imu_data:
+        if not capabilities.get("imu"):
+            return False, "IMU configuration is not supported on this platform"
+        if "enabled" in imu_data:
+            if not isinstance(imu_data["enabled"], bool):
+                return False, "imu.enabled must be a boolean"
+        if "crash_threshold_g" in imu_data:
+            val = imu_data["crash_threshold_g"]
+            if val not in capabilities["imu_crash_thresholds"]:
+                return False, (
+                    f"imu.crash_threshold_g '{val}' is not valid. "
+                    f"Valid values: {capabilities['imu_crash_thresholds']}"
+                )
+        if "pickup_threshold_g" in imu_data:
+            val = imu_data["pickup_threshold_g"]
+            if val not in capabilities["imu_pickup_thresholds"]:
+                return False, (
+                    f"imu.pickup_threshold_g '{val}' is not valid. "
+                    f"Valid values: {capabilities['imu_pickup_thresholds']}"
+                )
 
     return True, None
 

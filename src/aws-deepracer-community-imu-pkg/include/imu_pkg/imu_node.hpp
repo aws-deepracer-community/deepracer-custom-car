@@ -86,6 +86,9 @@ private:
   float prev_accel_y_{0.0f};
   float prev_accel_z_{0.0f};
   bool  filter_initialized_{false};
+
+  // ---------- Safety stop throttle ----------
+  rclcpp::Time last_stop_time_{0, 0, RCL_ROS_TIME};
 };
 
 }  // namespace imu_pkg
