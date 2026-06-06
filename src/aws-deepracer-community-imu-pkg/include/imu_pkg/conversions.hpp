@@ -124,8 +124,8 @@ inline MotionData applyAxisMapping(
 /// Return true when the IMU Z-axis reading suggests the car has been picked up.
 ///
 /// A pickup is detected when the measured accel_z deviates from the expected
-/// gravity value by more than (|expected_z| + threshold):
-///   |accel_z - expected_z|  >  |expected_z| + threshold_ms2
+/// gravity value by more than threshold:
+///   |accel_z - expected_z|  >  threshold_ms2
 ///
 /// @param accel_z_ms2        Measured Z acceleration in m/s²
 /// @param z_gravity_target   +1 for upside-down mount, -1 for normal mount
@@ -137,7 +137,7 @@ inline bool isPickupDetected(
 {
   const double expected_z = z_gravity_target * GRAVITY_MS2;
   const double threshold_ms2 = pickup_threshold_g * GRAVITY_MS2;
-  return std::abs(accel_z_ms2 - expected_z) > std::abs(expected_z) + threshold_ms2;
+  return std::abs(accel_z_ms2 - expected_z) > threshold_ms2;
 }
 
 // -------------------------------------------------------------------------

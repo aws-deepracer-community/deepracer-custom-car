@@ -173,7 +173,7 @@ TEST_F(AxisMappingTest, GyroAxisSwapYX)
   const int16_t raw_val = 1000;
   auto d = applyAxisMapping(raw_val, 0, 0, 0, 0, 0, as, gs);
   EXPECT_NEAR(d.gyro_x, 0.0f, 1e-7f);
-  EXPECT_NEAR(d.gyro_y, raw_val * gs, 1e-7f);
+  EXPECT_NEAR(d.gyro_y, -raw_val * gs, 1e-7f);  // sensor X → -gyro_y (negated)
   EXPECT_NEAR(d.gyro_z, 0.0f, 1e-7f);
 }
 
@@ -262,20 +262,12 @@ TEST_F(PickupDetectionTest, FlatGroundInvertedMount_NotPickup)
 }
 
 /// Car picked up, IMU measuring ~0 on Z (gravity gone): normal mount, z_target=-1
-/// Deviation = |0 - (-9.80665)| = 9.80665 > |-9.80665| + 0.5×9.80665 = 14.71 → False
-/// Wait: 9.80665 > 9.80665 + 4.903 = 14.71 → False?
-/// Need to reconsider: lifted means Z≈0, expected≈-9.8, |0-(-9.8)|=9.8, threshold=9.8+4.9=14.7
-/// 9.8 < 14.7 → NOT triggered. So let's use a small threshold:
+/// Deviation = |0 - (-9.80665)| = 9.80665 > 0.1 × 9.80665 = 0.98 → True
 TEST_F(PickupDetectionTest, CarLifted_ZeroAccel_NormalMount_SmallThreshold)
 {
   // threshold_g = 0.1 → threshold_ms2 = 0.1 × 9.80665 = 0.98
-  // |0 - (-9.80665)| = 9.80665 > |-9.80665| + 0.98 = 10.79 → False
-  // Still not triggered! The deviation is 9.8, limit is 9.8+0.98=10.78 → not triggered.
-  // This is actually correct: the formula requires the deviation to EXCEED |expected| + threshold.
-  // For Z=0, deviation = 9.8, limit = 9.8+threshold. Pickup only fires if threshold < 0,
-  // which means the formula is designed for sideways tilting, not full free-fall.
-  // Verify the formula behaves as implemented.
-  EXPECT_FALSE(isPickupDetected(0.0, -1, 0.1));
+  // |0 - (-9.80665)| = 9.80665 > 0.98 → PICKUP triggered
+  EXPECT_TRUE(isPickupDetected(0.0, -1, 0.1));
 }
 
 /// Car tilted sideways: accel_z ≈ 0 with larger threshold so detection triggers.
@@ -311,12 +303,12 @@ TEST_F(PickupDetectionTest, SmallVibration_NotPickup)
   EXPECT_FALSE(isPickupDetected(-9.80665 + 0.3 * 9.80665, -1, 0.5));
 }
 
-/// Threshold of zero: any deviation > |expected_z| triggers
+/// Threshold of zero: any deviation at all triggers
 TEST_F(PickupDetectionTest, ZeroThreshold_SlightDeviationTriggers)
 {
-  // accel_z = -5 (moved from -9.8), deviation=4.8, limit=9.8+0=9.8 → not triggered
-  EXPECT_FALSE(isPickupDetected(-5.0, -1, 0.0));
-  // accel_z = +1.0, deviation=|1-(-9.8)|=10.8, limit=9.8 → triggered
+  // accel_z = -5 (moved from -9.8), deviation=4.8, threshold=0 → triggered
+  EXPECT_TRUE(isPickupDetected(-5.0, -1, 0.0));
+  // accel_z = +1.0, deviation=|1-(-9.8)|=10.8, threshold=0 → triggered
   EXPECT_TRUE(isPickupDetected(1.0, -1, 0.0));
 }
 
