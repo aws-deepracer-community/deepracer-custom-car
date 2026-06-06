@@ -32,6 +32,7 @@ from flask_wtf.csrf import CSRFProtect
 from webserver_pkg.calibration import CALIBRATION_BLUEPRINT
 from webserver_pkg.car_config_api import CAR_CONFIG_API_BLUEPRINT
 from webserver_pkg.device_info_api import DEVICE_INFO_API_BLUEPRINT
+from webserver_pkg.events_api import EVENTS_API_BLUEPRINT
 from webserver_pkg.login import LOGIN_BLUEPRINT
 from webserver_pkg.led_api import LED_API_BLUEPRINT
 from webserver_pkg.models import MODELS_BLUEPRINT
@@ -51,6 +52,7 @@ csrf = CSRFProtect()
 # Initialize the application with CSRF and register all the API blueprints.
 csrf.init_app(app)
 app.register_blueprint(CAR_CONFIG_API_BLUEPRINT)
+app.register_blueprint(EVENTS_API_BLUEPRINT)
 app.register_blueprint(VEHICLE_LOGS_BLUEPRINT)
 app.register_blueprint(VEHICLE_CONTROL_BLUEPRINT)
 app.register_blueprint(WIFI_SETTINGS_BLUEPRINT)
