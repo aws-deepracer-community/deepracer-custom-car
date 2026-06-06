@@ -32,7 +32,7 @@ and **stop on pickup**.
 | Interface | Linux I2C userspace (`/dev/i2c-N`) via `ioctl` |
 | Default I2C bus | 7 (original DeepRacer), 1 (Raspberry Pi) |
 | Default I2C address | 0x68 |
-| ODR | 100 Hz (hardware), published at configurable rate (default 25 Hz) |
+| ODR | 100 Hz (hardware), published at configurable rate (default 30 Hz) |
 | Hardware filter | OSR4 (4× oversampling) — halves noise floor vs. normal mode |
 
 The BMI160 on the DeepRacer community board is mounted **upside-down** relative

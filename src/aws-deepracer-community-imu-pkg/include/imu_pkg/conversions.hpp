@@ -50,7 +50,10 @@ static constexpr float  HIGH_G_THRESH_LSB_PER_G = 1.0f / 0.00781f;
 ///                       Falls back to ±4G for unrecognised values.
 inline float computeAccelScale(int accel_range_g)
 {
-  const float lsb_per_g = FULL_SCALE_16BIT / static_cast<float>(accel_range_g);
+  const bool is_valid = (accel_range_g == 2 || accel_range_g == 4 ||
+                         accel_range_g == 8 || accel_range_g == 16);
+  const int range = is_valid ? accel_range_g : 4;
+  const float lsb_per_g = FULL_SCALE_16BIT / static_cast<float>(range);
   return static_cast<float>(GRAVITY_MS2) / lsb_per_g;
 }
 
@@ -59,7 +62,11 @@ inline float computeAccelScale(int accel_range_g)
 ///                        Falls back to ±250 dps for unrecognised values.
 inline float computeGyroScale(int gyro_range_dps)
 {
-  const float lsb_per_dps = FULL_SCALE_16BIT / static_cast<float>(gyro_range_dps);
+  const bool is_valid = (gyro_range_dps == 125 || gyro_range_dps == 250 ||
+                         gyro_range_dps == 500 || gyro_range_dps == 1000 ||
+                         gyro_range_dps == 2000);
+  const int range = is_valid ? gyro_range_dps : 250;
+  const float lsb_per_dps = FULL_SCALE_16BIT / static_cast<float>(range);
   return (static_cast<float>(M_PI) / 180.0f) / lsb_per_dps;
 }
 

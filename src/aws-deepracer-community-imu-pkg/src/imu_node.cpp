@@ -17,6 +17,7 @@
 #include "imu_pkg/imu_node.hpp"
 #include "imu_pkg/conversions.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <functional>
 #include <memory>
@@ -103,6 +104,7 @@ ImuNode::ImuNode()
   }
 
   // --- Publish timer ---
+  publish_rate_ = std::max(1, publish_rate_);  // guard against divide-by-zero
   auto period_ms = std::chrono::milliseconds(1000 / publish_rate_);
   publish_timer_ = create_timer(
     period_ms, std::bind(&ImuNode::timerCallback, this));

@@ -24,8 +24,8 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument(
             name='bus_id',
-            default_value='1',
-            description='I2C bus number (1 for Raspberry Pi, 7 for original DeepRacer)'),
+            default_value='7',
+            description='I2C bus number (7 for original DeepRacer, 1 for Raspberry Pi)'),
         DeclareLaunchArgument(
             name='address',
             default_value='104',   # 0x68 in decimal
