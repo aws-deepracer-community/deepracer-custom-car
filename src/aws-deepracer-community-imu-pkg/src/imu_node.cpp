@@ -222,7 +222,9 @@ void ImuNode::timerCallback()
 // -------------------------------------------------------------------------
 void ImuNode::triggerStop(const std::string & reason)
 {
-  RCLCPP_WARN(get_logger(), "IMU safety stop triggered: %s", reason.c_str());
+  RCLCPP_WARN(get_logger(), "[TEST] IMU safety stop triggered: %s — skipping service call", reason.c_str());
+  // TODO: remove test mode and restore service call
+  return;
 
   if (!vehicle_state_client_) {
     RCLCPP_ERROR(get_logger(),
