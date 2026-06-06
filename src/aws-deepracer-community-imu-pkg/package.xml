@@ -16,6 +16,7 @@
 
   <depend>rclcpp</depend>
   <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend>
   <depend>deepracer_interfaces_pkg</depend>
 
   <test_depend>ament_lint_auto</test_depend>

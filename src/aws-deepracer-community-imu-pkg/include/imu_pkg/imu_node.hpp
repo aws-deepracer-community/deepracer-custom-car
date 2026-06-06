@@ -22,6 +22,7 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/imu.hpp"
+#include "std_msgs/msg/string.hpp"
 #include "deepracer_interfaces_pkg/srv/enable_state_srv.hpp"
 #include "imu_pkg/bmi160.hpp"
 
@@ -54,6 +55,7 @@ private:
 
   // ---------- Publishers / Clients ----------
   rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr imu_publisher_;
+  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr safety_event_publisher_;
   rclcpp::Client<deepracer_interfaces_pkg::srv::EnableStateSrv>::SharedPtr
     vehicle_state_client_;
 

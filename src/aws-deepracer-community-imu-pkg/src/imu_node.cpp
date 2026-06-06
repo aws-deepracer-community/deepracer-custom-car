@@ -23,6 +23,8 @@
 #include <memory>
 #include <string>
 
+#include "std_msgs/msg/string.hpp"
+
 namespace imu_pkg
 {
 
@@ -30,14 +32,11 @@ namespace imu_pkg
 // Topic / service names
 // -------------------------------------------------------------------------
 static constexpr char IMU_TOPIC[] = "imu_msg/data_raw";
+static constexpr char IMU_SAFETY_EVENT_TOPIC[] = "safety_event";
 static constexpr char VEHICLE_STATE_SRV[] = "/ctrl_pkg/enable_state";
 
-// Default I2C bus per hardware platform
-#if defined(HW_PLATFORM_DR)
-static constexpr int DEFAULT_BUS_ID = 7;
-#else
-static constexpr int DEFAULT_BUS_ID = 1;  // RPI or unknown
-#endif
+// Default I2C bus (bus 1 on both original DeepRacer and Raspberry Pi)
+static constexpr int DEFAULT_BUS_ID = 1;
 
 // -------------------------------------------------------------------------
 // Constructor
@@ -86,6 +85,8 @@ ImuNode::ImuNode()
   // --- Publisher ---
   auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).best_effort();
   imu_publisher_ = create_publisher<sensor_msgs::msg::Imu>(IMU_TOPIC, qos);
+  safety_event_publisher_ = create_publisher<std_msgs::msg::String>(
+    IMU_SAFETY_EVENT_TOPIC, rclcpp::QoS(10).reliable());
 
   // --- Vehicle-state service client (only if stop features enabled) ---
   if (stop_on_pickup_ || stop_on_crash_) {
@@ -235,6 +236,11 @@ void ImuNode::triggerStop(const std::string & reason)
   last_stop_time_ = now_t;
 
   RCLCPP_WARN(get_logger(), "IMU safety stop triggered: %s", reason.c_str());
+
+  // Publish the safety event for the UI.
+  auto event_msg = std_msgs::msg::String();
+  event_msg.data = reason;
+  safety_event_publisher_->publish(event_msg);
 
   if (!vehicle_state_client_) {
     RCLCPP_ERROR(get_logger(),

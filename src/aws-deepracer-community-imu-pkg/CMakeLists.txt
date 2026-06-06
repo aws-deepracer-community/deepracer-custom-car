@@ -27,6 +27,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
 find_package(deepracer_interfaces_pkg REQUIRED)
 
 # Include directories
@@ -41,6 +42,7 @@ add_executable(imu_node
 ament_target_dependencies(imu_node
   rclcpp
   sensor_msgs
+  std_msgs
   deepracer_interfaces_pkg
 )
 
