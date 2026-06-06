@@ -43,6 +43,11 @@ if [ -f "${CONFIG_FILE}" ]; then
     CFG_INFERENCE_ENGINE=$(jq -r '.inference.engine // empty' "${CONFIG_FILE}" 2>/dev/null)
     CFG_INFERENCE_DEVICE=$(jq -r '.inference.device // empty' "${CONFIG_FILE}" 2>/dev/null)
     CFG_STEERING_MODE=$(jq -r '.steering.mode // empty' "${CONFIG_FILE}" 2>/dev/null)
+    CFG_IMU_ENABLED=$(jq -r '.imu.enabled // false' "${CONFIG_FILE}" 2>/dev/null)
+    CFG_IMU_CRASH_ENABLED=$(jq -r '.imu.crash_enabled // false' "${CONFIG_FILE}" 2>/dev/null)
+    CFG_IMU_CRASH_THRESHOLD=$(jq -r '.imu.crash_threshold_g // 3.0' "${CONFIG_FILE}" 2>/dev/null)
+    CFG_IMU_PICKUP_ENABLED=$(jq -r '.imu.pickup_enabled // false' "${CONFIG_FILE}" 2>/dev/null)
+    CFG_IMU_PICKUP_THRESHOLD=$(jq -r '.imu.pickup_threshold_g // 0.5' "${CONFIG_FILE}" 2>/dev/null)
 else
     CFG_LOGGING_MODE=''
     CFG_LOGGING_PROVIDER=''
@@ -52,6 +57,11 @@ else
     CFG_INFERENCE_ENGINE=''
     CFG_INFERENCE_DEVICE=''
     CFG_STEERING_MODE=''
+    CFG_IMU_ENABLED='false'
+    CFG_IMU_CRASH_ENABLED='false'
+    CFG_IMU_CRASH_THRESHOLD='3.0'
+    CFG_IMU_PICKUP_ENABLED='false'
+    CFG_IMU_PICKUP_THRESHOLD='0.5'
 fi
 
 # Determine inference engine and device
@@ -121,6 +131,30 @@ case "${CFG_GRAY_OVERLAY}" in
     *) GRAY_OVERLAY="enable_gray_overlay:=False" ;;
 esac
 
+# Determine IMU settings (x86 only; no-op on ARM)
+case "${CFG_IMU_ENABLED}" in
+    true|True)
+        ENABLE_IMU="enable_imu:=True"
+        case "${CFG_IMU_CRASH_ENABLED}" in
+            true|True) IMU_STOP_ON_CRASH="imu_stop_on_crash:=True" ;;
+            *) IMU_STOP_ON_CRASH="imu_stop_on_crash:=False" ;;
+        esac
+        IMU_CRASH_THRESHOLD="imu_crash_accel_threshold_g:=${CFG_IMU_CRASH_THRESHOLD:-3.0}"
+        case "${CFG_IMU_PICKUP_ENABLED}" in
+            true|True) IMU_STOP_ON_PICKUP="imu_stop_on_pickup:=True" ;;
+            *) IMU_STOP_ON_PICKUP="imu_stop_on_pickup:=False" ;;
+        esac
+        IMU_PICKUP_THRESHOLD="imu_pickup_threshold_g:=${CFG_IMU_PICKUP_THRESHOLD:-0.5}"
+        ;;
+    *)
+        ENABLE_IMU=''
+        IMU_STOP_ON_CRASH=''
+        IMU_CRASH_THRESHOLD=''
+        IMU_STOP_ON_PICKUP=''
+        IMU_PICKUP_THRESHOLD=''
+        ;;
+esac
+
 # Check if the LiDAR is connected via UART
 CP210X=$(lsusb | grep "CP210x UART Bridge")
 if [ -n "${CP210X}" ]; then
@@ -132,7 +166,7 @@ else
 fi
 
 CMD="ros2 launch deepracer_launcher deepracer_launcher.py"
-for ARG in "${INFERENCE_ENGINE}" "${INFERENCE_DEVICE}" "${BATTERY_DUMMY}" "${LOGGING_MODE}" "${LOGGING_PROVIDER}" "${CAMERA_MODE}" "${CAMERA_ORIENTATION}" "${STEERING_MODE}" "${RPLIDAR}" "${GRAY_OVERLAY}"; do
+for ARG in "${INFERENCE_ENGINE}" "${INFERENCE_DEVICE}" "${BATTERY_DUMMY}" "${LOGGING_MODE}" "${LOGGING_PROVIDER}" "${CAMERA_MODE}" "${CAMERA_ORIENTATION}" "${STEERING_MODE}" "${RPLIDAR}" "${GRAY_OVERLAY}" "${ENABLE_IMU}" "${IMU_STOP_ON_CRASH}" "${IMU_CRASH_THRESHOLD}" "${IMU_STOP_ON_PICKUP}" "${IMU_PICKUP_THRESHOLD}"; do
     [ -n "${ARG}" ] && CMD="${CMD} ${ARG}"
 done
 echo "==> ${CMD}"

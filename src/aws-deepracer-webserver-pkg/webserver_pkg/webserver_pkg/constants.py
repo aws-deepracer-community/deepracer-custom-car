@@ -108,6 +108,10 @@ SERVO_STATE_SERVICE = f"{SERVO_PKG_NS}/servo_state"
 SET_LED_STATE_SERVICE = f"{SERVO_PKG_NS}/set_led_state"
 SET_RAW_PWM_SERVICE = f"{SERVO_PKG_NS}/set_raw_pwm"
 
+# imu_pkg
+IMU_PKG_NS = "/imu_pkg"
+IMU_SAFETY_EVENT_TOPIC = f"{IMU_PKG_NS}/safety_event"
+
 # status_led_pkg
 STATUS_LED_PKG_NS = "/status_led_pkg"
 LED_BLINK_SERVICE = f"{STATUS_LED_PKG_NS}/led_blink"
