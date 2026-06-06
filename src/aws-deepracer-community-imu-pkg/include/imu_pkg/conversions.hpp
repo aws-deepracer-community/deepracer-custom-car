@@ -108,7 +108,7 @@ inline MotionData applyAxisMapping(
 {
   MotionData out;
   out.gyro_x = static_cast<float>(raw_gy) * gyro_scale;
-  out.gyro_y = static_cast<float>(raw_gx) * gyro_scale;
+  out.gyro_y = -static_cast<float>(raw_gx) * gyro_scale;
   out.gyro_z = -static_cast<float>(raw_gz) * gyro_scale;
 
   out.accel_x = static_cast<float>(raw_ay) * accel_scale;
