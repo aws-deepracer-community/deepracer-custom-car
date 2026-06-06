@@ -19,7 +19,6 @@
         "source=deepracer-ros-bashhistory,target=/commandhistory,type=volume",
         "source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind",
         "source=${localEnv:HOME}/.aws,target=/home/${localEnv:USER}/.aws,type=bind",
-        "source=${localWorkspaceFolder}/../deepracer-custom-console,target=/workspaces/deepracer-custom-console,type=bind,consistency=cached"
     ],
     "customizations": {
         "vscode": {

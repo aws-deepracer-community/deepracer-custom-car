@@ -52,6 +52,10 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
     
 RUN gem install deb-s3
 
+# Install Node.js 22
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
+    apt-get install -y --no-install-recommends nodejs
+
 RUN pip install flask flask-cors flask-wtf --break-system-packages
 
 # Install OpenVINO 2024.6.0 (apt for x86_64, pip for aarch64)
