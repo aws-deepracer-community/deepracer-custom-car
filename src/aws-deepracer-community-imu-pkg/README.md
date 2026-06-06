@@ -52,12 +52,12 @@ Linux I2C (/dev/i2c-N)
    - init / configure
    - FOC calibration
    - readMotion6()
-   - isHighGTriggered()
         │
         ▼
    conversions.hpp             (pure math, fully unit-tested)
    - applyAxisMapping()
    - ema()
+   - isCrashDetected()
    - isPickupDetected()
         │
         ▼
@@ -141,28 +141,28 @@ ros2 topic echo /imu_pkg/imu_msg/data_raw
 
 ### Crash Detection (`stop_on_crash`)
 
-Uses the BMI160 hardware high-G interrupt engine — no software polling of
-acceleration values is involved.
+Uses a **software magnitude check** on the accel data already read each timer
+tick — no extra I2C transaction, and no impact can be missed regardless of
+duration.
 
 **How it works:**
 
-1. At startup, `configureHighGInterrupt()` programs the BMI160:
-   - Enables high-G monitoring on all three axes simultaneously
-   - Sets the threshold register (`INT_LOWHIGH_3`): 1 LSB = 7.81 mg, so
-     `crash_accel_threshold_g / 0.00781` → register byte
-   - Sets duration (`INT_LOWHIGH_2`) to `0x00` (1 sample = 10 ms trigger)
-   - Sets hysteresis (`INT_LOWHIGH_4`) to `0x03` (~47 mg, prevents rapid re-triggers)
+1. Every timer tick, after reading and filtering the 6-DOF data, `isCrashDetected()`
+   computes the Euclidean magnitude across all three axes:
 
-2. Every timer tick, `isHighGTriggered()` reads `INT_STATUS_1` (register 0x1D)
-   and checks bit 2 (`high_g_int`). The BMI160 latches this bit in hardware —
-   a brief impact won't be missed between polls. Reading the register clears it.
+   ```
+   √(accel_x² + accel_y² + accel_z²)  >  crash_accel_threshold_g × 9.81
+   ```
+
+2. The check is **orientation-agnostic** — it detects impacts on any axis without
+   special configuration.
 
 3. When triggered, `triggerStop("crash")` calls `/ctrl_pkg/enable_state` with
    `is_active=false` (fire-and-forget async). The car halts and **latches**
    inactive until a human re-enables it via the web console.
 
-**Crash detection does not use the EMA filter** — it reads the raw hardware
-register, so it reacts to impacts at the sensor's full bandwidth.
+**Crash detection uses the EMA-filtered** accel values (same as published). To
+reduce filter lag for crash detection, raise `filter_alpha` toward `1.0`.
 
 **Polling latency:** up to `1000 / publish_rate` ms (default ~33 ms at 30 Hz).
 Raise `publish_rate` to reduce latency (e.g. `50` → 20 ms).
@@ -186,15 +186,16 @@ tilted, `accel_z` shifts toward 0 (free-fall) or swings wildly.
 **Trigger condition:**
 
 ```
-|accel_z - expected_z|  >  |expected_z| + (pickup_threshold_g × 9.81)
+|accel_z - expected_z|  >  pickup_threshold_g × 9.81
 ```
 
 With defaults (`accel_z_gravity_target=+1`, `pickup_threshold_g=0.5`):
 - `expected_z` = +9.81 m/s²
-- Fires when `accel_z` falls below **−4.9 m/s²** or exceeds **+24.5 m/s²**
+- `threshold` = 0.5 × 9.81 = 4.9 m/s²
+- Fires when `accel_z` falls outside the range **[+4.9, +14.7] m/s²**
 
-This means the car must deviate more than 1.5× gravity from its resting value,
-which normal driving does not produce.
+This covers: car lifted (accel_z → 0), car placed on its side (accel_z → 0),
+and car flipped upside-down (accel_z → −9.81 m/s²).
 
 **EMA lag** is intentional here — pickup is a sustained event (someone lifting
 the car) lasting hundreds of milliseconds, not a brief spike. The filter
@@ -229,8 +230,8 @@ filtered = alpha × current + (1 − alpha) × previous
 | `0.2` | Heavy smoothing, good for slow-changing data |
 | `0.0` | Holds previous value (fully frozen) |
 
-The crash detection check (`isHighGTriggered`) always bypasses the EMA filter
-and reads the raw hardware interrupt register.
+Crash detection uses the same EMA-filtered values as the published output.
+To minimise filter lag for crash detection, raise `filter_alpha` toward `1.0`.
 
 ---
 
@@ -284,7 +285,7 @@ cd /workspaces/deepracer-custom-car
 # Build
 colcon build --packages-select imu_pkg --cmake-args -DCMAKE_BUILD_TYPE=Release
 
-# Run tests (49 unit tests + 6 linter suites)
+# Run tests (55 unit tests + linter suites)
 source install/setup.bash
 colcon test --packages-select imu_pkg --event-handlers console_direct+
 colcon test-result --packages-select imu_pkg --verbose
@@ -309,7 +310,7 @@ aws-deepracer-community-imu-pkg/
 ├── include/
 │   └── imu_pkg/
 │       ├── bmi160.hpp          # BMI160 register map, commands, driver class declaration
-│       ├── conversions.hpp     # Pure-math helpers (axis mapping, EMA, pickup detection)
+│       ├── conversions.hpp     # Pure-math helpers (axis mapping, EMA, crash/pickup detection)
 │       └── imu_node.hpp        # ROS 2 node class declaration
 ├── src/
 │   ├── bmi160.cpp              # BMI160 I2C driver implementation
@@ -317,5 +318,5 @@ aws-deepracer-community-imu-pkg/
 ├── launch/
 │   └── imu_pkg_launch.py       # Standalone launch file
 └── test/
-    └── test_conversions.cpp    # GTest unit tests for conversions.hpp (49 tests)
+    └── test_conversions.cpp    # GTest unit tests for conversions.hpp (55 tests)
 ```
