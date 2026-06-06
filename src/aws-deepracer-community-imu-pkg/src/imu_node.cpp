@@ -128,9 +128,9 @@ bool ImuNode::initSensor()
   imu_->configure(accel_range_g_, gyro_range_dps_);
   imu_->calibrate(accel_z_gravity_target_);
 
-  if (stop_on_crash_) {
-    imu_->configureHighGInterrupt(static_cast<float>(crash_accel_threshold_g_));
-  }
+  // Hardware high-G interrupt not used for crash detection (software magnitude
+  // check in timerCallback is more reliable at 30 Hz polling). Retained in
+  // BMI160 driver for future GPIO-based use.
 
   return true;
 }
@@ -170,7 +170,10 @@ void ImuNode::timerCallback()
   prev_accel_x_ = accel_x; prev_accel_y_ = accel_y; prev_accel_z_ = accel_z;
 
   // --- Safety checks (before publishing) ---
-  if (stop_on_crash_ && imu_->isHighGTriggered()) {
+  if (stop_on_crash_ && conversions::isCrashDetected(
+      static_cast<double>(accel_x), static_cast<double>(accel_y),
+      static_cast<double>(accel_z), crash_accel_threshold_g_))
+  {
     triggerStop("crash");
   }
 

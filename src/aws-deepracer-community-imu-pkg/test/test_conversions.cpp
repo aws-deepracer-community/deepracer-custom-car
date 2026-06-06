@@ -146,6 +146,51 @@ TEST_F(HighGThreshTest, LargeValueClampedTo255)
 }
 
 // =========================================================================
+// Crash detection
+// =========================================================================
+
+class CrashDetectionTest : public ::testing::Test {};
+
+/// Car stationary flat: magnitude ≈ 9.8 m/s², threshold = 3G ≈ 29.4 → not a crash
+TEST_F(CrashDetectionTest, Stationary_NotCrash)
+{
+  EXPECT_FALSE(isCrashDetected(0.0, 0.0, 9.80665, 3.0));
+}
+
+/// Pure Z spike at exactly threshold: not triggered (must strictly exceed)
+TEST_F(CrashDetectionTest, ExactlyAtThreshold_NotTriggered)
+{
+  const double threshold_ms2 = 3.0 * 9.80665;
+  EXPECT_FALSE(isCrashDetected(0.0, 0.0, threshold_ms2, 3.0));
+}
+
+/// Pure Z spike above threshold triggers crash
+TEST_F(CrashDetectionTest, ZSpike_Triggered)
+{
+  EXPECT_TRUE(isCrashDetected(0.0, 0.0, 3.0 * 9.80665 + 0.01, 3.0));
+}
+
+/// Distributed across all axes: magnitude > threshold triggers crash
+TEST_F(CrashDetectionTest, MultiAxisImpact_Triggered)
+{
+  // Each axis = 2G → magnitude = 2G * sqrt(3) ≈ 3.46G > 3G
+  const double v = 2.0 * 9.80665;
+  EXPECT_TRUE(isCrashDetected(v, v, v, 3.0));
+}
+
+/// Small lateral bump: each axis < threshold, magnitude also < threshold
+TEST_F(CrashDetectionTest, SmallBump_NotCrash)
+{
+  EXPECT_FALSE(isCrashDetected(1.0 * 9.80665, 0.0, 9.80665, 3.0));
+}
+
+/// Threshold zero: any non-zero acceleration triggers
+TEST_F(CrashDetectionTest, ZeroThreshold_AlwaysTriggered)
+{
+  EXPECT_TRUE(isCrashDetected(0.001, 0.0, 0.0, 0.0));
+}
+
+// =========================================================================
 // Axis mapping
 // =========================================================================
 

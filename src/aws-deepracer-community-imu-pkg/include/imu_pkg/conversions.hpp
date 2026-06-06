@@ -118,6 +118,30 @@ inline MotionData applyAxisMapping(
 }
 
 // -------------------------------------------------------------------------
+// Crash detection
+// -------------------------------------------------------------------------
+
+/// Return true when the total acceleration magnitude indicates a crash.
+///
+/// Uses the Euclidean magnitude of all three axes, so it is orientation-agnostic.
+///   sqrt(x² + y² + z²) > threshold_ms2
+///
+/// @param accel_x/y/z_ms2    Measured accelerations in m/s² (vehicle frame)
+/// @param crash_threshold_g  Threshold in G (converted internally to m/s²)
+inline bool isCrashDetected(
+  double accel_x_ms2,
+  double accel_y_ms2,
+  double accel_z_ms2,
+  double crash_threshold_g)
+{
+  const double magnitude = std::sqrt(
+    accel_x_ms2 * accel_x_ms2 +
+    accel_y_ms2 * accel_y_ms2 +
+    accel_z_ms2 * accel_z_ms2);
+  return magnitude > crash_threshold_g * GRAVITY_MS2;
+}
+
+// -------------------------------------------------------------------------
 // Pickup detection
 // -------------------------------------------------------------------------
 
