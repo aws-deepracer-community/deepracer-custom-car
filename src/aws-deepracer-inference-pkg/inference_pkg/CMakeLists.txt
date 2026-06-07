@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.16)
 project(inference_pkg)
 include(FetchContent)
 
@@ -10,9 +10,9 @@ if(NOT CMAKE_C_STANDARD)
   set(CMAKE_C_STANDARD 99)
 endif()
 
-# Default to C++17
+# Default to C++20
 if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 17)
+  set(CMAKE_CXX_STANDARD 20)
 endif()
 
 # In each C++ package that needs HW_PLATFORM
@@ -32,14 +32,6 @@ elseif(HW_PLATFORM STREQUAL "DR")
   add_definitions(-DHW_PLATFORM_DR)
 endif()
 
-# Find and use OpenMP for multi-core optimization
-find_package(OpenMP)
-if(OpenMP_CXX_FOUND)
-  message(STATUS "OpenMP found. Enabling multi-core optimizations for CM4")
-  add_compile_options(${OpenMP_CXX_FLAGS})
-  link_libraries(${OpenMP_CXX_LIBRARIES})
-endif()
-
 # Architecture detection and optimization setup
 include(CheckCXXSourceRuns)
 set(CMAKE_REQUIRED_FLAGS)
@@ -51,6 +43,7 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     -Wno-deprecated-declarations 
     -Wno-ignored-attributes 
     -Wno-deprecated
+    -Wno-attributes
   )
   
   # Common optimizations for all architectures
@@ -62,18 +55,23 @@ endif()
 
 # Architecture-specific optimizations
 if(HW_PLATFORM STREQUAL "DR")
-  message(STATUS "Intel architecture detected, enabling Goldmont optimizations")
+  message(STATUS "Intel architecture detected, enabling Goldmont/Apollo Lake optimizations")
   
   # TensorFlow Lite optimization flags for Intel
+  # XNNPACK provides SSE4.1/SSE4.2 optimised kernels on x86 - this is the primary perf driver
+  set(TFLITE_GIT_TAG "v2.19.1")
   set(TFLITE_ENABLE_XNNPACK ON CACHE BOOL "Enable XNNPACK acceleration")
-  set(TFLITE_ENABLE_RUY ON CACHE BOOL "Enable RUY matrix multiplication library")
-  set(TFLITE_ENABLE_X86_OPTIMIZATIONS ON CACHE BOOL "Enable x86 optimizations")
+  set(TFLITE_ENABLE_RUY OFF CACHE BOOL "Enable RUY matrix multiplication library")
   
   if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     add_compile_options(
-      -march=goldmont     # Base architecture
-      -mtune=goldmont     # Microarchitecture optimizations
-      -funroll-loops      # Loop unrolling optimization
+      -O3                 # Maximum optimisation (E3930 is latency-critical inference)
+      -march=goldmont     # Apollo Lake (E3930) micro-architecture
+      -mtune=goldmont     # Tune scheduling for Goldmont pipeline
+      -msse4.1            # Explicit SSE4.1 (implied by goldmont, but explicit is safer)
+      -msse4.2            # Explicit SSE4.2 (implied by goldmont, but explicit is safer)
+      -ftree-vectorize    # Enable auto-vectorisation
+      -funroll-loops      # Loop unrolling optimisation
     )
   endif()
   
@@ -81,12 +79,10 @@ elseif(HW_PLATFORM STREQUAL "RPI")
   message(STATUS "RPI architecture detected, enabling Cortex-A72 optimizations")
  
   # TensorFlow Lite optimization flags for ARM64
+  set(TFLITE_GIT_TAG "v2.17.1")
   set(TFLITE_ENABLE_XNNPACK ON CACHE BOOL "Enable XNNPACK acceleration")
   set(TFLITE_ENABLE_RUY ON CACHE BOOL "Enable RUY matrix multiplication library")
   set(TFLITE_ENABLE_NEON ON CACHE BOOL "Enable NEON optimizations for ARM")
-  set(TFLITE_ENABLE_MMAP ON CACHE BOOL "Enable mmap for faster file access")
-  set(TFLITE_ENABLE_GPU OFF CACHE BOOL "Disable GPU")
-  set(TFLITE_ENABLE_NNAPI OFF CACHE BOOL "Disable Android NNAPI")
 
   if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     add_compile_options(
@@ -97,9 +93,11 @@ elseif(HW_PLATFORM STREQUAL "RPI")
   endif()
 endif()
 
-FetchContent_Declare(tensorflow-lite
+message(STATUS "Fetching TensorFlow Lite ${TFLITE_GIT_TAG} for platform ${HW_PLATFORM}")
+FetchContent_Declare(
+  tensorflow-lite
   GIT_REPOSITORY https://github.com/tensorflow/tensorflow.git
-  GIT_TAG v2.17.1  # Specify the desired tag here
+  GIT_TAG ${TFLITE_GIT_TAG}
 )
 FetchContent_Populate(tensorflow-lite)
 
