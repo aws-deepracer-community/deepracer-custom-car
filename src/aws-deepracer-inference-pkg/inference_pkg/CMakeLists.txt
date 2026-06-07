@@ -59,6 +59,7 @@ if(HW_PLATFORM STREQUAL "DR")
   
   # TensorFlow Lite optimization flags for Intel
   # XNNPACK provides SSE4.1/SSE4.2 optimised kernels on x86 - this is the primary perf driver
+  set(TFLITE_GIT_TAG "v2.19.1")
   set(TFLITE_ENABLE_XNNPACK ON CACHE BOOL "Enable XNNPACK acceleration")
   set(TFLITE_ENABLE_RUY OFF CACHE BOOL "Enable RUY matrix multiplication library")
   
@@ -78,6 +79,7 @@ elseif(HW_PLATFORM STREQUAL "RPI")
   message(STATUS "RPI architecture detected, enabling Cortex-A72 optimizations")
  
   # TensorFlow Lite optimization flags for ARM64
+  set(TFLITE_GIT_TAG "v2.17.1")
   set(TFLITE_ENABLE_XNNPACK ON CACHE BOOL "Enable XNNPACK acceleration")
   set(TFLITE_ENABLE_RUY ON CACHE BOOL "Enable RUY matrix multiplication library")
   set(TFLITE_ENABLE_NEON ON CACHE BOOL "Enable NEON optimizations for ARM")
@@ -91,11 +93,11 @@ elseif(HW_PLATFORM STREQUAL "RPI")
   endif()
 endif()
 
-# --- Fetch TensorFlow Lite (standalone) ---
+message(STATUS "Fetching TensorFlow Lite ${TFLITE_GIT_TAG} for platform ${HW_PLATFORM}")
 FetchContent_Declare(
   tensorflow-lite
   GIT_REPOSITORY https://github.com/tensorflow/tensorflow.git
-  GIT_TAG v2.19.1
+  GIT_TAG ${TFLITE_GIT_TAG}
 )
 FetchContent_Populate(tensorflow-lite)
 
