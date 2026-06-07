@@ -93,7 +93,7 @@ export TF_NEED_ROCM=0
 export TF_DOWNLOAD_CLANG=0
 export TF_SET_ANDROID_WORKSPACE=0
 export TF_NEED_MPI=0
-export CC_OPT_FLAGS="-march=silvermont -mtune=silvermont -msse4.1 -msse4.2 -mno-avx -mno-avx2"
+export CC_OPT_FLAGS="-march=goldmont -mtune=goldmont -msse4.1 -msse4.2 -mno-avx -mno-avx2"
 export TF_CONFIGURE_IOS=0
 export USE_DEFAULT_PYTHON_LIB_PATH=1
 export TF_NEED_CLANG=0
@@ -114,8 +114,8 @@ bazel build \
     --jobs=6 \
     --local_ram_resources=HOST_RAM*.5 \
     --config=opt \
-    --copt=-march=silvermont \
-    --copt=-mtune=silvermont \
+    --copt=-march=goldmont \
+    --copt=-mtune=goldmont \
     --copt=-msse4.1 \
     --copt=-msse4.2 \
     --copt=-mno-avx \
@@ -150,7 +150,7 @@ echo "========================================"
 echo "TensorFlow ${TF_VERSION} build complete!"
 echo "Wheel package location: ${INSTALL_PREFIX}/tensorflow-${TF_VERSION}*.whl"
 echo ""
-echo "The wheel is built for Intel Atom (Silvermont) without AVX/AVX2 instructions."
+echo "The wheel is built for Intel Atom (Goldmont/Apollo Lake) without AVX/AVX2 instructions."
 echo ""
 echo "To install in other environments:"
 echo "  pip install ${INSTALL_PREFIX}/tensorflow-${TF_VERSION}*.whl"
