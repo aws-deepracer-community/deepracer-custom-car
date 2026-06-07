@@ -44,6 +44,7 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
     ros-jazzy-image-transport \
     ros-jazzy-pybind11-vendor \
     ruby \
+    rsync \
     sudo \
     unzip \
     v4l-utils \
@@ -56,7 +57,7 @@ RUN gem install deb-s3
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
     apt-get install -y --no-install-recommends nodejs
 
-RUN pip install flask flask-cors flask-wtf --break-system-packages
+RUN pip install flask flask-cors flask-wtf "tensorflow-cpu==2.19.1" --break-system-packages
 
 # Install OpenVINO 2024.6.0 (apt for x86_64, pip for aarch64)
 RUN ARCH=$(uname -m) && \

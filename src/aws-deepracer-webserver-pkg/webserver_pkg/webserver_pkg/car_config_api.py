@@ -124,9 +124,10 @@ def _get_capabilities():
         "inference_devices": inference_devices,
         "steering_modes": ["servo"] if is_x86 else VALID_STEERING_MODES,
         "gray_overlay": True,
-        "imu": is_x86,  # BMI160 only fitted on original DeepRacer (x86) hardware
-        "imu_crash_thresholds": VALID_IMU_CRASH_THRESHOLDS if is_x86 else [],
-        "imu_pickup_thresholds": VALID_IMU_PICKUP_THRESHOLDS if is_x86 else [],
+        # BMI160 only fitted on original DeepRacer (x86) hardware, node only supported in non-Foxy distros
+        "imu": is_x86 and not is_foxy,
+        "imu_crash_thresholds": VALID_IMU_CRASH_THRESHOLDS if is_x86 and not is_foxy else [],
+        "imu_pickup_thresholds": VALID_IMU_PICKUP_THRESHOLDS if is_x86 and not is_foxy else [],
     }
 
 
