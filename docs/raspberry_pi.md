@@ -1,108 +1,184 @@
-# Building a DeepRacer for Raspberry Pi 4
+# Building a DeepRacer for Raspberry Pi
 
 ## Features
 
-Main features of the port:
-
-- Previously trained models will work
-- Uses Tensorflow Lite or OpenVINO for inference. Supports the Intel Neural Compute Stick 2 (NCS2/MYRIAD)
-- Can integrate with DREM
-- Single power source¹ - reduces weight and lowers center of gravity
+- Previously trained models work without modification
+- Inference via TensorFlow Lite or OpenVINO; supports the Intel Neural Compute Stick 2 (NCS2/MYRIAD)
+- Integrates with DREM
+- Single power source¹ — reduces weight and lowers centre of gravity
 - Over-the-Air Software Updates
+
+## Supported Boards
+
+| Board | Notes |
+| ----- | ----- |
+| Raspberry Pi 4 | |
+| Raspberry Pi 5 | |
+| Raspberry Pi CM4 Lite | With [Waveshare CM4-IOBASE-A/B](https://www.waveshare.com/product/raspberry-pi/boards-kits/cm4-series.htm) |
+| Raspberry Pi CM5 Lite | With [Waveshare CM5-IOBASE-A/B](https://www.waveshare.com/product/raspberry-pi/boards-kits/cm5-series.htm) or [Waveshare CM4-IOBASE-A/B](https://www.waveshare.com/product/raspberry-pi/boards-kits/cm4-series.htm) |
+
+It is recommended to have a minimum of 2 GB of RAM.
+
+The above combinations have been tested, other combinations may also work. Pi Zero W / Pi Zero 2W is not supported due to only having 512 MB of RAM.
 
 ## Parts
 
-The following parts are needed:
-
-* WLToys A959, A969, A979, compatible car built from parts or original DeepRacer
-* ESC for Brushed Motor, e.g. WP-1060-RTR - original DeepRacer already includes this item
-* 4-pin Servo, e.g. Surpass Hobby S0017M - original DeepRacer already includes this item
-* 3D-print of the parts in `/drawing`
+* WLToys A959, A969, A979, compatible car built from parts, or an original DeepRacer
+* ESC for brushed motor, e.g. WP-1060-RTR — original DeepRacer already includes this
+* 4-pin servo, e.g. Surpass Hobby S0017M — original DeepRacer already includes this
+* 3D-printed mount parts from `/drawings`
 * WLToys Body Posts (part# A969-05)
-* Raspberry Pi 4, recommended 2GB or more of RAM
-    * Stand-off set (2.5mm)
-* [Waveshare Servo Driver Hat](https://www.waveshare.com/product/raspberry-pi/hats/motors-relays/servo-driver-hat.htm) or compatible PCA9865 servo boards. 
-    * Stackable header 40pin (to get higher servo driver hat higher than the fan)
-* Raspberry Pi Camera 2
-    * Longer cable (20-25cm)
-    * Screws M2x15mm + nuts
-* Recommended cooling fan: [GeeekPi Raspberry Pi 4 Armor Lite](https://www.amazon.de/gp/product/B091L1XKL6/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&psc=1)
-* RGB Led: 
-    * [AZDelivery 5 x KY-016 FZ0455](https://www.amazon.co.uk/AZDelivery-KY-016-3-Colour-Arduino-including/dp/B07V6YSGC9/ref=sr_1_1)
-    * 4 female-female jumper cables
-    * [Led Holder](https://www.amazon.co.uk/Chanzon-Holder-Headfor-Emitting-Diodes/dp/B083Q9Q1ZR/ref=sr_1_4_sspa)
-* Servo extension cable (with red cable cut)
-* 3-pin female JST
-* 2.5mm plastic screws (preferrably of good quality) to mount back and front; or use M2 screws with nuts
+* Raspberry Pi 4 or 5 (or CM4/CM5 Lite on a Waveshare IO Base)
+    * Stand-off set (2.5 mm)
+* [Waveshare Servo Driver Hat](https://www.waveshare.com/product/raspberry-pi/hats/motors-relays/servo-driver-hat.htm) or compatible PCA9685 board
+    * 40-pin stackable header (raises the servo hat above the cooling fan)
+* Raspberry Pi Camera Module 2, 3, or 5
+    * Longer ribbon cable (20–25 cm)
+    * M2×15 mm screws + nuts
+* Recommended cooling fan: [GeeekPi Raspberry Pi 4 Armor Lite](https://www.amazon.de/gp/product/B091L1XKL6/) (Pi 4) or equivalent active cooler (Pi 5)
+* RGB LED:
+    * [AZDelivery 5 × KY-016 FZ0455](https://www.amazon.co.uk/AZDelivery-KY-016-3-Colour-Arduino-including/dp/B07V6YSGC9/)
+    * 4 female-to-female jumper cables
+    * [LED holder](https://www.amazon.co.uk/Chanzon-Holder-Headfor-Emitting-Diodes/dp/B083Q9Q1ZR/)
+* Servo extension cable (red power wire removed)
+* 3-pin female JST connector
+* 2.5 mm plastic screws (good quality) or M2 screws with nuts for front/rear body mounts
 
-¹ The Waveshare hat comes with a step-down converter from 7.4V to 5V, and will power the Pi via the GPIO header. Other similar cards will require separate power.
+¹ The Waveshare hat includes a step-down converter (7.4 V → 5 V) that powers the Pi via the GPIO header. Other PCA9685 boards may require a separate 5 V supply.
 
 ## Software Install
 
-Installation of software is reasonably straight forward, as pre-built packages are provided:
+Pre-built packages are provided, making installation straightforward.
 
-- Flash an SD card with Ubuntu 22.04 Server for ARM64 using the Raspberry Pi Imager.
-- Boot the SD card, and let it upgrade (this takes some time...)
-- Run `git clone https://github.com/aws-deepracer-community/deepracer-custom-car`
-- Run `sudo ./install_scripts/rpi4-22.04/install-prerequisites.sh`
-- Reboot
-- Run `sudo ./install_scripts/rpi4-22.04/install-deepracer.sh`
+1. Flash an SD card with **Ubuntu 24.04 Server for ARM64** using the [Raspberry Pi Imager](https://www.raspberrypi.com/software/). The recommended username is `deepracer`.
+2. Boot and wait for the first-run upgrade to complete (this can take several minutes).
+3. Clone the repository:
+   ```bash
+   git clone https://github.com/aws-deepracer-community/deepracer-custom-car
+   ```
+4. Run the prerequisites script and reboot:
+   ```bash
+   sudo ./install_scripts/rpi-24.04/install-prerequisites.sh
+   sudo reboot
+   ```
+5. Run the main install script:
+   ```bash
+   sudo ./install_scripts/rpi-24.04/install-deepracer.sh
+   ```
 
-Once installed you can start the stack with `sudo /opt/aws/deepracer/start_ros.sh`. To ensure a smooth start a camera needs to be plugged in.
-The launch log will now display in the console.
+### Firmware configuration (`/boot/firmware/config.txt`)
 
-To automatically start at boot do `sudo systemctl enable deepracer-core` and to start the service in the background `sudo systemctl start deepracer-core`.
+The prerequisites script automatically adds the I²C/PWM overlay. The following additional changes must be made **manually** before rebooting:
 
-### Changes
+#### Camera
 
-Some changes have been made to the code to enable access to GPIO as sysfs layout is different on the Raspberry Pi than on the custom Intel board.
+Unlike Raspberry Pi OS, Ubuntu 24.04 does **not** reliably auto-detect camera modules. Disable auto-detection and add the overlay for your specific camera manually in `/boot/firmware/config.txt`:
 
-### Improvements
+| Camera | Overlay line |
+| ------ | ------------ |
+| Raspberry Pi Camera Module 2 (IMX219) | `dtoverlay=imx219` |
+| Raspberry Pi Camera Module 3 (IMX708) | `dtoverlay=imx708` |
 
-- Stripped down OS
-- Runs the custom deepracer stack also seen in [deepracer-scripts](https://github.com/davidfsmith/deepracer-scripts).
+For example, for a Camera Module 2:
 
-### Details
+```ini
+camera_auto_detect=0
+dtoverlay=imx219
+```
 
-**PWM Outputs**
+If you have two cameras connected (e.g. on a Compute Module), repeat the overlay once per camera with the port specified:
 
-| Channel | Purpose          | Notes                                                                   |
-| ------- | ---------------- | ----------------------------------------------------------------------- |
-| 0       | Speed controller | <span style="color:red">Remove red cable for stock DeepRacer ESC</span> |
-| 1       | Steering servo   |                                                                         |
-| 2       | RGB LED          | Tail light - Red                                                        |
-| 3       | RGB LED          | Tail light - Green                                                      |
-| 4       | RGB LED          | Tail light - Blue                                                       |
-| 5       |
-| 6       |
-| 7       | RGB LED          |
-| 8       | RGB LED          |
-| 9       | RGB LED          |
-| 10      | RGB LED          |
-| 11      | RGB LED          |
-| 12      | RGB LED          |
-| 13      | RGB LED          |
-| 14      | RGB LED          |
-| 15      | RGB LED          |
+```ini
+dtoverlay=imx219,cam0
+dtoverlay=imx219,cam1
+```
 
-<span style="color:red">**NOTE:** Remove the red cable on the stock DeepRacer from the speed controller into PWM channel 0, otherwise you are putting 6V into the servo hat.</span>
+#### GPU Memory
 
-LiPo can power both the board and car, 3 pin (balance lead) gets wired to VIN (black and red cables only) to power the board and RPi. The 2 pin power cable goes to the car as normal.
+Allocate sufficient GPU memory for the camera pipeline:
 
+```ini
+gpu_mem=256
+```
 
-**GPIO layout:**
+Add this line to `/boot/firmware/config.txt`.
 
-- `gpio1` - enables PWM (does not do anything, PWM is always on for the Waveshare board)
-- `gpio495`-`gpio504` - maps to PWM7 to PWM15 on the Hat, to control three RGB leds (those originally on the side of the board)
+#### USB OTG / Ethernet Gadget
 
-**USB host mode:**
-To connect the USB-C port on the Raspberry Pi 4 to a USB on your computer, then you need to perform two changes:
-* Add `dtoverlay=dwc2,dr_mode=host` to your `/boot/firmware/config.txt`
-* Add `modules-load=dwc2,g_ether` to your `/boot/firmware/cmdline.txt`
+To expose a USB Ethernet gadget on the USB-C port, make two changes:
 
-With this you will see a new network connect appear in Windows (and Mac?). The Raspberry Pi will have IP 10.0.0.1; you can connect to the console via `https://deepracer.aws`. This will require your computer to be disconnected from all other networks (given a DNS priority issue). SSH directly to the IP will work.
+**`/boot/firmware/config.txt`** — add:
+```ini
+dtoverlay=dwc2,dr_mode=peripheral
+```
+
+**`/boot/firmware/cmdline.txt`** — append (on the same single line, after `rootwait`):
+```
+modules-load=dwc2,g_ether
+```
+
+After booting, a new network interface appears on the host computer. The Raspberry Pi is reachable at `10.0.0.1`; the DeepRacer console is available at `https://deepracer.aws`. Note that your computer must not be connected to other networks due to DNS priority; SSH directly to `10.0.0.1` always works.
+
+### Starting the stack
+
+The install script enables `deepracer-core` at boot, so the stack starts automatically. To run it manually instead, stop the service and launch directly:
+
+```bash
+sudo systemctl stop deepracer-core
+sudo /opt/aws/deepracer/start_ros.sh
+```
+
+A camera must be connected before starting. The ROS launch log is shown in the console.
+
+To follow the service logs:
+```bash
+journalctl -u deepracer-core
+```
+
+## Hardware Details
+
+### PWM Outputs (Waveshare Servo Driver Hat)
+
+| Channel | Purpose          | Notes |
+| ------- | ---------------- | ----- |
+| 0       | Speed controller | <span style="color:red">Remove the red wire for a stock DeepRacer ESC — 6 V will damage the hat</span> |
+| 1       | Steering servo   | |
+| 2       | RGB LED          | Tail light — Red |
+| 3       | RGB LED          | Tail light — Green |
+| 4       | RGB LED          | Tail light — Blue |
+| 5       | *(unused)*       | |
+| 6–15    | *(unused)*       | Side LEDs are driven directly from Pi GPIO — see below |
+
+<span style="color:red">**NOTE:** Always remove the red wire from the stock DeepRacer speed controller before connecting to PWM channel 0.</span>
+
+LiPo battery wiring: connect the 3-pin balance lead (black and red wires only) to VIN on the hat to power the hat and Raspberry Pi. The 2-pin main power lead goes to the car's ESC as normal.
+
+### GPIO
+
+The software uses the `libgpiod` interface. The GPIO chip differs by board:
+
+| Board | GPIO chip |
+| ----- | --------- |
+| Raspberry Pi 4 / CM4 | `/dev/gpiochip0` |
+| Raspberry Pi 5 / CM5 | `/dev/gpiochip4` |
+
+The three side RGB LEDs are **not** driven through the PCA9685. Instead they are wired directly to the Pi's GPIO header and controlled via `libgpiod`:
+
+| GPIO (BCM) | LED | Channel |
+| ---------- | --- | ------- |
+| 9  | Side LED 1 | Red   |
+| 10 | Side LED 1 | Green |
+| 11 | Side LED 1 | Blue  |
+| 12 | Side LED 2 | Red   |
+| 13 | Side LED 2 | Green |
+| 14 | Side LED 2 | Blue  |
+| 15 | Side LED 3 | Red   |
+| 16 | Side LED 3 | Green |
+| 17 | Side LED 3 | Blue  |
+
+This is confirmed in [`status_led_pkg/constants.py`](../src/aws-deepracer-status-led-pkg/status_led_pkg/status_led_pkg/constants.py): the RPi code path uses `/dev/gpiochip0` (Pi 4) or `/dev/gpiochip4` (Pi 5) with lines 9–17, which are the Pi's own BCM GPIO pins, not PCA9685 outputs.
 
 ## What does not (yet) work
 
-- Battery gauge is not connected - red warning message persists
-- Device Info Node is looking in non-existent places - no real impact
+- Battery gauge is not connected — red warning message persists
+- Device Info Node looks in non-existent locations — no functional impact
