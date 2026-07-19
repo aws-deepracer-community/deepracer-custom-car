@@ -12,6 +12,7 @@
   <license>Apache 2.0</license>
 
   <depend>rclpy</depend>
+  <depend>rcl_interfaces</depend>
   <depend>deepracer_interfaces_pkg</depend>
   <depend>ctrl_pkg</depend>
   <depend>sensor_fusion_pkg</depend>
