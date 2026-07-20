@@ -1,4 +1,4 @@
-# Building a DeepRacer for Raspberry Pi
+# Building a DeepRacer for Raspberry Pi 4 / 5
 
 ## Features
 
@@ -102,6 +102,20 @@ gpu_mem=256
 ```
 
 Add this line to `/boot/firmware/config.txt`.
+
+GPIO is accessed via the `libgpiod` library (not the legacy sysfs `/sys/class/gpio/` interface).
+The GPIO chip and line numbers differ by board:
+
+| Board       | GPIO chip          | LED lines (R, G, B per LED × 3 LEDs) |
+| ----------- | ------------------ | ------------------------------------- |
+| Raspberry Pi 4 | `/dev/gpiochip0` | Lines 9–17                          |
+| Raspberry Pi 5 | `/dev/gpiochip4` | Lines 9–17                          |
+
+The three RGB LEDs (those originally on the side of the DeepRacer board) map to lines 9–17:
+LED 0 → lines 9, 10, 11 (R, G, B); LED 1 → lines 12, 13, 14; LED 2 → lines 15, 16, 17.
+
+> **Note:** The legacy sysfs GPIO numbers (`gpio1`, `gpio495`–`gpio504`) applied only to
+> Raspberry Pi 4 on Ubuntu 22.04 and are no longer used.
 
 #### USB OTG / Ethernet Gadget
 

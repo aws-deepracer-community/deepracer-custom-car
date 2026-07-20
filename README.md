@@ -42,49 +42,18 @@ In the `utils/` folder there are utilities to create a USB flash stick for the o
 
 ## Installation
 
-### Installation scripts
+Choose the guide that matches your scenario:
 
-There are separate installation scripts for the original DeepRacer on Ubuntu 20.04/ROS2 Foxy, the Raspberry Pi 4 based car on Ubuntu 22.04/ROS2 Humble, and the original car or Raspberry Pi 4/5 on Ubuntu 24.04/ROS2 Jazzy. Basic installation depends on pre-packaged apt/deb packages and does not require compiling on the car itself.
+| Scenario | Guide |
+|---|---|
+| Original DeepRacer — flash to Ubuntu 24.04 (fresh install, recommended) | [Flashing to Ubuntu 24.04](docs/flash-2404.md) |
+| Original DeepRacer — install community stack on existing Ubuntu 20.04 | [Upgrading on Ubuntu 20.04](docs/upgrade-2004.md) |
+| Raspberry Pi 4 or 5 | [Building with Raspberry Pi](docs/raspberry_pi.md) |
 
-For the original DeepRacer on Ubuntu 20.04 (ROS 2 Foxy):
-
-        sudo install_scripts/aws-20.04/install-prerequisites.sh
-        sudo install_scripts/aws-20.04/install-deepracer.sh
-
-For the original DeepRacer on Ubuntu 24.04 (ROS 2 Jazzy):
-
-        sudo install_scripts/aws-24.04/install-prerequisites.sh
-        sudo install_scripts/aws-24.04/install-deepracer.sh
-
-For the Raspberry Pi4 on Ubuntu 22.04 (ROS2 Humble):
-
-        sudo install_scripts/rpi4-22.04/install-prerequisites.sh
-        sudo install_scripts/rpi4-22.04/install-deepracer.sh
-
-For the Raspberry Pi 4 or 5 on Ubuntu 24.04 (ROS2 Jazzy):
-
-        sudo install_scripts/rpi-24.04/install-prerequisites.sh
-        sudo install_scripts/rpi-24.04/install-deepracer.sh
-
-See also [building instructions](docs/raspberry_pi.md) for the Raspberry Pi4.
-
-### Custom Flash image (Original Car)
-
-You can flash the original DeepRacer directly from a pre-built image (20.04 or 24.04). Pick the script that matches your workstation:
-
-| Script | Host OS | Notes |
-| --- | --- | --- |
-| `usb-build.ubuntu.sh` | Ubuntu / other Linux | Preferred on Debian-based hosts; accepts `-d <drive> -r <image_url>` |
-| `usb-build.sh` | macOS / Linux | Compatible with BSD utilities; same arguments as above |
-| `usb-build.ps1` | Windows (PowerShell) | Use from an elevated PowerShell prompt; drive letter replaces `/dev/sdX` |
-
-Typical flow on Linux:
-
-1. Enter the `utils/` directory
-2. Run `./usb-build.ubuntu.sh -d <drive> -r <image_url>`
-3. `drive` is the USB device (`sdb`, `sdc`, ...). Validate with `lsblk` before running the script.
-
-The Ubuntu 24.04 image includes the refreshed installer and OpenVINO CPU pipeline; use the URL published alongside each release announcement.
+All installation scripts require root privileges (`sudo`). Run
+`install-prerequisites.sh` first, then `install-deepracer.sh`. Basic
+installation uses pre-packaged apt/deb packages and does not require compiling
+on the car.
 
 ## Usage
 
@@ -107,15 +76,15 @@ The custom stack exposes the following arguments which can be changed through ch
 
 ### Inference engine 
 
-The different combinations of `inference_engine` and `inference_device` are not all compatible with the RPi4, and each option comes with pros and cons. The original car software only supports OpenVINO CPU.
+The different combinations of `inference_engine` and `inference_device` are not all compatible with the RPi, and each option comes with pros and cons. The original car software only supports OpenVINO CPU.
 
-| Feature                   | Original (Ubuntu 20.04, ROS2 Foxy)  | Original (Ubuntu 24.04, ROS2 Jazzy)  | RPi4 (Ubuntu 22.04, ROS2 Humble)  | RPi4/RPi5 (Ubuntu 24.04, ROS2 Jazzy)  | Notes                                                                 |
-|---------------------------|-------------------------------------|--------------------------------------|-----------------------------------|---------------------------------------|-----------------------------------------------------------------------|
-| Camera                    | Original USB (incl. Stereo)         | Original USB (incl. Stereo)          | RPi Camera Module 2 + USB         | RPi Camera Module 2 & 3 + USB         |                                                                       |
-| TensorFlow Lite (CPU)     | Yes                                 | Yes                                  | Yes                               | Yes                                   | Default for RPi                                                       |
-| OpenVINO (CPU)            | Yes                                 | Yes                                  | No                                | No                                    | Default for Original                                                  |
-| OpenVINO (GPU)            | Yes                                 | No                                   | No                                | No                                    | Reduces CPU load, but model takes longer to load                      |
-| OpenVINO (NCS2/Myriad X)  | Yes                                 | No                                   | Yes                               | No                                    | Reduces CPU load, requires NCS2 stick, model takes longer to load     |
+| Feature                   | Original (Ubuntu 20.04, ROS2 Foxy)  | Original (Ubuntu 24.04, ROS2 Jazzy)  | RPi4/RPi5 (Ubuntu 24.04, ROS2 Jazzy)  | Notes                                                                 |
+|---------------------------|-------------------------------------|--------------------------------------|---------------------------------------|-----------------------------------------------------------------------|
+| Camera                    | Original USB (incl. Stereo)         | Original USB (incl. Stereo)          | RPi Camera Module 2 & 3 + USB         |                                                                       |
+| TensorFlow Lite (CPU)     | Yes                                 | Yes                                  | Yes                                   | Default for RPi                                                       |
+| OpenVINO (CPU)            | Yes                                 | Yes                                  | No                                    | Default for Original                                                  |
+| OpenVINO (GPU)            | Yes                                 | No                                   | No                                    | Reduces CPU load, but model takes longer to load                      |
+| OpenVINO (NCS2/Myriad X)  | Yes                                 | No                                   | No                                    | Reduces CPU load, requires NCS2 stick, model takes longer to load     |
 
 The different modes have been tested for equivalency, and it is verified that they provide the same results (identical picture in -> identical action taken). Less than 1 per 1000 frames are differing, mainly due to the model not having a clear action, and several actions are having very similar probabilities.
 
