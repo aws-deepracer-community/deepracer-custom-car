@@ -36,40 +36,43 @@ The backend acts as an intermediary between the Web UI and the ROS 2 parameter s
 The frontend provides an intuitive interface for users to interact with camera hardware using React and TypeScript.
 
 ### 2.1 Data & Types
-- [ ] Define `CameraParameter` and `ParamValue` interfaces in `console/website/src/common/types.ts`.
-- [ ] Add logic to handle ROS parameter value types returned by the backend: `boolean`, `integer`, `double`, `string`, and arrays of those types.
-- [ ] Avoid assuming mock-style lowercase names such as `exposure`, `gain`, or `white_balance`; the UI should render discovered libcamera control names.
+- [x] Define `CameraParameter` and `ParamValue` interfaces in `console/website/src/common/types.ts`.
+- [x] Add logic to handle ROS parameter value types returned by the backend: `boolean`, `integer`, `double`, `string`, and arrays of those types.
+- [x] Avoid assuming mock-style lowercase names such as `exposure`, `gain`, or `white_balance`; the UI should render discovered libcamera control names.
 
 ### 2.2 API Integration (Custom Hooks)
-- [ ] Create `use-camera.ts` in `console/website/src/components/common/hooks/`.
-- [ ] Implement state management for loading, error, and current parameter states.
-- [ ] Implement the fetching logic (`useEffect`) to sync UI with ROS 2 parameters on mount/refresh.
+- [x] Create `use-camera.ts` in `console/website/src/components/common/hooks/`.
+- [x] Implement state management for loading, error, and current parameter states.
+- [x] Implement the fetching logic (`useEffect`) to sync UI with ROS 2 parameters on mount/refresh.
 
 ### 2.3 UI Components
-- [ ] Create `CameraSettingsContainer.tsx` in `console/website/src/components/settings/`.
-- [ ] **Smart Inputs:** Build a component that renders the correct input type based on parameter metadata:
+- [x] Create `CameraSettingsContainer.tsx` in `console/website/src/components/settings/`.
+- [/] **Smart Inputs:** Build a component that renders the correct input type based on parameter metadata:
   - Sliders or numeric inputs for scalar numeric ranges, using descriptor `min`, `max`, and `step` when available.
   - Toggles for booleans such as `AeEnable` and `AwbEnable`.
   - Multi-value editors for array controls such as `ColourGains` when exposed by the camera.
   - Keep FPS/frame-duration controls hidden because `FrameDurationLimits` is blocked by the backend.
-- [ ] **Visual Feedback:** Add loading indicators and success/error toasts when settings are applied.
+- [/] **Visual Feedback:** Add loading indicators and success/error toasts when settings are applied.
 
 ### 2.4 Navigation & Layout Integration
-- [ ] Update `src/components/pages/settings.tsx` or create a new page to include the Camera Settings section.
-- [ ] Ensure responsive layout works on both tablets (mobile view) and desktop views used for configuration.
+- [x] Update `src/components/pages/settings.tsx` or create a new page to include the Camera Settings section.
+- [x] Ensure responsive layout works on both tablets (mobile view) and desktop views used for configuration.
 
 ---
 
 ## 🧪 Phase 3: Verification & Testing
 
 ### 3.1 Manual ROS 2 Validation
-- [ ] Verify that `camera_ros` actually exposes the parameters via CLI:
-  `ros2 param list /camera_pkg/camera_node`
-- [ ] Test manual parameter changes using terminal to ensure hardware responsiveness.
+- [x] Verify that `camera_ros` actually exposes the parameters via CLI:
+  `ros2 param list /camera_pkg/camera`
+- [x] Test manual parameter changes using terminal to ensure hardware responsiveness.
 - [x] Validate backend module syntax:
   `python3 -m py_compile src/aws-deepracer-webserver-pkg/webserver_pkg/webserver_pkg/camera_api.py`
 
-### 3.2 End-to-End (E2E) Testing
+### 3.2 Unit & Integration Testing (Frontend)
+- [ ] Create unit tests for `CameraSettingsContainer` and custom hooks in the console project, following existing patterns in the codebase.
+
+### 3.3 End-to-End (E2E) Testing
 - [ ] **Full Loop Test:** Change a setting in the Web UI and verify via CLI that the ROS 2 parameter updated successfully.
 - [ ] **Robustness Test:** Verify the system behaves gracefully when a camera is disconnected or a parameter update fails.
 

@@ -12,7 +12,7 @@ from webserver_pkg import webserver_publisher_node
 from webserver_pkg.utility import call_service_sync
 
 
-CAMERA_NODE_NAME = "/camera_pkg/camera_node"
+CAMERA_NODE_NAME = "/camera_pkg/camera"
 PARAMETER_SERVICE_TIMEOUT = 5
 
 CAMERA_PARAM_DENYLIST = {
@@ -172,6 +172,7 @@ def _is_exposed_camera_parameter(name, descriptor=None):
         return False
     return True
 
+
 @CAMERA_API_BLUEPRINT.route("/api/camera/params", methods=["GET"])
 def get_camera_params():
     """
@@ -211,6 +212,7 @@ def get_camera_params():
         if _is_exposed_camera_parameter(name, descriptor)
     ]
     return jsonify({"status": "success", "params": params})
+
 
 @CAMERA_API_BLUEPRINT.route("/api/camera/param/<param_name>", methods=["POST"])
 def set_camera_param(param_name):
