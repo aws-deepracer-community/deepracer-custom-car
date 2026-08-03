@@ -47,12 +47,13 @@ The frontend provides an intuitive interface for users to interact with camera h
 
 ### 2.3 UI Components
 - [x] Create `CameraSettingsContainer.tsx` in `console/website/src/components/settings/`.
-- [/] **Smart Inputs:** Build a component that renders the correct input type based on parameter metadata:
+- [x] **Smart Inputs:** Build a component that renders the correct input type based on parameter metadata:
   - Sliders or numeric inputs for scalar numeric ranges, using descriptor `min`, `max`, and `step` when available.
   - Toggles for booleans such as `AeEnable` and `AwbEnable`.
   - Multi-value editors for array controls such as `ColourGains` when exposed by the camera.
   - Keep FPS/frame-duration controls hidden because `FrameDurationLimits` is blocked by the backend.
-- [/] **Visual Feedback:** Add loading indicators and success/error toasts when settings are applied.
+- [x] **Visual Feedback:** Add loading indicators and success/error toasts when settings are applied.
+- [x] **Live Preview:** Display the active camera MJPEG stream with the controls so parameter changes can be evaluated immediately.
 
 ### 2.4 Navigation & Layout Integration
 - [x] Update `src/components/pages/settings.tsx` or create a new page to include the Camera Settings section.
@@ -70,13 +71,17 @@ The frontend provides an intuitive interface for users to interact with camera h
   `python3 -m py_compile src/aws-deepracer-webserver-pkg/webserver_pkg/webserver_pkg/camera_api.py`
 
 ### 3.2 Unit & Integration Testing (Frontend)
-- [ ] Create unit tests for `CameraSettingsContainer` and custom hooks in the console project, following existing patterns in the codebase.
+- [x] **Unit Testing (`src/test/unit`)**
+    - Create `src/test/unit/hooks/use-camera.test.ts` to verify:
+        - Fetching camera parameters on mount.
+        - Handling loading and error states during API calls.
+        - Correctly updating the local state when an API call succeeds or fails.
+    - Create `src/test/unit/components/settings/CameraSettingsContainer.test.tsx` to verify:
+        - Rendering of different input types (sliders for numeric, toggles for booleans) based on parameter metadata.
+        - The UI correctly displays loading indicators and error toasts.
+- [x] **Integration Testing (`src/test/integration`)**
+    - Add a test case in `settings-page.test.tsx` to ensure the camera settings section is visible and that interacting with a slider triggers an API call via the hook.
 
-### 3.3 End-to-End (E2E) Testing
-- [ ] **Full Loop Test:** Change a setting in the Web UI and verify via CLI that the ROS 2 parameter updated successfully.
-- [ ] **Robustness Test:** Verify the system behaves gracefully when a camera is disconnected or a parameter update fails.
-
----
 ## 📝 Research & Technical Context Notes
 
 ### Hardware Layer (`libcamera`)
