@@ -21,4 +21,7 @@
         "**/log": true,
         "**/install": false
     },
+    "chat.tools.terminal.autoApprove": {
+        "npm test": true
+    },
 }

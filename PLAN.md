@@ -22,6 +22,7 @@ The backend acts as an intermediary between the Web UI and the ROS 2 parameter s
 - [x] **Command Execution:** Set parameter values through the standard `set_parameters` service using the shared webserver ROS node, rather than shelling out to `ros2 param`.
 - [x] **Dependency:** Add `rcl_interfaces` to `webserver_pkg/package.xml` because ROS 2 parameter services and parameter value messages are defined there.
 - [x] **Error Handling:** Return structured errors when the camera parameter services are unavailable, request bodies are invalid, values cannot be represented as ROS parameters, or `camera_ros` rejects an update.
+- [x] **Persistence & Deferred Apply:** Camera settings should be saved to disk at `/opt/aws/deepracer/camera.json` so they survive restarts, and they should be applied once the camera becomes available rather than being dropped if the camera is not yet ready.
 
 ### 1.3 Camera Parameter Exposure Policy
 - [x] Treat `camera_ros` dynamic parameters as libcamera controls. Names are discovered at runtime and generally match libcamera control names such as `ExposureTime`, `AnalogueGain`, `AeEnable`, `AwbEnable`, `ColourGains`, `Brightness`, `Contrast`, `Saturation`, and `Sharpness`.
@@ -57,6 +58,7 @@ The frontend provides an intuitive interface for users to interact with camera h
 
 ### 2.4 Navigation & Layout Integration
 - [x] Update `src/components/pages/settings.tsx` or create a new page to include the Camera Settings section.
+- [x] Add a dedicated Camera Settings tab in the settings experience so camera controls are no longer grouped under Car Settings.
 - [x] Ensure responsive layout works on both tablets (mobile view) and desktop views used for configuration.
 
 ---
@@ -98,3 +100,16 @@ The frontend provides an intuitive interface for users to interact with camera h
 
 ### Security
 *   All new API endpoints should respect the existing authentication mechanisms implemented in `login.py` to ensure only authorized users can modify hardware settings.
+
+### Working with Tools in This Environment
+*   Work from the repository root at `/workspaces/deepracer-custom-car` for repo-wide changes and from `/workspaces/deepracer-custom-car/console/website` for frontend work.
+*   Frontend verification commands that are known to work in this environment:
+  - `cd /workspaces/deepracer-custom-car/console/website && npm test -- --run src/test/unit/settings/camera-settings-container.test.tsx src/test/integration/settings-page.test.tsx`
+  - `cd /workspaces/deepracer-custom-car/console/website && CI=1 npx vitest run src/test/unit/settings/camera-settings-container.test.tsx`
+  - `cd /workspaces/deepracer-custom-car/console/website && npm run lint`
+*   Useful repo-level commands when validating broader changes:
+  - `cd /workspaces/deepracer-custom-car && git status --short`
+  - `cd /workspaces/deepracer-custom-car && python3 -m py_compile src/aws-deepracer-webserver-pkg/webserver_pkg/webserver_pkg/camera_api.py`
+*   The frontend test runner is the most reliable verification path for UI work in this environment; use it after modifying camera settings, settings tabs, or related tests.
+*   The terminal should be used for verification and for quick inspection of file state; avoid relying on ad-hoc manual edits without re-running the relevant tests.
+*   When a command hangs or produces environment-specific Vitest startup noise, retry from the frontend workspace directory and use the explicit Vitest entrypoints above rather than generic `npm test` invocations.

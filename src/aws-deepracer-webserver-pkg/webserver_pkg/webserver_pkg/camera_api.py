@@ -4,6 +4,9 @@ camera_api.py
 This module holds the APIs required to interact with camera settings in ROS 2 via parameters.
 """
 
+import json
+import os
+
 from flask import Blueprint, jsonify, request
 
 from rcl_interfaces.msg import Parameter, ParameterType, ParameterValue
@@ -14,6 +17,7 @@ from webserver_pkg.utility import call_service_sync
 
 CAMERA_NODE_NAME = "/camera_pkg/camera"
 PARAMETER_SERVICE_TIMEOUT = 5
+CAMERA_SETTINGS_FILE_PATH = "/opt/aws/deepracer/camera.json"
 
 CAMERA_PARAM_DENYLIST = {
     "camera",
@@ -44,6 +48,14 @@ PARAMETER_TYPE_NAMES = {
     ParameterType.PARAMETER_DOUBLE_ARRAY: "double_array",
     ParameterType.PARAMETER_STRING_ARRAY: "string_array",
 }
+
+
+def _logger():
+    """Return the shared webserver logger when available."""
+    node = webserver_publisher_node.get_webserver_node()
+    if node is None:
+        return None
+    return node.get_logger()
 
 
 def _parameter_service_name(service_name):
@@ -164,6 +176,72 @@ def _camera_parameter_payload(name, parameter_value, descriptor):
     return payload
 
 
+def _read_camera_settings():
+    """Read pending camera settings from disk, if present."""
+    if not os.path.exists(CAMERA_SETTINGS_FILE_PATH):
+        return {}
+
+    try:
+        with open(CAMERA_SETTINGS_FILE_PATH, "r") as handle:
+            data = json.load(handle)
+        return data if isinstance(data, dict) else {}
+    except (json.JSONDecodeError, OSError) as ex:
+        logger = _logger()
+        if logger is not None:
+            logger.warning(f"Failed to read camera settings from {CAMERA_SETTINGS_FILE_PATH}: {ex}")
+        return {}
+
+
+def _write_camera_settings(settings):
+    """Persist pending camera settings to disk."""
+    os.makedirs(os.path.dirname(CAMERA_SETTINGS_FILE_PATH), exist_ok=True)
+    with open(CAMERA_SETTINGS_FILE_PATH, "w") as handle:
+        json.dump(settings, handle, indent=2)
+
+
+def _persist_camera_parameter(name, value):
+    """Store a camera parameter value on disk for deferred application."""
+    settings = _read_camera_settings()
+    settings[name] = value
+    _write_camera_settings(settings)
+
+
+def _apply_pending_camera_parameters():
+    """Apply any camera parameters that were queued while the camera node was unavailable."""
+    pending_settings = _read_camera_settings()
+    if not pending_settings:
+        return []
+
+    remaining_settings = {}
+    applied_names = []
+    for name in sorted(pending_settings):
+        value = pending_settings[name]
+        try:
+            parameter_value = _python_to_parameter_value(value)
+        except ValueError as ex:
+            logger = _logger()
+            if logger is not None:
+                logger.warning(f"Skipping pending camera parameter {name}: {ex}")
+            remaining_settings[name] = value
+            continue
+
+        set_request = SetParameters.Request()
+        set_request.parameters = [Parameter(name=name, value=parameter_value)]
+        set_response = _call_parameter_service(SetParameters, "set_parameters", set_request)
+        if set_response is None:
+            remaining_settings[name] = value
+            continue
+
+        result = set_response.results[0]
+        if result.successful:
+            applied_names.append(name)
+        else:
+            remaining_settings[name] = value
+
+    _write_camera_settings(remaining_settings)
+    return applied_names
+
+
 def _is_exposed_camera_parameter(name, descriptor=None):
     """Return whether a camera parameter should be exposed through this API."""
     if name in CAMERA_PARAM_DENYLIST:
@@ -179,6 +257,8 @@ def get_camera_params():
     Returns a list of available camera parameters and their current values.
     Queries /camera_pkg/camera_node, which is provided by camera_ros.
     """
+    _apply_pending_camera_parameters()
+
     list_request = ListParameters.Request()
     list_request.depth = ListParameters.Request.DEPTH_RECURSIVE
     list_response = _call_parameter_service(ListParameters, "list_parameters", list_request)
@@ -243,10 +323,13 @@ def set_camera_param(param_name):
     set_request.parameters = [Parameter(name=param_name, value=parameter_value)]
     set_response = _call_parameter_service(SetParameters, "set_parameters", set_request)
     if set_response is None:
+        _persist_camera_parameter(param_name, new_value)
         return jsonify({
-            "status": "error",
-            "message": f"Unable to set parameter on {CAMERA_NODE_NAME}"
-        }), 503
+            "status": "success",
+            "parameter": param_name,
+            "new_value": new_value,
+            "message": f"Parameter saved and will be applied when {CAMERA_NODE_NAME} is available"
+        })
 
     result = set_response.results[0]
     if not result.successful:
@@ -256,6 +339,8 @@ def set_camera_param(param_name):
             "message": result.reason or "Parameter update was rejected"
         }), 400
 
+    _persist_camera_parameter(param_name, new_value)
+    _apply_pending_camera_parameters()
     return jsonify({
         "status": "success",
         "parameter": param_name,
