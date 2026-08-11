@@ -191,10 +191,13 @@ def launch_setup(context, *args, **kwargs):
 
     rplidar = str2bool(LaunchConfiguration('rplidar').perform(context))
     if rplidar:
+        # rplidar_ros 2.x ships the standalone executable as 'rplidar_composition';
+        # the Foxy-era package still provides it as 'rplidar_node'.
+        rplidar_executable = 'rplidar_node' if os.environ.get('ROS_DISTRO') == 'foxy' else 'rplidar_composition'
         rplidar_node = Node(
             package='rplidar_ros',
             namespace='rplidar_ros',
-            executable='rplidar_node',
+            executable=rplidar_executable,
             name='rplidar_node',
             parameters=[{
                     'serial_port': '/dev/ttyUSB0',
