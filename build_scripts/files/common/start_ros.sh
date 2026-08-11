@@ -98,8 +98,12 @@ fi
 # Config overrides auto-detection; auto-detection: foxy -> legacy, others -> modern
 if [ -n "${CFG_CAMERA_MODE}" ] && [ "${CFG_CAMERA_MODE}" != "auto" ]; then
     CAMERA_MODE="camera_mode:=${CFG_CAMERA_MODE}"
+# The original DeepRacer uses USB cameras, and only the legacy node detects a
+# stereo pair; the Raspberry Pi needs the libcamera-based modern node.
 elif [ "$ROS_DISTRO" == "foxy" ]; then
     CAMERA_MODE=''
+elif [ "$(uname -m)" == "x86_64" ]; then
+    CAMERA_MODE='camera_mode:=legacy'
 else
     CAMERA_MODE='camera_mode:=modern'
 fi
