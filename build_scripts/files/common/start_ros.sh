@@ -47,8 +47,12 @@ else
 fi
 
 # Determine camera mode
+# The original DeepRacer uses USB cameras, and only the legacy node detects a
+# stereo pair; the Raspberry Pi needs the libcamera-based modern node.
 if [ "$ROS_DISTRO" == "foxy" ]; then
     CAMERA_MODE=''
+elif [ "$(uname -m)" == "x86_64" ]; then
+    CAMERA_MODE='camera_mode:=legacy'
 else
     CAMERA_MODE='camera_mode:=modern'
 fi
