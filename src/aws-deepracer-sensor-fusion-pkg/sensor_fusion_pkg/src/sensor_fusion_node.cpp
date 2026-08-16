@@ -72,6 +72,7 @@ The node defines:
 
 #include "sensor_fusion_pkg/lidar_overlay.hpp"
 #include "sensor_fusion_pkg/utility.hpp"
+#include "ament_index_cpp/get_package_share_directory.hpp"
 
 // Convert radian values to degrees
 #define RAD2DEG(x) ((x)*180./M_PI)
@@ -166,6 +167,7 @@ namespace SensorFusion {
           image_transport_(std::shared_ptr<rclcpp::Node>(this, [](auto *) {})),
           lidarOverlayProcessingObj_(LidarOverlay()),
           enableOverlay_(true),
+          enableGrayOverlay_(false),
           imageWidth_(DEFAULT_IMAGE_WIDTH),
           imageHeight_(DEFAULT_IMAGE_HEIGHT)
         {
@@ -180,6 +182,11 @@ namespace SensorFusion {
             }
             this->declare_parameter<bool>("enable_overlay", true);
             enableOverlay_ = this->get_parameter("enable_overlay").as_bool();
+            this->declare_parameter<bool>("enable_gray_overlay", false);
+            enableGrayOverlay_ = this->get_parameter("enable_gray_overlay").as_bool();
+            if (enableGrayOverlay_) {
+                loadGrayOverlay();
+            }
             createDefaultSensorConfiguration();
             if (checkFile(SENSOR_CONFIGURATION_FILE_PATH)) {
                 setSensorConfigurationFromFile(sensorConfiguration_,
@@ -203,7 +210,7 @@ namespace SensorFusion {
 
             // Publisher to publish the overlay message with sector LiDAR information
             // overlayed over the camera image frame.
-            if (enableOverlay_)
+            if (enableOverlay_ || enableGrayOverlay_)
                 overlayImagePub_ = image_transport_.advertise(OVERLAY_MSG_TOPIC, 1);
             
             statusCheckService_ = this->create_service<deepracer_interfaces_pkg::srv::SensorStatusCheckSrv>(
@@ -244,7 +251,7 @@ namespace SensorFusion {
                                                                                                        this,
                                                                                                        std::placeholders::_1));
             }
-            if (enableOverlay_) {
+            if (enableOverlay_ || enableGrayOverlay_) {
                 // Subscriber to subscribe to the camera display messages published by the camera_pkg.
                 image_transport::TransportHints ith(this);
                 RCLCPP_INFO(this->get_logger(), "image_transport configured to use %s", ith.getTransport().c_str());
@@ -288,6 +295,17 @@ namespace SensorFusion {
                 cameraImageCount_ = msg->images.size();
                 auto sensorMsg = deepracer_interfaces_pkg::msg::EvoSensorMsg();
                 sensorMsg.images = msg->images;
+                if (enableGrayOverlay_ && !grayOverlay_.empty()) {
+                    for (auto & compImg : sensorMsg.images) {
+                        cv::Mat img = cv::imdecode(cv::Mat(compImg.data), cv::IMREAD_COLOR);
+                        if (!img.empty()) {
+                            applyGrayOverlay(img);
+                            std::vector<uchar> buf;
+                            cv::imencode(".jpg", img, buf);
+                            compImg.data = buf;
+                        }
+                    }
+                }
                 // Update the LiDAR data with sector LiDAR data based on preprocessing configuration
                 if(sensorConfiguration_[LIDAR_KEY][LIDAR_CONFIG_PREPROCESS_TYPE_KEY] == sector){
                     std::lock_guard<std::mutex> guard(lidarMutex_);
@@ -324,38 +342,39 @@ namespace SensorFusion {
         /// @param msg Message with images from DeepRacer cameras.
         void displayCB(const sensor_msgs::msg::Image::ConstSharedPtr & msg) {
             try {
-                std::chrono::duration<float> timeSinceLastLidar = std::chrono::steady_clock::now() - lastLidarMsgRecievedTime;
-                std::chrono::duration<float> LIDAR_DATA_MAX_AGE(1.0);
-
                 cv::Mat resizedImg;
+                if (msg->height > imageHeight_) {
+                    cv::resize(cv_bridge::toCvCopy(msg, "bgr8")->image, resizedImg, cv::Size(imageWidth_, imageHeight_));
+                } else {
+                    resizedImg = cv_bridge::toCvCopy(msg, "bgr8")->image;
+                }
 
-                if ( timeSinceLastLidar < LIDAR_DATA_MAX_AGE ) {
-                    std::bitset<8> sectorOverlayValues;
-                    {
-                        std::lock_guard<std::mutex> guard(lidarMutex_);
-                        size_t blockSize = overlayLidarData_.size()/sensorConfiguration_[LIDAR_OVERLAY_KEY][LIDAR_OVERLAY_CONFIG_LIDAR_OVERLAY_NUM_SECTORS_KEY];
-                        if(blockSize == 8){
-                            auto overlaySectorLidarData = binarySectorizeLidarData(overlayLidarData_,
-                                                                                blockSize,
-                                                                                sensorConfiguration_[LIDAR_OVERLAY_KEY][LIDAR_OVERLAY_CONFIG_MAX_LIDAR_DIST_KEY]);
-                            for(size_t sector_idx = 0; sector_idx < overlaySectorLidarData.size(); sector_idx++){
-                                sectorOverlayValues[sector_idx] = (int)overlaySectorLidarData[sector_idx];
+                applyGrayOverlay(resizedImg);
+
+                if (enableOverlay_) {
+                    std::chrono::duration<float> timeSinceLastLidar = std::chrono::steady_clock::now() - lastLidarMsgRecievedTime;
+                    std::chrono::duration<float> LIDAR_DATA_MAX_AGE(1.0);
+                    if (timeSinceLastLidar < LIDAR_DATA_MAX_AGE) {
+                        std::bitset<8> sectorOverlayValues;
+                        {
+                            std::lock_guard<std::mutex> guard(lidarMutex_);
+                            size_t blockSize = overlayLidarData_.size()/sensorConfiguration_[LIDAR_OVERLAY_KEY][LIDAR_OVERLAY_CONFIG_LIDAR_OVERLAY_NUM_SECTORS_KEY];
+                            if(blockSize == 8){
+                                auto overlaySectorLidarData = binarySectorizeLidarData(overlayLidarData_,
+                                                                                    blockSize,
+                                                                                    sensorConfiguration_[LIDAR_OVERLAY_KEY][LIDAR_OVERLAY_CONFIG_MAX_LIDAR_DIST_KEY]);
+                                for(size_t sector_idx = 0; sector_idx < overlaySectorLidarData.size(); sector_idx++){
+                                    sectorOverlayValues[sector_idx] = (int)overlaySectorLidarData[sector_idx];
+                                }
                             }
                         }
+                        cv::Mat overlayCVImage = lidarOverlayProcessingObj_.overlayLidarDataOnImage(resizedImg, sectorOverlayValues);
+                        overlayImagePub_.publish(*(cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", overlayCVImage).toImageMsg().get()));
+                        return;
                     }
+                }
 
-                    cv::resize(cv_bridge::toCvCopy(msg, "bgr8")->image, resizedImg, cv::Size(imageWidth_, imageHeight_));
-                    cv::Mat overlayCVImage = lidarOverlayProcessingObj_.overlayLidarDataOnImage(resizedImg, sectorOverlayValues);
-                    overlayImagePub_.publish(*(cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", overlayCVImage).toImageMsg().get()));
-                }
-                else {
-                    if (msg->height > imageHeight_) {
-                        cv::resize(cv_bridge::toCvCopy(msg, "bgr8")->image, resizedImg, cv::Size(imageWidth_, imageHeight_));
-                    } else {
-                        resizedImg = cv_bridge::toCvCopy(msg, "bgr8")->image;
-                    }
-                    overlayImagePub_.publish(*(cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", resizedImg).toImageMsg().get()));
-                }
+                overlayImagePub_.publish(*(cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", resizedImg).toImageMsg().get()));
             }
             catch (const std::exception &ex) {
                 RCLCPP_ERROR(this->get_logger(), "Display callback failed: %s", ex.what());
@@ -412,6 +431,87 @@ namespace SensorFusion {
             catch (const std::exception &ex) {
                 RCLCPP_ERROR(this->get_logger(), "LiDAR callback failed: %s", ex.what());
             }
+        }
+
+        /// Loads the gray fade overlay image from the package share directory.
+        void loadGrayOverlay() {
+            try {
+                std::string pkg_share = ament_index_cpp::get_package_share_directory("sensor_fusion_pkg");
+                std::string overlay_path = pkg_share + "/images/fade_gray_overlay.png";
+                grayOverlay_ = cv::imread(overlay_path, cv::IMREAD_UNCHANGED);
+                if (grayOverlay_.empty()) {
+                    RCLCPP_WARN(this->get_logger(), "Gray overlay image not found at %s", overlay_path.c_str());
+                } else {
+                    RCLCPP_INFO(this->get_logger(), "Loaded gray overlay image (%dx%d, channels=%d)",
+                                grayOverlay_.cols, grayOverlay_.rows, grayOverlay_.channels());
+                }
+            }
+            catch (const std::exception &ex) {
+                RCLCPP_WARN(this->get_logger(), "Failed to load gray overlay image: %s", ex.what());
+            }
+        }
+
+        /// Blends the gray fade overlay onto a BGR image in-place using per-pixel alpha compositing.
+        /// The overlay PNG's alpha channel controls the blend weight at each pixel.
+        /// Has no effect if enable_gray_overlay is false or the overlay image is not loaded.
+        /// Precomputes the two cached float32 blend mats from grayOverlayResized_.
+        /// Must be called whenever grayOverlayResized_ changes, with overlayCacheMutex_ held.
+        void prepareOverlayCache() {
+            std::vector<cv::Mat> channels;
+            cv::split(grayOverlayResized_, channels);
+
+            cv::Mat overlayBGR;
+            cv::Mat alphaNorm;
+            if (channels.size() == 4) {
+                // BGRA
+                std::vector<cv::Mat> bgrChannels = {channels[0], channels[1], channels[2]};
+                cv::merge(bgrChannels, overlayBGR);
+                channels[3].convertTo(alphaNorm, CV_32F, 1.0 / 255.0);
+            } else if (channels.size() == 2) {
+                // Grayscale + Alpha
+                std::vector<cv::Mat> bgrChannels = {channels[0], channels[0], channels[0]};
+                cv::merge(bgrChannels, overlayBGR);
+                channels[1].convertTo(alphaNorm, CV_32F, 1.0 / 255.0);
+            } else {
+                // BGR (no alpha)
+                overlayBGR = grayOverlayResized_;
+                alphaNorm = cv::Mat(grayOverlayResized_.size(), CV_32F, cv::Scalar(1.0));
+            }
+
+            cv::Mat alpha3;
+            std::vector<cv::Mat> alphaChannels = {alphaNorm, alphaNorm, alphaNorm};
+            cv::merge(alphaChannels, alpha3);
+
+            cv::Mat overlay32;
+            overlayBGR.convertTo(overlay32, CV_32FC3);
+            overlayBGRPremul_ = overlay32.mul(alpha3);           // overlay * alpha
+            oneMinusAlpha3_   = cv::Scalar(1, 1, 1) - alpha3;   // 1 - alpha
+        }
+
+        /// Blends the gray fade overlay onto a BGR image in-place using cached alpha compositing.
+        /// Has no effect if enable_gray_overlay is false or the overlay image is not loaded.
+        void applyGrayOverlay(cv::Mat & image) {
+            if (!enableGrayOverlay_ || grayOverlay_.empty() || image.empty()) {
+                return;
+            }
+            // Hold the mutex only long enough to check/rebuild the cache and copy out the
+            // blend mats. The expensive float conversion and blend happen after the lock is
+            // released so that cameraCB and displayCB don't serialise each other.
+            cv::Mat localPremul, localOneMinusAlpha;
+            {
+                std::lock_guard<std::mutex> guard(overlayCacheMutex_);
+                if (grayOverlayResized_.size() != image.size()) {
+                    cv::resize(grayOverlay_, grayOverlayResized_, image.size(), 0, 0, cv::INTER_LINEAR);
+                    prepareOverlayCache();
+                }
+                localPremul        = overlayBGRPremul_;   // shallow copy (shared data, read-only use)
+                localOneMinusAlpha = oneMinusAlpha3_;
+            }
+            // Hot path: result = src * (1-alpha) + overlay_premul
+            cv::Mat src32;
+            image.convertTo(src32, CV_32FC3);
+            cv::Mat result32 = src32.mul(localOneMinusAlpha) + localPremul;
+            result32.convertTo(image, CV_8UC3);
         }
 
         /// Function to sectorize the lidarData to represent sectors where an object is detected.
@@ -611,6 +711,18 @@ namespace SensorFusion {
         std::unordered_map<std::string, std::unordered_map<std::string, float>> sensorConfiguration_;
         /// Flag to enable publishing the overlay image.
         std::atomic<bool> enableOverlay_;
+        /// Flag to enable the gray fade overlay on camera images.
+        std::atomic<bool> enableGrayOverlay_;
+        /// Gray fade overlay image loaded from the package share directory (BGRA or BGR).
+        cv::Mat grayOverlay_;
+        /// Cached overlay resized to the current image dimensions.
+        cv::Mat grayOverlayResized_;
+        /// Cached premultiplied overlay (overlay_bgr * alpha), float32 BGR.
+        cv::Mat overlayBGRPremul_;
+        /// Cached inverse-alpha broadcast to 3 channels (1 - alpha), float32 BGR.
+        cv::Mat oneMinusAlpha3_;
+        /// Mutex protecting grayOverlayResized_, overlayBGRPremul_, and oneMinusAlpha3_.
+        std::mutex overlayCacheMutex_;
         std::chrono::steady_clock::time_point lastLidarMsgRecievedTime;
         std::chrono::steady_clock::time_point lastCameraMsgRecievedTime;
         size_t cameraImageCount_;

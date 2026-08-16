@@ -29,6 +29,9 @@
   <depend>usb_monitor_pkg</depend>
   <depend>webserver_pkg</depend>
   <depend>web_video_server</depend>
+  <depend>logging_pkg</depend>
+  <depend condition="$HW_PLATFORM == 'RPI'">diffdrive_motor_pkg</depend>
+  <depend condition="$HW_PLATFORM == 'DR' and $ROS_DISTRO != 'foxy'">imu_pkg</depend>
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
 

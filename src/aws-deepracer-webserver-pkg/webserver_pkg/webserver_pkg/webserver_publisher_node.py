@@ -25,6 +25,7 @@ and topics that are required by the APIs called from the DeepRacer vehicle conso
 """
 
 import threading
+import queue
 from flask import g
 import rclpy
 from rclpy.node import Node
@@ -37,6 +38,35 @@ from rclpy.qos import (QoSReliabilityPolicy,
 
 # TODO: Figure out a way to avoid global variable for webserver node shared across Flask threads
 webserver_node = None
+
+# ---------------------------------------------------------------------------
+# SSE event bus — thread-safe broadcast queue for Server-Sent Events.
+# Flask SSE clients register a queue here; ROS callbacks push events into it.
+# ---------------------------------------------------------------------------
+_sse_lock: threading.Lock = threading.Lock()
+_sse_clients: list = []
+
+
+def register_sse_client(q: queue.Queue) -> None:
+    with _sse_lock:
+        _sse_clients.append(q)
+
+
+def unregister_sse_client(q: queue.Queue) -> None:
+    with _sse_lock:
+        try:
+            _sse_clients.remove(q)
+        except ValueError:
+            pass
+
+
+def broadcast_sse_event(event_type: str, data: str) -> None:
+    with _sse_lock:
+        for q in _sse_clients:
+            try:
+                q.put_nowait({"event": event_type, "data": data})
+            except queue.Full:
+                pass  # slow client — drop the event rather than block
 
 from deepracer_interfaces_pkg.srv import (ActiveStateSrv,
                                           EnableStateSrv,
@@ -61,6 +91,7 @@ from deepracer_interfaces_pkg.srv import (ActiveStateSrv,
 from deepracer_interfaces_pkg.msg import (DeviceStatusMsg, 
                                           ServoCtrlMsg,
                                           SoftwareUpdatePctMsg)
+from std_msgs.msg import String as StringMsg
 from webserver_pkg.webserver import app
 from webserver_pkg.utility import DoubleBuffer
 from webserver_pkg.constants import (DEVICE_STATUS_TOPIC, VEHICLE_STATE_SERVICE,
@@ -85,7 +116,9 @@ from webserver_pkg.constants import (DEVICE_STATUS_TOPIC, VEHICLE_STATE_SERVICE,
                                      GET_OTG_LINK_STATE_SERVICE,
                                      CAL_DRIVE_TOPIC,
                                      MANUAL_DRIVE_TOPIC,
-                                     SOFTWARE_UPDATE_PCT_TOPIC)
+                                     SOFTWARE_UPDATE_PCT_TOPIC,
+                                     IMU_SAFETY_EVENT_TOPIC,
+                                     SteeringMode)
 
 
 class WebServerNode(Node):
@@ -98,6 +131,18 @@ class WebServerNode(Node):
         """
         super().__init__("webserver_publisher_node")
         self.get_logger().info("webserver_publisher_node started")
+        
+        # Declare and get steering mode parameter
+        self.declare_parameter("steering_mode", SteeringMode.SERVO.value)
+        steering_mode_value = self.get_parameter("steering_mode").value
+        try:
+            self.steering_mode = SteeringMode(steering_mode_value)
+        except ValueError:
+            self.get_logger().warn(f"Invalid steering mode '{steering_mode_value}', using default SERVO mode")
+            self.steering_mode = SteeringMode.SERVO
+        
+        self.get_logger().info(f"Steering mode set to: {self.steering_mode.value}")
+        
         HOST_DEFAULT = "0.0.0.0"
         PORT_DEFAULT = "5001"
         self.get_logger().info(f"Running the flask server on {HOST_DEFAULT}:{PORT_DEFAULT}")
@@ -324,11 +369,27 @@ class WebServerNode(Node):
         )
         self.latest_device_status = None
 
+        # Subscribe to IMU safety events and forward them to SSE clients.
+        self.imu_safety_event_sub = self.create_subscription(
+            StringMsg,
+            IMU_SAFETY_EVENT_TOPIC,
+            self.imu_safety_event_callback,
+            10
+        )
+
     def timer_callback(self):
         """Heartbeat function to keep the node alive.
         """
         self.get_logger().debug(f"Timer heartbeat {self.timer_count}")
         self.timer_count += 1
+
+    def get_steering_mode(self):
+        """Get the current steering mode.
+        
+        Returns:
+            SteeringMode: The current steering mode (SERVO or DIFFDRIVE)
+        """
+        return self.steering_mode
 
     def sw_update_pct_sub_cb(self, pct_dict):
         """Callback for the software_update_pct topic.
@@ -356,6 +417,14 @@ class WebServerNode(Node):
             msg (DeviceStatusMsg): The device status message
         """
         self.latest_device_status = msg
+
+    def imu_safety_event_callback(self, msg: StringMsg):
+        """Broadcast IMU safety stop events to all connected SSE clients.
+
+        Args:
+            msg (StringMsg): The stop reason ("crash" or "pickup")
+        """
+        broadcast_sse_event("imu_stop", msg.data)
 
 
 def get_webserver_node():

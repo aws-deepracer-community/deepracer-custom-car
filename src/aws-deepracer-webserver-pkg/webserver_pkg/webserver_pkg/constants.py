@@ -25,6 +25,12 @@ from enum import Enum
 
 BASE_PATH = "/opt/aws/deepracer/"
 
+# Steering mode enum
+class SteeringMode(Enum):
+    """Enum representing different steering modes for the DeepRacer."""
+    SERVO = "servo"
+    DIFFDRIVE = "diffdrive"
+
 # Service and topic names.
 
 # webserver_pkg
@@ -102,6 +108,10 @@ SERVO_STATE_SERVICE = f"{SERVO_PKG_NS}/servo_state"
 SET_LED_STATE_SERVICE = f"{SERVO_PKG_NS}/set_led_state"
 SET_RAW_PWM_SERVICE = f"{SERVO_PKG_NS}/set_raw_pwm"
 
+# imu_pkg
+IMU_PKG_NS = "/imu_pkg"
+IMU_SAFETY_EVENT_TOPIC = f"{IMU_PKG_NS}/safety_event"
+
 # status_led_pkg
 STATUS_LED_PKG_NS = "/status_led_pkg"
 LED_BLINK_SERVICE = f"{STATUS_LED_PKG_NS}/led_blink"
@@ -147,6 +157,8 @@ PWM_ANGLE_CONVERSION = 10000
 PWM_THROTTLE_CONVERSION = 4500
 PWM_OFFSET = 1500000
 CALIBRATION_MODE = 2
+DIFFDRIVE_THROTTLE_CONVERSION = 2
+DIFFDRIVE_ANGLE_CONVERSION = 1
 
 # Default values for action space mapped to on the vehicle for speed values of 0.8 and 0.4
 DEFAULT_SPEED_SCALES = [1.0, 0.8]

@@ -33,6 +33,7 @@ def launch_setup(context, *args, **kwargs):
 
     camera_mode = LaunchConfiguration('camera_mode').perform(context)
     camera_index = int(LaunchConfiguration('camera_index').perform(context))
+    camera_orientation = int(LaunchConfiguration('camera_orientation').perform(context))
     fps = int(LaunchConfiguration('camera_fps').perform(context))
     resize_images = str2bool(LaunchConfiguration('camera_resize').perform(context))
     resolution = resize_images and [160, 120] or [640, 480]
@@ -52,6 +53,7 @@ def launch_setup(context, *args, **kwargs):
         # Camera configuration
         camera_params = {'width': resolution[0],
                          'height': resolution[1],
+                         'orientation': camera_orientation,
                          'FrameDurationLimits': [math.floor(1e6 / fps), math.ceil(1e6 / fps)],
                          'use_node_time': True}
 
@@ -189,6 +191,27 @@ def launch_setup(context, *args, **kwargs):
         }]
     )
 
+    enable_imu = str2bool(LaunchConfiguration('enable_imu').perform(context))
+    if enable_imu:
+        imu_node = Node(
+            package='imu_pkg',
+            namespace='imu_pkg',
+            executable='imu_node',
+            name='imu_node',
+            parameters=[{
+                'stop_on_pickup': str2bool(
+                    LaunchConfiguration('imu_stop_on_pickup').perform(context)),
+                'stop_on_crash': str2bool(
+                    LaunchConfiguration('imu_stop_on_crash').perform(context)),
+                'crash_accel_threshold_g': float(
+                    LaunchConfiguration('imu_crash_accel_threshold_g').perform(context)),
+                'pickup_threshold_g': float(
+                    LaunchConfiguration('imu_pickup_threshold_g').perform(context)),
+                'filter_alpha': float(
+                    LaunchConfiguration('imu_filter_alpha').perform(context)),
+            }]
+        )
+
     rplidar = str2bool(LaunchConfiguration('rplidar').perform(context))
     if rplidar:
         # rplidar_ros 2.x ships the standalone executable as 'rplidar_composition';
@@ -208,6 +231,7 @@ def launch_setup(context, *args, **kwargs):
             }]
         )
 
+    enable_gray_overlay = str2bool(LaunchConfiguration('enable_gray_overlay').perform(context))
     sensor_fusion_node = Node(
         package='sensor_fusion_pkg',
         namespace='sensor_fusion_pkg',
@@ -216,15 +240,28 @@ def launch_setup(context, *args, **kwargs):
         parameters=[{
                 'camera_mode': camera_mode,
                 'image_transport': 'compressed',
-                'enable_overlay': rplidar
+                'enable_overlay': rplidar,
+                'enable_gray_overlay': enable_gray_overlay
         }]
     )
-    servo_node = Node(
-        package='servo_pkg',
-        namespace='servo_pkg',
-        executable='servo_node',
-        name='servo_node'
-    )
+
+    if LaunchConfiguration("steering_mode").perform(context) == "servo":
+        servo_node = Node(
+            package='servo_pkg',
+            namespace='servo_pkg',
+            executable='servo_node',
+            name='servo_node'
+        )
+    elif LaunchConfiguration("steering_mode").perform(context) == "diffdrive":
+        servo_node = Node(
+            package='diffdrive_motor_pkg',
+            namespace='diffdrive_motor_pkg',
+            executable='diffdrive_motor_node',
+            name='diffdrive_motor_node'
+        )
+    else:
+        raise ValueError("Invalid steering_mode. Must be 'servo' or 'diffdrive'.")
+    
     status_led_node = Node(
         package='status_led_pkg',
         namespace='status_led_pkg',
@@ -242,7 +279,10 @@ def launch_setup(context, *args, **kwargs):
         namespace='webserver_pkg',
         executable='webserver_publisher_node',
         name='webserver_publisher_node',
-        arguments=['--ros-args', '--log-level', 'info']
+        arguments=['--ros-args', '--log-level', 'info'],
+        parameters=[{
+                'steering_mode': LaunchConfiguration("steering_mode").perform(context)
+        }]
     )
     web_video_server_node = Node(
         package='web_video_server',
@@ -299,6 +339,9 @@ def launch_setup(context, *args, **kwargs):
     if rplidar:
         ld.append(rplidar_node)
 
+    if enable_imu:
+        ld.append(imu_node)
+
     return ld
 
 
@@ -342,8 +385,44 @@ def generate_launch_description():
                 default_value="0",
                 description="Index of the camera to use, applicable to modern camera_mode only"),
             DeclareLaunchArgument(
+                name="camera_orientation",
+                default_value="0",
+                description="Camera orientation in degrees, applicable to modern camera_mode only"),
+            DeclareLaunchArgument(
                 name="rplidar",
                 default_value="True",
                 description="Enable RPLIDAR node"),
+            DeclareLaunchArgument(
+                name="enable_gray_overlay",
+                default_value="False",
+                description="Apply gray fade overlay on camera images to reduce sky influence"),
+            DeclareLaunchArgument(
+                name="steering_mode",
+                default_value="servo",
+                description="Steering mode: servo or diffdrive"),
+            DeclareLaunchArgument(
+                name="enable_imu",
+                default_value="False",
+                description="Enable the IMU (BMI160) node"),
+            DeclareLaunchArgument(
+                name="imu_stop_on_pickup",
+                default_value="False",
+                description="Stop vehicle when IMU detects pickup"),
+            DeclareLaunchArgument(
+                name="imu_stop_on_crash",
+                default_value="False",
+                description="Stop vehicle when IMU detects high-G crash"),
+            DeclareLaunchArgument(
+                name="imu_crash_accel_threshold_g",
+                default_value="3.0",
+                description="Crash detection threshold in G"),
+            DeclareLaunchArgument(
+                name="imu_pickup_threshold_g",
+                default_value="0.5",
+                description="Pickup detection threshold in G"),
+            DeclareLaunchArgument(
+                name="imu_filter_alpha",
+                default_value="0.5",
+                description="IMU EMA smoothing factor (0, 1]: 1.0 = no filtering"),
             OpaqueFunction(function=launch_setup)
         ])
