@@ -116,11 +116,7 @@ rosdep install -i --from-path . --ignore-src --rosdistro $ROS_DISTRO -y
 cd $DIR
 
 # Build the core
-if [ "$ROS_DISTRO" == "humble" ] || [ "$ROS_DISTRO" == "jazzy" ]; then
-    colcon build --packages-up-to deepracer_launcher logging_pkg $COLCON_BUILD_ARGS --cmake-args $CMAKE_ARGS
-else
-    colcon build --packages-up-to deepracer_launcher rplidar_ros logging_pkg $COLCON_BUILD_ARGS --cmake-args $CMAKE_ARGS
-fi
+colcon build --packages-up-to deepracer_launcher $COLCON_BUILD_ARGS --cmake-args $CMAKE_ARGS
 
 set +e
 echo "Done!"

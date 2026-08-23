@@ -22,7 +22,6 @@
 
 #include <thread>
 #include <exception>
-#include <omp.h>
 
 #define RAD2DEG(x) ((x)*180./M_PI)
 
@@ -154,6 +153,10 @@ namespace TFLiteInferenceEngine {
 
     RLInferenceModel::~RLInferenceModel() {
         stopInference();
+        if (xnnpack_delegate_) {
+            TfLiteXNNPackDelegateDelete(xnnpack_delegate_);
+            xnnpack_delegate_ = nullptr;
+        }
     }
 
     bool RLInferenceModel::loadModel(const char* artifactPath,
@@ -188,15 +191,31 @@ namespace TFLiteInferenceEngine {
             tflite::ops::builtin::BuiltinOpResolver resolver;
             tflite::InterpreterBuilder(*model_, resolver)(&interpreter_);
 
-            // Set number of CPU threads for inference
-            // Use the number of available CPU cores or a specific number (e.g., 4)
-            int num_threads = std::thread::hardware_concurrency() - 2; // Get available CPU cores
-            if (num_threads <= 0) num_threads = 2; // Fallback if detection fails
+            // Use all available CPU cores; inference is the latency-critical task on this platform
+            int num_threads = std::max(1, static_cast<int>(std::thread::hardware_concurrency()));
             interpreter_->SetNumThreads(num_threads);
-            // Set OpenMP threads (for operations that use OpenMP)
-            omp_set_num_threads(num_threads);
 
             RCLCPP_INFO(inferenceNode->get_logger(), "TFLite interpreter using %d threads", num_threads);
+
+            // Apply XNNPACK delegate for SSE4.1/SSE4.2-optimised kernels on Intel Atom
+            // Must be done BEFORE AllocateTensors so the delegate can claim supported ops
+            if (xnnpack_delegate_) {
+                TfLiteXNNPackDelegateDelete(xnnpack_delegate_);
+            }
+            TfLiteXNNPackDelegateOptions xnnpack_opts = TfLiteXNNPackDelegateOptionsDefault();
+            xnnpack_opts.num_threads = num_threads;
+            xnnpack_opts.flags =
+                // Opt into newer XNNPACK kernel paths not yet enabled by default
+                TFLITE_XNNPACK_DELEGATE_FLAG_ENABLE_LATEST_OPERATORS;
+
+            xnnpack_delegate_ = TfLiteXNNPackDelegateCreate(&xnnpack_opts);
+            if (interpreter_->ModifyGraphWithDelegate(xnnpack_delegate_) != kTfLiteOk) {
+                RCLCPP_WARN(inferenceNode->get_logger(), "XNNPACK delegate failed to apply; falling back to default kernels");
+                TfLiteXNNPackDelegateDelete(xnnpack_delegate_);
+                xnnpack_delegate_ = nullptr;
+            } else {
+                RCLCPP_INFO(inferenceNode->get_logger(), "XNNPACK delegate applied with %d threads", num_threads);
+            }
 
             interpreter_->AllocateTensors();
 

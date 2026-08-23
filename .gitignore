@@ -77,3 +77,4 @@ test/build/
 test/model/
 test/data/*
 !test/data/demo/
+test/data/demo/*.json

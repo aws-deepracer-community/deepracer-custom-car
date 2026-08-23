@@ -1,0 +1,3 @@
+[submodule "console"]
+	path = console
+	url = https://github.com/aws-deepracer-community/deepracer-custom-console

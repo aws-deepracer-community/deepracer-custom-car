@@ -21,6 +21,7 @@
 #include "tensorflow/lite/interpreter.h"
 #include "tensorflow/lite/kernels/register.h"
 #include "tensorflow/lite/model.h"
+#include "tensorflow/lite/delegates/xnnpack/xnnpack_delegate.h"
 #include "deepracer_interfaces_pkg/msg/evo_sensor_msg.hpp"
 #include "deepracer_interfaces_pkg/msg/infer_results_array.hpp"
 #include <atomic>
@@ -71,6 +72,8 @@ namespace TFLiteInferenceEngine {
         std::vector<float*> inputTensorPtrs_;
         /// Cached output tensor pointer for performance
         float* outputTensorPtr_;
+        /// XNNPACK delegate for SSE4.1/SSE4.2 accelerated inference on Intel Atom
+        TfLiteDelegate* xnnpack_delegate_{nullptr};
 
     };
 }

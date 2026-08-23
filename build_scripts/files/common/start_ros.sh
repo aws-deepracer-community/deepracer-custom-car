@@ -26,17 +26,65 @@ else
     echo "No OpenVINO found!"
 fi
 
-# Determine which ineference engine and device to use
-# Priority for MYRIAD > CPU (ROS2 Foxy x86_64 only) > TFLITE
-MYRIAD=$(lsusb | grep "Intel Movidius MyriadX")
-if [ -n "${MYRIAD}" ]; then
-    INFERENCE_ENGINE='inference_engine:=OV'
-    INFERENCE_DEVICE='inference_device:=MYRIAD'
-elif [ "$(uname -m)" == "x86_64" ]; then
-    INFERENCE_ENGINE='inference_engine:=OV'
-    INFERENCE_DEVICE='inference_device:=CPU'
+# Require jq for config.json parsing
+if ! command -v jq &>/dev/null; then
+    echo "ERROR: jq is not installed. Install it with: sudo apt-get install -y jq" >&2
+    exit 1
+fi
+
+# Read configuration overrides from config.json
+CONFIG_FILE='/opt/aws/deepracer/config.json'
+if [ -f "${CONFIG_FILE}" ]; then
+    CFG_LOGGING_MODE=$(jq -r '.logging.mode // empty' "${CONFIG_FILE}" 2>/dev/null)
+    CFG_LOGGING_PROVIDER=$(jq -r '.logging.provider // empty' "${CONFIG_FILE}" 2>/dev/null)
+    CFG_CAMERA_MODE=$(jq -r '.camera.mode // empty' "${CONFIG_FILE}" 2>/dev/null)
+    CFG_CAMERA_ORIENTATION=$(jq -r '.camera.orientation // 0' "${CONFIG_FILE}" 2>/dev/null)
+    CFG_GRAY_OVERLAY=$(jq -r '.camera.enable_gray_overlay // false' "${CONFIG_FILE}" 2>/dev/null)
+    CFG_INFERENCE_ENGINE=$(jq -r '.inference.engine // empty' "${CONFIG_FILE}" 2>/dev/null)
+    CFG_INFERENCE_DEVICE=$(jq -r '.inference.device // empty' "${CONFIG_FILE}" 2>/dev/null)
+    CFG_STEERING_MODE=$(jq -r '.steering.mode // empty' "${CONFIG_FILE}" 2>/dev/null)
+    CFG_IMU_ENABLED=$(jq -r '.imu.enabled // false' "${CONFIG_FILE}" 2>/dev/null)
+    CFG_IMU_CRASH_ENABLED=$(jq -r '.imu.crash_enabled // false' "${CONFIG_FILE}" 2>/dev/null)
+    CFG_IMU_CRASH_THRESHOLD=$(jq -r '.imu.crash_threshold_g // 3.0' "${CONFIG_FILE}" 2>/dev/null)
+    CFG_IMU_PICKUP_ENABLED=$(jq -r '.imu.pickup_enabled // false' "${CONFIG_FILE}" 2>/dev/null)
+    CFG_IMU_PICKUP_THRESHOLD=$(jq -r '.imu.pickup_threshold_g // 0.5' "${CONFIG_FILE}" 2>/dev/null)
 else
-    INFERENCE_ENGINE='inference_engine:=TFLITE'
+    CFG_LOGGING_MODE=''
+    CFG_LOGGING_PROVIDER=''
+    CFG_CAMERA_MODE=''
+    CFG_CAMERA_ORIENTATION='0'
+    CFG_GRAY_OVERLAY='false'
+    CFG_INFERENCE_ENGINE=''
+    CFG_INFERENCE_DEVICE=''
+    CFG_STEERING_MODE=''
+    CFG_IMU_ENABLED='false'
+    CFG_IMU_CRASH_ENABLED='false'
+    CFG_IMU_CRASH_THRESHOLD='3.0'
+    CFG_IMU_PICKUP_ENABLED='false'
+    CFG_IMU_PICKUP_THRESHOLD='0.5'
+fi
+
+# Determine inference engine and device
+# Config overrides auto-detection; auto-detection priority: MYRIAD > OV/CPU (x86_64) > TFLITE
+if [ -n "${CFG_INFERENCE_ENGINE}" ] && [ "${CFG_INFERENCE_ENGINE}" != "auto" ]; then
+    INFERENCE_ENGINE="inference_engine:=${CFG_INFERENCE_ENGINE}"
+    if [ -n "${CFG_INFERENCE_DEVICE}" ] && [ "${CFG_INFERENCE_DEVICE}" != "auto" ]; then
+        INFERENCE_DEVICE="inference_device:=${CFG_INFERENCE_DEVICE}"
+    else
+        INFERENCE_DEVICE=''
+    fi
+else
+    MYRIAD=$(lsusb | grep "Intel Movidius MyriadX")
+    if [ -n "${MYRIAD}" ]; then
+        INFERENCE_ENGINE='inference_engine:=OV'
+        INFERENCE_DEVICE='inference_device:=MYRIAD'
+    elif [ "$(uname -m)" == "x86_64" ]; then
+        INFERENCE_ENGINE='inference_engine:=OV'
+        INFERENCE_DEVICE='inference_device:=CPU'
+    else
+        INFERENCE_ENGINE='inference_engine:=TFLITE'
+        INFERENCE_DEVICE=''
+    fi
 fi
 
 # No support for battery sensor on Raspberry Pi
@@ -47,9 +95,12 @@ else
 fi
 
 # Determine camera mode
+# Config overrides auto-detection; auto-detection: foxy -> legacy, others -> modern
+if [ -n "${CFG_CAMERA_MODE}" ] && [ "${CFG_CAMERA_MODE}" != "auto" ]; then
+    CAMERA_MODE="camera_mode:=${CFG_CAMERA_MODE}"
 # The original DeepRacer uses USB cameras, and only the legacy node detects a
 # stereo pair; the Raspberry Pi needs the libcamera-based modern node.
-if [ "$ROS_DISTRO" == "foxy" ]; then
+elif [ "$ROS_DISTRO" == "foxy" ]; then
     CAMERA_MODE=''
 elif [ "$(uname -m)" == "x86_64" ]; then
     CAMERA_MODE='camera_mode:=legacy'
@@ -57,14 +108,56 @@ else
     CAMERA_MODE='camera_mode:=modern'
 fi
 
-# Read in logging configuration
-if [ -f /opt/aws/deepracer/logging.conf ]; then
-    LOGGING_MODE="logging_mode:=$(cat /opt/aws/deepracer/logging.conf | grep mode | cut -d'=' -f2 | tr -d '[:space:]')"
-    LOGGING_PROVIDER="logging_provider:=$(cat /opt/aws/deepracer/logging.conf | grep provider | cut -d'=' -f2 | tr -d '[:space:]')"
-else
-    LOGGING_MODE='logging_mode:=usbonly'
-    LOGGING_PROVIDER='logging_provider:=sqlite3'
+# Determine camera orientation for modern/libcamera mode only.
+# In auto mode we keep orientation hidden in UI, so only explicit modern mode enables this.
+case "${CFG_CAMERA_ORIENTATION}" in
+    180) CAMERA_ORIENTATION="camera_orientation:=180" ;;
+    *) CAMERA_ORIENTATION="camera_orientation:=0" ;;
+esac
+if [ "${CFG_CAMERA_MODE}" != "modern" ]; then
+    CAMERA_ORIENTATION=''
 fi
+
+# Determine logging configuration
+LOGGING_MODE="logging_mode:=${CFG_LOGGING_MODE:-usbonly}"
+LOGGING_PROVIDER="logging_provider:=${CFG_LOGGING_PROVIDER:-sqlite3}"
+
+# Determine steering mode (no auto-detection; defaults to servo)
+# Validate value; fall back to servo for unknown/corrupt config entries
+case "${CFG_STEERING_MODE}" in
+    servo|diffdrive) STEERING_MODE="steering_mode:=${CFG_STEERING_MODE}" ;;
+    *) STEERING_MODE="steering_mode:=servo" ;;
+esac
+
+# Determine gray overlay setting
+case "${CFG_GRAY_OVERLAY}" in
+    true|True) GRAY_OVERLAY="enable_gray_overlay:=True" ;;
+    *) GRAY_OVERLAY="enable_gray_overlay:=False" ;;
+esac
+
+# Determine IMU settings (x86 only; no-op on ARM)
+case "${CFG_IMU_ENABLED}" in
+    true|True)
+        ENABLE_IMU="enable_imu:=True"
+        case "${CFG_IMU_CRASH_ENABLED}" in
+            true|True) IMU_STOP_ON_CRASH="imu_stop_on_crash:=True" ;;
+            *) IMU_STOP_ON_CRASH="imu_stop_on_crash:=False" ;;
+        esac
+        IMU_CRASH_THRESHOLD="imu_crash_accel_threshold_g:=${CFG_IMU_CRASH_THRESHOLD:-3.0}"
+        case "${CFG_IMU_PICKUP_ENABLED}" in
+            true|True) IMU_STOP_ON_PICKUP="imu_stop_on_pickup:=True" ;;
+            *) IMU_STOP_ON_PICKUP="imu_stop_on_pickup:=False" ;;
+        esac
+        IMU_PICKUP_THRESHOLD="imu_pickup_threshold_g:=${CFG_IMU_PICKUP_THRESHOLD:-0.5}"
+        ;;
+    *)
+        ENABLE_IMU=''
+        IMU_STOP_ON_CRASH=''
+        IMU_CRASH_THRESHOLD=''
+        IMU_STOP_ON_PICKUP=''
+        IMU_PICKUP_THRESHOLD=''
+        ;;
+esac
 
 # Check if the LiDAR is connected via UART
 CP210X=$(lsusb | grep "CP210x UART Bridge")
@@ -76,4 +169,9 @@ else
     echo "RPLIDAR / UART Bridge not found!"
 fi
 
-ros2 launch deepracer_launcher deepracer_launcher.py ${INFERENCE_ENGINE} ${INFERENCE_DEVICE} ${BATTERY_DUMMY} ${LOGGING_MODE} ${LOGGING_PROVIDER} ${CAMERA_MODE} ${RPLIDAR}
+CMD="ros2 launch deepracer_launcher deepracer_launcher.py"
+for ARG in "${INFERENCE_ENGINE}" "${INFERENCE_DEVICE}" "${BATTERY_DUMMY}" "${LOGGING_MODE}" "${LOGGING_PROVIDER}" "${CAMERA_MODE}" "${CAMERA_ORIENTATION}" "${STEERING_MODE}" "${RPLIDAR}" "${GRAY_OVERLAY}" "${ENABLE_IMU}" "${IMU_STOP_ON_CRASH}" "${IMU_CRASH_THRESHOLD}" "${IMU_STOP_ON_PICKUP}" "${IMU_PICKUP_THRESHOLD}"; do
+    [ -n "${ARG}" ] && CMD="${CMD} ${ARG}"
+done
+echo "==> ${CMD}"
+exec ${CMD}
