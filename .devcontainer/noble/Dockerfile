@@ -57,7 +57,8 @@ RUN gem install deb-s3
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
     apt-get install -y --no-install-recommends nodejs
 
-RUN pip install flask flask-cors flask-wtf "tensorflow-cpu==2.19.1" --break-system-packages
+# --ignore-installed: the distro numpy has no RECORD file, so pip cannot uninstall it
+RUN pip install flask flask-cors flask-wtf "tensorflow-cpu==2.19.1" --break-system-packages --ignore-installed
 
 # Install OpenVINO 2024.6.0 (apt for x86_64, pip for aarch64)
 RUN ARCH=$(uname -m) && \

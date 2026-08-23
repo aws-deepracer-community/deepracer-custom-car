@@ -2,14 +2,14 @@
     "build": {
         "dockerfile": "Dockerfile",
         "args": {
-            "USERNAME": "${localEnv:USER}"
+            "USERNAME": "${localEnv:USER:vscode}"
         }
     },
     "containerEnv": {
         "DISPLAY": "${localEnv:DISPLAY}",
         "QT_X11_NO_MITSHM": "1"
     },
-    "containerUser": "${localEnv:USER}",
+    "containerUser": "${localEnv:USER:vscode}",
     "runArgs": [
         "--privileged",
         "--network",
@@ -18,8 +18,8 @@
     "mounts": [
         "source=deepracer-ros-bashhistory,target=/commandhistory,type=volume",
         "source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind",
-        "source=${localEnv:HOME}/.aws,target=/home/${localEnv:USER}/.aws,type=bind",
-        "source=${localEnv:HOME}/.gnupg,target=/home/${localEnv:USER}/.gnupg,type=bind",
+        "source=${localEnv:HOME}/.aws,target=/home/${localEnv:USER:vscode}/.aws,type=bind",
+        "source=${localEnv:HOME}/.gnupg,target=/home/${localEnv:USER:vscode}/.gnupg,type=bind",
     ],
     "customizations": {
         "vscode": {
