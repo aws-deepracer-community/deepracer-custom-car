@@ -57,7 +57,13 @@ RUN gem install deb-s3
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
     apt-get install -y --no-install-recommends nodejs
 
-RUN pip install flask flask-cors flask-wtf "tensorflow-cpu==2.19.1" --break-system-packages
+ENV ROS_PYTHON_VENV=/opt/rosenv
+ENV VIRTUAL_ENV=$ROS_PYTHON_VENV
+ENV PATH="$ROS_PYTHON_VENV/bin:$PATH"
+
+RUN python3 -m venv --system-site-packages "$ROS_PYTHON_VENV" && \
+    "$ROS_PYTHON_VENV/bin/pip" install --upgrade pip && \
+    "$ROS_PYTHON_VENV/bin/pip" install flask flask-cors flask-wtf "tensorflow-cpu==2.19.1" --ignore-installed
 
 # Install OpenVINO 2024.6.0 (apt for x86_64, pip for aarch64)
 RUN ARCH=$(uname -m) && \
@@ -66,7 +72,7 @@ RUN ARCH=$(uname -m) && \
         echo "deb [signed-by=/usr/share/keyrings/intel-openvino-2024.gpg] https://apt.repos.intel.com/openvino/2024 ubuntu24 main" | tee /etc/apt/sources.list.d/intel-openvino-2024.list && \
         apt-get update && apt-get install -y --no-install-recommends openvino-2024.6.0; \
     elif [ "$ARCH" = "aarch64" ]; then \
-        pip install openvino==2024.6.0 --break-system-packages; \
+        "$ROS_PYTHON_VENV/bin/pip" install openvino==2024.6.0; \
     else \
         echo "Unsupported architecture: $ARCH" && exit 1; \
     fi
