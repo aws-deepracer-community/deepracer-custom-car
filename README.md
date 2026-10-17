@@ -66,7 +66,7 @@ The custom stack exposes the following arguments which can be changed through ch
 | -------- | ------- | ----------- |
 | `camera_fps` | `30` | Number of camera frames per second, directly impacting how frequently the car takes new actions. |
 | `camera_resize` | `True` | Does the camera resize from 640x480 to 160x120 at source. | 
-| `camera_mode` | `legacy` | Camera integration method (`legacy` or `modern`). |
+| `camera_mode` | Auto-detected | Camera integration method (`legacy` or `modern`): legacy on x86_64, modern on aarch64. Foxy keeps its legacy default. |
 | `inference_engine` | `TFLITE` | Inference engine to use (`TFLITE` or `OV`). |
 | `inference_device` | `CPU` | Inference device to use, applicable to OV only (`CPU`, `GPU` or `MYRIAD`). |
 | `logging_mode` | `usbonly` | Enable the logging of results to ROS Bag on USB stick. |
@@ -74,6 +74,8 @@ The custom stack exposes the following arguments which can be changed through ch
 | `battery_dummy` | `False` | Use static dummy for battery measurements. |
 | `steering_mode` | `servo` | Drivetrain type (`servo` for standard servo/ESC, `diffdrive` for differential drive). See [docs/diffdrive.md](docs/diffdrive.md). |
 | `rplidar` | `True` | Enable RPLIDAR node for LiDAR sensor integration. |
+
+The installed startup script reads `camera.mode` from `/opt/aws/deepracer/config.json` (also configurable in the car settings). Its default, `auto`, selects the mode for the system architecture; set it to `legacy` or `modern` to override auto-detection.
 
 
 ### Inference engine 
@@ -108,4 +110,3 @@ To create a DeepRacer compatible car with WLToys A979 and a Raspberry Pi read th
 ## Building the Software
 
 To build the software packages, either for the Raspberry Pi4 or for the original Deepracer [read the instructions](docs/build_sw.md).
-
