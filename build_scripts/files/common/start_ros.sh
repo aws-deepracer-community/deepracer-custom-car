@@ -94,16 +94,15 @@ else
     BATTERY_DUMMY=''
 fi
 
-# Determine camera mode
-# Config overrides auto-detection; auto-detection: foxy -> legacy, others -> modern
+# Determine camera mode. Config overrides auto-detection.
 if [ -n "${CFG_CAMERA_MODE}" ] && [ "${CFG_CAMERA_MODE}" != "auto" ]; then
     CAMERA_MODE="camera_mode:=${CFG_CAMERA_MODE}"
-elif [ "$ROS_DISTRO" == "foxy" ]; then
-    CAMERA_MODE=''
-elif [ "$(uname -m)" == "x86_64" ]; then
-    CAMERA_MODE='camera_mode:=legacy'
 else
-    CAMERA_MODE='camera_mode:=modern'
+    case "$(uname -m)" in
+        x86_64) CAMERA_MODE='camera_mode:=legacy' ;;
+        aarch64) CAMERA_MODE='camera_mode:=modern' ;;
+        *) CAMERA_MODE='camera_mode:=modern' ;;
+    esac
 fi
 
 # Determine camera orientation for modern/libcamera mode only.

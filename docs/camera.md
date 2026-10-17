@@ -1,5 +1,16 @@
 # Cameras
 
+## Camera Mode
+
+The installed startup script uses `camera.mode` from
+`/opt/aws/deepracer/config.json`. By default it is `auto`: x86_64 systems use
+the legacy camera node, which supports the original DeepRacer stereo USB
+cameras, while aarch64 systems use the modern camera node for Raspberry Pi
+cameras. ROS 2 Foxy keeps the legacy launcher default.
+
+Set `camera.mode` to `legacy` or `modern` to override architecture-based
+selection. The same setting is available in the car settings UI.
+
 ## Field of View
 
 Modern cameras typically support multiple sensor modes with different resolutions. Some of these modes use the full sensor area, while others are cropped to achieve different aspect ratios or to reduce data processing requirements. The choice of sensor mode affects both the field of view and the processing latency.
