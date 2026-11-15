@@ -11,6 +11,19 @@ This repository contains a few different things:
 
 The repository is a merge of [deepracer-scripts](https://github.com/davidfsmith/deepracer-scripts) that contained improvements for the original car and [deepracer-pi](https://github.com/larsll/deepracer-pi) that ported DeepRacer to a Raspberry Pi4.
 
+> [!IMPORTANT]
+> **APT signing key expired (2026-11-08).** The key `CFB167A8F18DE6A634A6A2E4A63BC335D48DF8C6` that signs the DeepRacer community apt repository has had its expiry extended. Cars and images installed earlier still hold the old copy of the key, so `apt update` reports an expired key or a failed signature check for `aws-deepracer-community-sw`.
+>
+> To fix, refresh the key on the car and update the package lists:
+>
+> ```bash
+> sudo curl -sSL https://raw.githubusercontent.com/aws-deepracer-community/deepracer-custom-car/refs/heads/main/install_scripts/common/deepracer-community.asc \
+>   -o /etc/apt/trusted.gpg.d/deepracer-community.asc
+> sudo apt update
+> ```
+>
+> The key ID is unchanged and no changes to the apt source files are needed.
+
 ## Table of Contents
 
 - [Features](#features)
